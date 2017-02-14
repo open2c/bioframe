@@ -89,6 +89,23 @@ def bychrom(func, *tables, **kwargs):
 
     return map_impl(run_job, chroms, iter_partials())
 
+def chromsorted(df, sort_by=None, reset_index=True, **kw):
+    """
+    Sort bed-like dataframe by chromosome label in "natural" alphanumeric order,
+    followed by any columns specified in ``sort_by``.
+
+    """
+    if sort_by is None:
+        return pandas.concat(
+            bychrom(lambda c,x:x, df),
+            axis=0,
+            ignore_index=reset_index)
+    else:
+        return pandas.concat(
+            bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
+            axis=0,
+            ignore_index=reset_index)
+
 class IndexedBedLike(object):
     """BED intersection using pandas"""
     def __init__(self, bed):
@@ -108,22 +125,4 @@ class IndexedBedLike(object):
         tail = tail[tail['end'] > qend]
 
         return pandas.concat((head, tail), axis=0)
-
-
-def chromsorted(df, sort_by=None, reset_index=True, **kw):
-    """
-    Sort bed-like dataframe by chromosome label in "natural" alphanumeric order,
-    followed by any columns specified in ``sort_by``.
-
-    """
-    if sort_by is None:
-        return pandas.concat(
-            bychrom(lambda c,x:x, df),
-            axis=0,
-            ignore_index=reset_index)
-    else:
-        return pandas.concat(
-            bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
-            axis=0,
-            ignore_index=reset_index)
 
