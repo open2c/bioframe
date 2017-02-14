@@ -106,6 +106,35 @@ def chromsorted(df, sort_by=None, reset_index=True, **kw):
             axis=0,
             ignore_index=reset_index)
 
+
+def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False, 
+    allow_partial=False, trim_partial=False):
+    '''
+    Extract all bins of `chrom` between `start` and `end`.
+    
+
+
+    '''
+    pass
+
+def downsample():
+    '''
+    '''
+
+def upsample():
+    '''
+    '''
+
+def rle():
+    '''
+    run-length encode a bed chunk
+    '''
+
+def pile():
+    '''
+    make a pile up
+    '''
+
 class IndexedBedLike(object):
     """BED intersection using pandas"""
     def __init__(self, bed):

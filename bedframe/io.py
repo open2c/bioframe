@@ -17,6 +17,9 @@ import json
 import numpy as np
 import pandas
 import pysam
+import pyfaidx
+import Bio.Restriction as biorst
+import Bio.Seq as bioseq
 
 settings = {
     'bedtools_path': '',
@@ -235,6 +238,81 @@ def read_bam(fp, chrom=None, start=None, end=None):
                     json.dumps(OrderedDict(s.tags))) for s in bam_iter]
         df = pandas.DataFrame(records, columns=BAM_FIELDS)
     return df
+
+
+def read_fasta(*filepaths, **kwargs):
+    records = OrderedDict()
+    for filepath in filepaths:
+        records.update(pyfaidx.Fasta(filepath, **kwargs))
+    return records
+
+
+
+def read_chrominfo(filepath_or_fp,
+                   name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
+                   name_index=False,
+                   all_names=False,
+                   **kwargs):
+    """
+    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
+    database, where ``db`` is a genome assembly name.
+    Input
+    -----
+    filepath_or_fp : str or file-like
+        Path or url to text file, or buffer.
+    name_patterns : sequence, optional
+        Sequence of regular expressions to capture desired sequence names.
+        Each corresponding set of records will be sorted in natural order.
+    name_index : bool, optional
+        Index table by chromosome name.
+    all_names : bool, optional
+        Whether to return all scaffolds listed in the file. Default is
+        ``False``.
+    Returns
+    -------
+    Data frame indexed by sequence name, with columns 'name' and 'length'.
+    """
+    chrom_table = read_table(filepath_or_fp,
+                             usecols=[0, 1],
+                             names=['name', 'length'],
+                             **kwargs)
+    if not all_names:
+        parts = []
+        for pattern in name_patterns:
+            part = chrom_table[chrom_table['name'].str.contains(pattern)]
+            chrom_table = chrom_table.drop(part.index)
+            part = part.iloc[argnatsort(part['name'])]
+            parts.append(part)
+        chrom_table = pandas.concat(parts, axis=0)
+
+    if name_index:
+        chrom_table.index = chrom_table['name'].values
+
+    return chrom_table
+
+
+def read_gap(filepath_or_fp):
+    df = pandas.read_csv(
+            filepath_or_fp, sep='\t', compression='gzip',
+            usecols=[1,2,3,5,6,7,8],
+            names=['chrom', 'start', 'end', 'length_known',
+                   'length', 'type', 'bridge'])
+    df['length_known'] = df['length_known'].apply(lambda x: x == 'N')
+    return df
+
+
+def read_cytoband(filepath_or_fp):
+    return pandas.read_csv(
+        filepath_or_fp, sep='\t', compression='gzip',
+        names=['chrom', 'start', 'end', 'name', 'gieStain'])
+
+
+def read_fasta(*filepaths, **kwargs):
+    records = OrderedDict()
+    for filepath in filepaths:
+        records.update(pyfaidx.Fasta(filepath, **kwargs))
+    return records
+
 
 
 def tsv(df, **kwargs):
