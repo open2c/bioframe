@@ -3,7 +3,7 @@ from __future__ import division, print_function, unicode_literals
 import os
 import subprocess
 
-from .io import cmd_exists, run
+from .io import cmd_exists, run, to_dataframe
 
 if cmd_exists("bedtools"):
 
