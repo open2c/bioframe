@@ -176,55 +176,60 @@ def run(cmd, input=None, raises=True, print_cmd=False, max_msg_len=1000):
     return out.decode('utf-8')
 
 
+def read_chromsizes(filepath_or,
+                   name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
+                   all_names=False,
+                   **kwargs):
+    """
+    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
+    database, where ``db`` is a genome assembly name.
+
+    Parameters
+    ----------
+    filepath_or : str or file-like
+        Path or url to text file, or buffer.
+    name_patterns : sequence, optional
+        Sequence of regular expressions to capture desired sequence names.
+        Each corresponding set of records will be sorted in natural order.
+    all_names : bool, optional
+        Whether to return all contigs listed in the file. Default is
+        ``False``.
+
+    Returns
+    -------
+    Series of integer bp lengths indexed by sequence name.
+
+    See also
+    --------
+    * UCSC assembly terminology: <http://genome.ucsc.edu/FAQ/FAQdownloads.html#download9>
+    * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions
+
+    """
+    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
+        kwargs.setdefault('compression', 'gzip')
+    chromtable = pd.read_csv(
+        filepath_or, sep='\t', usecols=[0, 1],
+        names=['name', 'length'], dtype={'name':str}, **kwargs)
+    if not all_names:
+        parts = []
+        for pattern in name_patterns:
+            part = chromtable[chromtable['name'].str.contains(pattern)]
+            part = part.iloc[argnatsort(part['name'])]
+            parts.append(part)
+        chromtable = pd.concat(parts, axis=0)
+    chromtable.index = chromtable['name'].values
+    return chromtable['length']
+
+
 def fetch_chromsizes(db, **kwargs):
     """
     Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
     chromosome label.
 
     """
-    return read_chrominfo(CHROMINFO_URLS[db], name_index=True, **kwargs)['length']
-
-
-def read_chrominfo(filepath_or_fp,
-                    name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
-                    name_index=False,
-                    all_names=False,
-                    **kwargs):
-    """
-    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
-    database, where ``db`` is a genome assembly name.
-
-    Input
-    -----
-    filepath_or_fp : str or file-like
-        Path or url to text file, or buffer.
-    name_patterns : sequence, optional
-        Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-    name_index : bool, optional
-        Index table by chromosome name.
-    all_names : bool, optional
-        Whether to return all scaffolds listed in the file. Default is
-        ``False``.
-
-    Returns
-    -------
-    Data frame indexed by sequence name, with columns 'name' and 'length'.
-
-    """
-    chrom_table = read_table(filepath_or_fp, usecols=[0, 1],
-                             names=['name', 'length'], **kwargs)
-    if not all_names:
-        parts = []
-        for pattern in name_patterns:
-            part = chrom_table[chrom_table['name'].str.contains(pattern)]
-            part = part.iloc[argnatsort(part['name'])]
-            parts.append(part)
-        chrom_table = pandas.concat(parts, axis=0)
-    chrom_table.insert(0, 'id', np.arange(len(chrom_table)))
-    if name_index:
-        chrom_table.index = chrom_table['name'].values
-    return chrom_table
+    return read_chromsizes(
+        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/chromInfo.txt.gz'.format(db), 
+        **kwargs)
 
 
 def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
@@ -237,6 +242,10 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
     if chroms is not None:
         gap = gap[gap.chrom.isin(chroms)]
     return chromsorted(gap)
+
+
+def fetch_gaps(db, **kwargs):
+    return read_gapfile('http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db), **kwargs)
 
 
 def read_table(filepath_or, schema=None, **kwargs):
