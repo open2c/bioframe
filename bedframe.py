@@ -46,7 +46,7 @@ GFF_FIELDS = ['chrom', 'source', 'feature', 'start', 'end',
 
 PGSNP_FIELDS = ['chrom', 'start', 'end', 'name',
                 'alleleCount', 'alleleFreq', 'alleleScores']
-RNA_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
+BEDRNAELEMENTS_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
               'level', 'signif', 'score2']
 NARROWPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'fc', '-log10p', '-log10q', 'relSummit']
@@ -56,6 +56,10 @@ GAPPEDPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'thickStart', 'thickEnd', 'rgb',
                      'blockCount', 'blockSizes', 'blockStarts',
                      'fc', '-log10p', '-log10q']
+GAP_FIELDS = ['bin', 
+              'chrom', 'start', 'end', 
+              'ix', 'n', 
+              'length', 'type', 'bridge']
 
 # http://ga4gh.org/#/fileformats-team
 BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
@@ -69,10 +73,11 @@ SCHEMAS = {
     'bed4': BED_FIELDS[:4],
     'bed5': BED_FIELDS[:5],
     'bed6': BED_FIELDS,
+    'bed9': BED12_FIELDS[:9],
     'bed12': BED12_FIELDS,
     'gff': GFF_FIELDS,
     'gtf': GFF_FIELDS,
-    'rna': RNA_FIELDS,
+    'bedRnaElements': BEDRNAELEMENTS_FIELDS,
     'narrowPeak': NARROWPEAK_FIELDS,
     'broadPeak': BROADPEAK_FIELDS,
     'gappedPeak': GAPPEDPEAK_FIELDS,
@@ -222,6 +227,18 @@ def read_chrominfo(filepath_or_fp,
     return chrom_table
 
 
+def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
+    gap = pandas.read_csv(
+        filepath_or_fp,
+        sep='\t',
+        names=GAP_FIELDS,
+        usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
+        **kwargs)
+    if chroms is not None:
+        gap = gap[gap.chrom.isin(chroms)]
+    return chromsorted(gap)
+
+
 def read_table(filepath_or, schema=None, **kwargs):
     kwargs.setdefault('sep', '\t')
     kwargs.setdefault('header', None)
@@ -231,6 +248,8 @@ def read_table(filepath_or, schema=None, **kwargs):
         try:
             kwargs.setdefault('names', SCHEMAS[schema])
         except (KeyError, TypeError):
+            if isinstance(schema, six.string_types):
+                raise ValueError("TSV schema not found: '{}'".format(schema))
             kwargs.setdefault('names', schema)
     return pandas.read_csv(filepath_or, **kwargs)
 
@@ -539,6 +558,7 @@ if cmd_exists("bedtools"):
         random = _register('random')
         shuffle = _register('shuffle')
         annotate = _register('annotate')
+        jaccard = _register('jaccard')
 
 
 class IndexedBedLike(object):
@@ -561,3 +581,10 @@ class IndexedBedLike(object):
 
         return pandas.concat((head, tail), axis=0)
 
+
+def bedslice(grouped, chrom, start, end):
+    """Assumes no proper nesting of intervals"""
+    chromdf = grouped.get_group(chrom)
+    lo = chromdf['end'].values.searchsorted(start, side='right')
+    hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
+    return chromdf.iloc[lo:hi]
