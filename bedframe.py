@@ -20,6 +20,7 @@ import numpy as np
 import pandas
 import pysam
 
+__version__ = '0.1.0'
 
 settings = {
     'bedtools_path': '',
