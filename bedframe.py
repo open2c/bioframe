@@ -43,7 +43,7 @@ BEDPE_FIELDS = ['chrom1', 'start1', 'end1',
                 'chrom2', 'start2', 'end2',
                 'name', 'score', 'strand1', 'strand2']
 GFF_FIELDS = ['chrom', 'source', 'feature', 'start', 'end',
-              'score', 'strand', 'frame', 'info']
+              'score', 'strand', 'frame', 'attributes']
 
 PGSNP_FIELDS = ['chrom', 'start', 'end', 'name',
                 'alleleCount', 'alleleFreq', 'alleleScores']
