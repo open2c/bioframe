@@ -1,10 +1,27 @@
 from __future__ import division, print_function
+import re
+
 import numpy as np
 import pandas as pd
 
 
 def atoi(s):
     return int(s.replace(',', ''))
+
+
+def natsort_key(s, _NS_REGEX=re.compile(r'(\d+)', re.U)):
+    return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
+
+
+def natsorted(iterable):
+    return sorted(iterable, key=natsort_key)
+
+
+def argnatsort(array):
+    array = np.asarray(array)
+    if not len(array): return np.array([], dtype=int)
+    cols = tuple(zip(*(natsort_key(x) for x in array)))
+    return np.lexsort(cols[::-1])  # numpy's lexsort is ass-backwards
 
 
 def parse_region_string(s):
@@ -109,19 +126,57 @@ def parse_region(reg, chromsizes=None):
     return chrom, start, end
 
 
-def natsort_key(s, _NS_REGEX=re.compile(r'(\d+)', re.U)):
-    return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
+def bedslice(grouped, chrom, start, end):
+    """Assumes no proper nesting of intervals"""
+    chromdf = grouped.get_group(chrom)
+    lo = chromdf['end'].values.searchsorted(start, side='right')
+    hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
+    return chromdf.iloc[lo:hi]
 
 
-def natsorted(iterable):
-    return sorted(iterable, key=natsort_key)
+def bg2slice_frame(bg2, region1, region2):
+    """
+    Slice a dataframe with columns ['chrom1', 'start1', 'end1', 'chrom2',
+    'start2', 'end2']. Assumes no proper nesting of intervals.
+    """
+    chrom1, start1, end1 = region1
+    chrom2, start2, end2 = region2
+    if end1 is None:
+        end1 = np.inf
+    if end2 is None:
+        end2 = np.inf
+    out = bg2[(bg2['chrom1'] == chrom1) & 
+              (bg2['start1'] >= start1) &
+              (bg2['end1'] < end1) &
+              (bg2['chrom2'] == chrom2) & 
+              (bg2['start2'] >= start2) &
+              (bg2['end2'] < end2)]
+    return out
 
 
-def argnatsort(array):
-    array = np.asarray(array)
-    if not len(array): return np.array([], dtype=int)
-    cols = tuple(zip(*(natsort_key(x) for x in array)))
-    return np.lexsort(cols[::-1])  # numpy's lexsort is ass-backwards
+def bedslice_frame(bed, region):
+    """
+    Slice a dataframe with sorted columns ['chrom', 'start', 'end'].
+    Assumes no proper nesting of intervals.
+    """
+    chrom, start, end = region
+    grouped = bed.groupby('chrom')
+    chromdf = grouped.get_group(chrom)
+    lo = chromdf['end'].values.searchsorted(start, side='right')
+    if end is not None:
+        hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
+    else:
+        hi = None
+    return chromdf.iloc[lo:hi]
+
+
+def bedslice_series(bed, region):
+    """
+    Slice a series multi-indexed by ['chrom', 'start', 'end'].
+    Assumes no proper nesting of intervals.
+    """
+    chrom, start, end = region
+    return bed.loc[chrom].loc[start:end]
 
 
 class IndexedBedLike(object):
@@ -145,9 +200,32 @@ class IndexedBedLike(object):
         return pandas.concat((head, tail), axis=0)
 
 
-def bedslice(grouped, chrom, start, end):
-    """Assumes no proper nesting of intervals"""
-    chromdf = grouped.get_group(chrom)
-    lo = chromdf['end'].values.searchsorted(start, side='right')
-    hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
-    return chromdf.iloc[lo:hi]
+class Genome:
+    '''
+    Tasks: 
+    
+    '''
+    def __init__(self,
+            chromsizes='',
+            centromeres=None,
+            bins=None,
+            fasta_path=None,
+            mapped_frac=False,
+            GC=False,
+            ):
+        pass
+    
+    def from_cache(path):
+        pass
+    
+    @property
+    def chroms(self)
+        return self._chroms
+    
+    @property
+    def chromarms(self)
+        return self._chromarms
+ 
+    @property
+    def bins(self)
+        return self._bins

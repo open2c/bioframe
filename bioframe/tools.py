@@ -1,9 +1,12 @@
-from __future__ import division, print_function, unicode_literals
-import numpy as np
-import pandas
+# -*- coding: utf-8 -*-
+from __future__ import division, print_function
+import subprocess
+import os
 
-from .util import read_table
-from .io import read_chrominfo
+import numpy as np
+import pandas as pd
+
+from .io.process import cmd_exists, run, to_dataframe
 
 
 def binnify(chromsizes, binsize):
@@ -25,17 +28,17 @@ def binnify(chromsizes, binsize):
         binidxs = np.arange(0, (n_bins+1))
         binedges = binidxs * binsize
         binedges[-1] = clen
-        return pandas.DataFrame({
+        return pd.DataFrame({
                 'chrom': [chrom]*n_bins,
                 'start': binedges[:-1],
                 'end': binedges[1:],
                 'binidx' : binidxs[:-1],
             }, columns=['chrom', 'start', 'end','binidx',])
 
-    chromTable = pandas.concat(map(_each, chromsizes.keys()),
+    chromTable = pd.concat(map(_each, chromsizes.keys()),
                                axis=0, ignore_index=True)
 
-#    chromTable['chrom'] = pandas.Categorical(
+#    chromTable['chrom'] = pd.Categorical(
 #        chromTable.chrom, 
 #        categories=list(chromsizes.keys()), 
 #        ordered=True)
@@ -43,6 +46,20 @@ def binnify(chromsizes, binsize):
 
 
 def digest(fasta_records, enzyme):
+    """
+    Divide a genome into restriction fragments.
+    Parameters
+    ----------
+    fasta_records : OrderedDict
+        Dictionary of chromosome names to sequence records.
+    enzyme: str
+        Name of restriction enzyme.
+    Returns
+    -------
+    Dataframe with columns: 'chrom', 'start', 'end'.
+    """
+    import Bio.Restriction as biorst
+    import Bio.Seq as bioseq
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     chroms = fasta_records.keys()
     try:
@@ -54,17 +71,15 @@ def digest(fasta_records, enzyme):
         seq = bioseq.Seq(str(fasta_records[chrom]))
         cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
         n_frags = len(cuts) - 1
-        frags = pandas.DataFrame({
+
+        frags = pd.DataFrame({
             'chrom': [chrom] * n_frags,
             'start': cuts[:-1],
-            'end': cuts[1:],
-            'binidx': np.arange(0, n_frags)},
-            columns=['chrom', 'start', 'end', 'binidx'])
+            'end': cuts[1:]},
+            columns=['chrom', 'start', 'end'])
         return frags
 
-    chromTable = pandas.concat(map(_each, chroms), axis=0, ignore_index=True)
-    chromTable['chrom'] = pandas.Categorical(chromTable.chrom, categories=chroms, ordered=True)
-    return chromTable
+    return pd.concat(map(_each, chroms), axis=0, ignore_index=True)
 
 
 def frac_mapped(bintable, fasta_records):
@@ -93,37 +108,6 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
     return bintable.apply(_each, axis=1)
 
 
-class Genome:
-    '''
-    Tasks: 
-    
-    '''
-    def __init__(self,
-            chromsizes='',
-            centromeres=None,
-            bins=None,
-            fasta_path=None,
-            mapped_frac=False,
-            GC=False,
-            ):
-        pass
-    
-    def from_cache(path):
-        pass
-    
-    @property
-    def chroms(self)
-        return self._chroms
-    
-    @property
-    def chromarms(self)
-        return self._chromarms
- 
-    @property
-    def bins(self)
-        return self._bins
-
-
 def bychrom(func, *tables, **kwargs):
     """
     Split one or more bed-like dataframes by chromosome.
@@ -137,7 +121,7 @@ def bychrom(func, *tables, **kwargs):
         where ``df1, df2, ...`` are subsets of the input dataframes.
         The function can return anything.
 
-    tables : sequence of BED-like ``pandas.DataFrame``s.
+    tables : sequence of BED-like ``pd.DataFrame``s.
         The first column of each dataframe must be chromosome labels,
         unless specified by ``chrom_field``.
 
@@ -199,44 +183,42 @@ def chromsorted(df, sort_by=None, reset_index=True, **kw):
 
     """
     if sort_by is None:
-        return pandas.concat(
+        return pd.concat(
             bychrom(lambda c,x:x, df),
             axis=0,
             ignore_index=reset_index)
     else:
-        return pandas.concat(
+        return pd.concat(
             bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
             axis=0,
             ignore_index=reset_index)
 
 
-def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False, 
-    allow_partial=False, trim_partial=False):
-    '''
-    Extract all bins of `chrom` between `start` and `end`.
+# def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False, 
+#     allow_partial=False, trim_partial=False):
+#     '''
+#     Extract all bins of `chrom` between `start` and `end`.
     
+# #     '''
+# #     pass
 
+# # def downsample():
+# #     '''
+# #     '''
 
-    '''
-    pass
+# # def upsample():
+# #     '''
+# #     '''
 
-def downsample():
-    '''
-    '''
+# # def rle():
+# #     '''
+# #     run-length encode a bed chunk
+# #     '''
 
-def upsample():
-    '''
-    '''
-
-def rle():
-    '''
-    run-length encode a bed chunk
-    '''
-
-def pile():
-    '''
-    make a pile up
-    '''
+# # def pile():
+# #     '''
+# #     make a pile up
+#     '''
 
 class IndexedBedLike(object):
     """BED intersection using pandas"""
@@ -256,16 +238,11 @@ class IndexedBedLike(object):
         # ...and terminate outside it
         tail = tail[tail['end'] > qend]
 
-        return pandas.concat((head, tail), axis=0)
+        return pd.concat((head, tail), axis=0)
 
 
 
 if cmd_exists("bedtools"):
-
-    import os
-    import subprocess
-    from .io import cmd_exists, run, to_dataframe
-
 
     def _register(name):
         # Wrapper calls bedtools
@@ -274,7 +251,7 @@ if cmd_exists("bedtools"):
             run_kws = {kw[1:]: kwargs.pop(kw) for kw in list(kwargs.keys())
                            if kw.startswith('_')}
 
-            cmd = [os.path.join(settings['bedtools_path'], 'bedtools'), name]
+            cmd = ['bedtools', name]
             for k, v in kwargs.items():
                 if isinstance(v, bool):
                     if not v: continue
@@ -287,7 +264,7 @@ if cmd_exists("bedtools"):
 
         # Call once to generate docstring from usage text
         p = subprocess.Popen(
-                [os.path.join(settings['bedtools_path'],'bedtools'), name, '-h'],
+                ['bedtools', name, '-h'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
         _, err = p.communicate()

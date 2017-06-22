@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from . import io
+from .formats import read_chromsizes, read_gapfile
 
 
 def fetch_chromsizes(db, **kwargs):
