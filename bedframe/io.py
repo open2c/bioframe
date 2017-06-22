@@ -1,36 +1,31 @@
 from __future__ import division, print_function, unicode_literals
-from contextlib import contextmanager, closing
-from collections import OrderedDict
-import subprocess
-import itertools
-import functools
-import tempfile
-import json
-import re
+
 import os
+import subprocess
+import tempfile
 import io
 from io import StringIO
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
-import six
+
+from contextlib import contextmanager, closing
+from collections import OrderedDict
+import json
 
 import numpy as np
 import pandas
 import pysam
 
+
 __version__ = '0.1.0'
+
 
 settings = {
     'bedtools_path': '',
     'kenttools_path': '/net/proteome/home/nezar/local/tools/kenttools/bin',
 }
-
-
-def _is_text_or_bytes(s):
-    return isinstance(s, (six.text_type, six.binary_type))
-
 
 # https://genome.ucsc.edu/FAQ/FAQformat.html
 BED12_FIELDS = ['chrom', 'start', 'end',
@@ -85,14 +80,6 @@ SCHEMAS = {
     'bam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
 }
-
-CHROMINFO_URLS = {
-    'hg38': 'http://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/chromInfo.txt.gz',
-    'hg19': 'http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/chromInfo.txt.gz',
-    'mm10': 'http://hgdownload.cse.ucsc.edu/goldenPath/mm10/database/chromInfo.txt.gz',
-    'mm9': 'http://hgdownload.cse.ucsc.edu/goldenPath/mm9/database/chromInfo.txt.gz',
-}
-
 
 
 def atoi(s):
@@ -496,121 +483,79 @@ def read_bam(fp, chrom=None, start=None, end=None):
     return df
 
 
-def binnify(chromsizes, binsize):
+def read_fasta(*filepaths, **kwargs):
+    records = OrderedDict()
+    for filepath in filepaths:
+        records.update(pyfaidx.Fasta(filepath, **kwargs))
+    return records
+
+
+
+def read_chrominfo(filepath_or_fp,
+                   name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
+                   name_index=False,
+                   all_names=False,
+                   **kwargs):
     """
-    Divide a genome into evenly sized bins.
-
-    Parameters
-    ----------
-    chromsizes : Series
-        pandas Series indexed by chromosome name with chromosome lengths in bp.
-    binsize : int
-        size of bins in bp
-
+    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
+    database, where ``db`` is a genome assembly name.
+    Input
+    -----
+    filepath_or_fp : str or file-like
+        Path or url to text file, or buffer.
+    name_patterns : sequence, optional
+        Sequence of regular expressions to capture desired sequence names.
+        Each corresponding set of records will be sorted in natural order.
+    name_index : bool, optional
+        Index table by chromosome name.
+    all_names : bool, optional
+        Whether to return all scaffolds listed in the file. Default is
+        ``False``.
     Returns
     -------
-    Data frame with columns: 'chrom', 'start', 'end'.
-
+    Data frame indexed by sequence name, with columns 'name' and 'length'.
     """
-    def _each(chrom):
-        clen = chromsizes.at[chrom]
-        n_bins = int(np.ceil(clen / binsize))
-        binedges = np.arange(0, (n_bins+1)) * binsize
-        binedges[-1] = clen
-        return pandas.DataFrame({
-                'chrom': [chrom]*n_bins,
-                'start': binedges[:-1],
-                'end': binedges[1:],
-            }, columns=['chrom', 'start', 'end'])
-    return pandas.concat(map(_each, chromsizes.index),
-                         axis=0, ignore_index=True)
+    chrom_table = read_table(filepath_or_fp,
+                             usecols=[0, 1],
+                             names=['name', 'length'],
+                             **kwargs)
+    if not all_names:
+        parts = []
+        for pattern in name_patterns:
+            part = chrom_table[chrom_table['name'].str.contains(pattern)]
+            chrom_table = chrom_table.drop(part.index)
+            part = part.iloc[argnatsort(part['name'])]
+            parts.append(part)
+        chrom_table = pandas.concat(parts, axis=0)
+
+    if name_index:
+        chrom_table.index = chrom_table['name'].values
+
+    return chrom_table
 
 
-def bychrom(func, *tables, **kwargs):
-    """
-    Split one or more bed-like dataframes by chromosome.
-    Apply ``func(chrom, *slices)`` to each chromosome slice.
-    Yield results.
-
-    Parameters
-    ----------
-    func : function to apply to split dataframes.
-        The expected signature is ``func(chrom, df1[, df2[, ...])``,
-        where ``df1, df2, ...`` are subsets of the input dataframes.
-        The function can return anything.
-
-    tables : sequence of BED-like ``pandas.DataFrame``s.
-        The first column of each dataframe must be chromosome labels,
-        unless specified by ``chrom_field``.
-
-    chroms : sequence of str, optional
-        Select which chromosome subsets of the data to apply the function to.
-        Defaults to all unique chromosome labels in the first dataframe input,
-        in natural sorted order.
-
-    chrom_field: str, optional
-        Name of column containing chromosome labels.
-
-    ret_chrom : bool, optional (default: False)
-        Yield "chromosome, value" pairs as output instead of only values.
-
-    map : callable, optional (default: ``itertools.imap`` or ``map`` in Python 3)
-        Map implementation to use.
-
-    Returns
-    -------
-    Iterator or future that yields the output of running `func` on
-    each chromosome
-
-    """
-    chroms = kwargs.pop('chroms', None)
-    parallel = kwargs.pop('parallel', False)
-    ret_chrom = kwargs.pop('ret_chrom', False)
-    map_impl = kwargs.pop('map', six.moves.map)
-
-    first = tables[0]
-    chrom_field = kwargs.pop('chrom_field', first.columns[0])
-    if chroms is None:
-        chroms = natsorted(first[chrom_field].unique())
-
-    grouped_tables = [table.groupby(chrom_field) for table in tables]
-
-    def iter_partials():
-        for chrom in chroms:
-            partials = []
-            for gby in grouped_tables:
-                try:
-                    partials.append(gby.get_group(chrom))
-                except KeyError:
-                    partials.append(gby.head()[0:0])
-            yield partials
-
-    if ret_chrom:
-        def run_job(chrom, partials):
-            return chrom, func(chrom, *partials)
-    else:
-        def run_job(chrom, partials):
-            return func(chrom, *partials)
-
-    return map_impl(run_job, chroms, iter_partials())
+def read_gap(filepath_or_fp):
+    df = pandas.read_csv(
+            filepath_or_fp, sep='\t', compression='gzip',
+            usecols=[1,2,3,5,6,7,8],
+            names=['chrom', 'start', 'end', 'length_known',
+                   'length', 'type', 'bridge'])
+    df['length_known'] = df['length_known'].apply(lambda x: x == 'N')
+    return df
 
 
-def chromsorted(df, sort_by=None, reset_index=True, **kw):
-    """
-    Sort bed-like dataframe by chromosome label in "natural" alphanumeric order,
-    followed by any columns specified in ``sort_by``.
+def read_cytoband(filepath_or_fp):
+    return pandas.read_csv(
+        filepath_or_fp, sep='\t', compression='gzip',
+        names=['chrom', 'start', 'end', 'name', 'gieStain'])
 
-    """
-    if sort_by is None:
-        return pandas.concat(
-            bychrom(lambda c,x:x, df),
-            axis=0,
-            ignore_index=reset_index)
-    else:
-        return pandas.concat(
-            bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
-            axis=0,
-            ignore_index=reset_index)
+
+def read_fasta(*filepaths, **kwargs):
+    records = OrderedDict()
+    for filepath in filepaths:
+        records.update(pyfaidx.Fasta(filepath, **kwargs))
+    return records
+
 
 
 def tsv(df, **kwargs):
@@ -628,67 +573,39 @@ def tsv(df, **kwargs):
     fh.seek(0)
     return fh
 
+def run(cmd, input=None, raises=True, print_cmd=False, max_msg_len=1000):
+    if print_cmd:
+        print(subprocess.list2cmdline(cmd))
 
-def to_dataframe(text, columns=None):
-    # To convert decoded stdout into a dataframe
-    return pandas.read_csv(StringIO(text), sep='\t', header=None, names=columns)
+    if input is not None:
+        p = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        out, err = p.communicate(input.encode('utf-8'))
+    else:
+        p = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        out, err = p.communicate()
 
+
+    if raises and p.returncode != 0:
+        if len(out) > max_msg_len:
+            out = out[:max_msg_len] + b'... [truncated]'
+        raise OSError("process failed: %d\n%s\n%s" % (p.returncode,  out.decode('utf-8'), err.decode('utf-8')))
+
+    return out.decode('utf-8')
 
 def cmd_exists(cmd):
     return any(os.access(os.path.join(path, cmd), os.X_OK)
                for path in os.environ["PATH"].split(os.pathsep))
 
-
-if cmd_exists("bedtools"):
-
-    def _register(name):
-        # Wrapper calls bedtools
-        def wrapper(**kwargs):
-            columns = kwargs.pop('_schema', None)
-            run_kws = {kw[1:]: kwargs.pop(kw) for kw in list(kwargs.keys())
-                           if kw.startswith('_')}
-
-            cmd = [os.path.join(settings['bedtools_path'], 'bedtools'), name]
-            for k, v in kwargs.items():
-                if isinstance(v, bool):
-                    if not v: continue
-                    cmd.append('-{}'.format(k))
-                else:
-                    cmd.append('-{}'.format(k))
-                    cmd.append(str(v))
-            out = run(cmd, **run_kws)
-            return to_dataframe(out, columns=columns)
-
-        # Call once to generate docstring from usage text
-        p = subprocess.Popen(
-                [os.path.join(settings['bedtools_path'],'bedtools'), name, '-h'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-        _, err = p.communicate()
-        wrapper.__doc__ = err.decode('utf-8')
-        wrapper.__name__ = str(name)
-
-        return staticmethod(wrapper)
-
-
-    class bedtools(object):
-        intersect = _register('intersect')
-        window = _register('window')
-        closest = _register('closest')
-        coverage = _register('coverage')
-        map = _register('map')
-        genomecov = _register('genomecov')
-        merge = _register('merge')
-        cluster = _register('cluster')
-        complement = _register('complement')
-        subtract = _register('subtract')
-        slop = _register('slop')
-        flank = _register('flank')
-        sort = _register('sort')
-        random = _register('random')
-        shuffle = _register('shuffle')
-        annotate = _register('annotate')
-        jaccard = _register('jaccard')
+def to_dataframe(text, columns=None):
+    # To convert decoded stdout into a dataframe
+    return pandas.read_csv(StringIO(text), sep='\t', header=None, names=columns)
 
 
 class IndexedBedLike(object):
