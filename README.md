@@ -1,2 +1,2 @@
-# bedframe
-Pandas utilities for BED files
+# bioframe
+Pandas utilities for tab-delimited and other genomic data files

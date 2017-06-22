@@ -7,7 +7,8 @@ import re
 from setuptools import setup, find_packages
 
 
-PKG_NAME = 'bedframe'
+PKG_NAME = 'bioframe'
+README_PATH = 'README.md'
 
 
 classifiers = """\
@@ -20,6 +21,7 @@ classifiers = """\
     Programming Language :: Python :: 3.3
     Programming Language :: Python :: 3.4
     Programming Language :: Python :: 3.5
+    Programming Language :: Python :: 3.6
 """
 
 
@@ -40,7 +42,13 @@ def get_version():
 
 
 def get_long_description():
-    return _read('README.md')
+    descr = _read(README_PATH)
+    try:
+        import pypandoc
+        descr = pypandoc.convert_text(descr, to='rst', format='md')
+    except (IOError, ImportError):
+        pass
+    return descr
 
 
 install_requires = [
@@ -70,7 +78,7 @@ setup(
     author_email='nezar@mit.edu',
     version=get_version(),
     license='MIT',
-    description='Pandas utilities for BED files',
+    description='Pandas utilities for tab-delimited and other genomic files',
     long_description=get_long_description(),
     #url='',
     keywords=[],
