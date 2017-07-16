@@ -2,12 +2,15 @@ from __future__ import division, print_function
 from collections import OrderedDict
 import tempfile
 import json
+import six
 import os
 
 import numpy as np
 import pandas as pd
 import pyfaidx
 import pysam
+from ..core import argnatsort
+from ..schemas import SCHEMAS
 
 
 def read_chromsizes(filepath_or,
@@ -56,7 +59,7 @@ def read_chromsizes(filepath_or,
 
 
 def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
-    gap = pandas.read_csv(
+    gap = pd.read_csv(
         filepath_or_fp,
         sep='\t',
         names=GAP_FIELDS,
@@ -68,7 +71,7 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
 
 
 def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
-    gap = pandas.read_csv(
+    gap = pd.read_csv(
         filepath_or_fp,
         sep='\t',
         names=GAP_FIELDS,
@@ -82,7 +85,7 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
 def read_table(filepath_or, schema=None, **kwargs):
     kwargs.setdefault('sep', '\t')
     kwargs.setdefault('header', None)
-    if _is_text_or_bytes(filepath_or) and filepath_or.endswith('.gz'):
+    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
         kwargs.setdefault('compression', 'gzip')
     if schema is not None:
         try:
@@ -91,7 +94,7 @@ def read_table(filepath_or, schema=None, **kwargs):
             if isinstance(schema, six.string_types):
                 raise ValueError("TSV schema not found: '{}'".format(schema))
             kwargs.setdefault('names', schema)
-    return pandas.read_csv(filepath_or, **kwargs)
+    return pd.read_csv(filepath_or, **kwargs)
 
 
 def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
@@ -114,7 +117,7 @@ def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
         trackline = fh.readline().split()
         if trackline[0] == '#bedGraph':
             info = {'type': 'bedGraph'}
-            out = pandas.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
+            out = pd.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
         else:
             tracktype = trackline[0]
             info = dict([kv.split('=') for kv in trackline[1:]])
@@ -122,9 +125,9 @@ def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
             for key in ['start', 'step', 'span']:
                 if key in info: info[key] = int(info[key])
             if tracktype == 'fixedStep':
-                out = pandas.read_csv(fh, sep='\t', names=['value'])
+                out = pd.read_csv(fh, sep='\t', names=['value'])
             else:
-                out = pandas.read_csv(fh, sep='\t', names=['start', 'value'])
+                out = pd.read_csv(fh, sep='\t', names=['start', 'value'])
 
     return info, out
 
@@ -159,7 +162,7 @@ def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cache
     if cachedir is not None:
         cmd += ['-udcDir={}'.format(cachedir)]
     out = run(cmd, raises=True)
-    return pandas.read_csv(StringIO(out), sep='\t', na_values='n/a', header=None).iloc[0].values
+    return pd.read_csv(StringIO(out), sep='\t', na_values='n/a', header=None).iloc[0].values
 
 
 def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False):
@@ -181,7 +184,7 @@ def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False)
         cmd += [fp, fh.name]
         run(cmd, raises=True)
         fh.flush()
-        bg = pandas.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
+        bg = pd.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
 
     return bg
 
@@ -189,7 +192,7 @@ def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False)
 def read_tabix(fp, chrom=None, start=None, end=None):
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
-        df = pandas.read_csv(
+        df = pd.read_csv(
             StringIO('\n'.join(f.fetch(chrom, start, end))),
             sep='\t', header=None, names=names)
     return df
@@ -202,7 +205,7 @@ def read_bam(fp, chrom=None, start=None, end=None):
                     s.cigarstring if s.mapq != 0 else np.nan,
                     s.rnext, s.pnext, s.tlen, s.seq, s.qual,
                     json.dumps(OrderedDict(s.tags))) for s in bam_iter]
-        df = pandas.DataFrame(records, columns=BAM_FIELDS)
+        df = pd.DataFrame(records, columns=BAM_FIELDS)
     return df
 
 
@@ -249,7 +252,7 @@ def read_chrominfo(filepath_or_fp,
             chrom_table = chrom_table.drop(part.index)
             part = part.iloc[argnatsort(part['name'])]
             parts.append(part)
-        chrom_table = pandas.concat(parts, axis=0)
+        chrom_table = pd.concat(parts, axis=0)
 
     if name_index:
         chrom_table.index = chrom_table['name'].values
@@ -258,7 +261,7 @@ def read_chrominfo(filepath_or_fp,
 
 
 def read_gap(filepath_or_fp):
-    df = pandas.read_csv(
+    df = pd.read_csv(
             filepath_or_fp, sep='\t', compression='gzip',
             usecols=[1,2,3,5,6,7,8],
             names=['chrom', 'start', 'end', 'length_known',
@@ -268,7 +271,7 @@ def read_gap(filepath_or_fp):
 
 
 def read_cytoband(filepath_or_fp):
-    return pandas.read_csv(
+    return pd.read_csv(
         filepath_or_fp, sep='\t', compression='gzip',
         names=['chrom', 'start', 'end', 'name', 'gieStain'])
 

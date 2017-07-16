@@ -8,12 +8,12 @@ def fetch_chromsizes(db, **kwargs):
     chromosome label.
 
     """
-    return io.read_chromsizes(
+    return read_chromsizes(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/chromInfo.txt.gz'.format(db), 
         **kwargs)
 
 
 def fetch_gaps(db, **kwargs):
-    return io.read_gapfile(
+    return read_gapfile(
     	'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db),
     	**kwargs)

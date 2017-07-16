@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from .io.process import cmd_exists, run, to_dataframe
+from .io.process import cmd_exists, run, to_dataframe, tsv
 
 
 def binnify(chromsizes, binsize):

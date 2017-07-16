@@ -56,4 +56,4 @@ def cmd_exists(cmd):
 
 def to_dataframe(text, columns=None):
     # To convert decoded stdout into a dataframe
-    return pandas.read_csv(StringIO(text), sep='\t', header=None, names=columns)
+    return pd.read_csv(StringIO(text), sep='\t', header=None, names=columns)

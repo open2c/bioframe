@@ -219,13 +219,13 @@ class Genome:
         pass
     
     @property
-    def chroms(self)
+    def chroms(self):
         return self._chroms
     
     @property
-    def chromarms(self)
+    def chromarms(self):
         return self._chromarms
  
     @property
-    def bins(self)
+    def bins(self):
         return self._bins
