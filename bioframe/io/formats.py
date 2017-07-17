@@ -13,10 +13,25 @@ from ..core import argnatsort
 from ..schemas import SCHEMAS
 
 
+def read_table(filepath_or, schema=None, **kwargs):
+    kwargs.setdefault('sep', '\t')
+    kwargs.setdefault('header', None)
+    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
+        kwargs.setdefault('compression', 'gzip')
+    if schema is not None:
+        try:
+            kwargs.setdefault('names', SCHEMAS[schema])
+        except (KeyError, TypeError):
+            if isinstance(schema, six.string_types):
+                raise ValueError("TSV schema not found: '{}'".format(schema))
+            kwargs.setdefault('names', schema)
+    return pd.read_csv(filepath_or, **kwargs)
+
+
 def read_chromsizes(filepath_or,
-                   name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
-                   all_names=False,
-                   **kwargs):
+                    name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
+                    natsort=True,
+                    **kwargs):
     """
     Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
     database, where ``db`` is a genome assembly name.
@@ -39,21 +54,28 @@ def read_chromsizes(filepath_or,
     See also
     --------
     * UCSC assembly terminology: <http://genome.ucsc.edu/FAQ/FAQdownloads.html#download9>
-    * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions
+    * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions>
 
     """
+    if kwargs.pop('all_names', False):
+        name_patterns = 'all'
     if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
         kwargs.setdefault('compression', 'gzip')
+
     chromtable = pd.read_csv(
         filepath_or, sep='\t', usecols=[0, 1],
         names=['name', 'length'], dtype={'name':str}, **kwargs)
-    if not all_names:
+    
+    if name_patterns != 'all':
         parts = []
         for pattern in name_patterns:
+            if not len(pattern): continue
             part = chromtable[chromtable['name'].str.contains(pattern)]
-            part = part.iloc[argnatsort(part['name'])]
+            if natsort:
+                part = part.iloc[argnatsort(part['name'])]
             parts.append(part)
         chromtable = pd.concat(parts, axis=0)
+    
     chromtable.index = chromtable['name'].values
     return chromtable['length']
 
@@ -70,37 +92,10 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
     return chromsorted(gap)
 
 
-def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
-    gap = pd.read_csv(
-        filepath_or_fp,
-        sep='\t',
-        names=GAP_FIELDS,
-        usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs)
-    if chroms is not None:
-        gap = gap[gap.chrom.isin(chroms)]
-    return chromsorted(gap)
-
-
-def read_table(filepath_or, schema=None, **kwargs):
-    kwargs.setdefault('sep', '\t')
-    kwargs.setdefault('header', None)
-    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
-        kwargs.setdefault('compression', 'gzip')
-    if schema is not None:
-        try:
-            kwargs.setdefault('names', SCHEMAS[schema])
-        except (KeyError, TypeError):
-            if isinstance(schema, six.string_types):
-                raise ValueError("TSV schema not found: '{}'".format(schema))
-            kwargs.setdefault('names', schema)
-    return pd.read_csv(filepath_or, **kwargs)
-
-
 def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
     # https://sebastienvigneau.wordpress.com/2014/01/10/bigwig-to-bedgraph-to-wig/
     # http://redmine.soe.ucsc.edu/forum/index.php?t=msg&goto=5492&S=2925a24be1c20bb064fc09bd054f862d
-    cmd = [os.path.join(settings['kenttools_path'], 'bigWigToWig'),
+    cmd = ['bigWigToWig',
            '-chrom={}'.format(chrom)]
     if start is not None:
         cmd += ['-start={}'.format(start)]
@@ -155,7 +150,7 @@ def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cache
         'coverage' - % of region that is covered
     
     """
-    cmd = [os.path.join(settings['kenttools_path'], 'bigWigSummary'),
+    cmd = ['bigWigSummary',
            filepath, chrom, str(start+1), str(end), str(nbins)]
     if aggfunc is not None:
         cmd += ['-type={}'.format(aggfunc)]
@@ -170,7 +165,7 @@ def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False)
         return _read_bigwig_as_wig(fp, chrom, start, end, cachedir)
 
     cmd = [
-        os.path.join(settings['kenttools_path'], 'bigWigToBedGraph'),
+        'bigWigToBedGraph',
         '-chrom={}'.format(chrom)
     ]
     if start is not None:
@@ -208,66 +203,6 @@ def read_bam(fp, chrom=None, start=None, end=None):
         df = pd.DataFrame(records, columns=BAM_FIELDS)
     return df
 
-
-def read_fasta(*filepaths, **kwargs):
-    records = OrderedDict()
-    for filepath in filepaths:
-        records.update(pyfaidx.Fasta(filepath, **kwargs))
-    return records
-
-
-
-def read_chrominfo(filepath_or_fp,
-                   name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
-                   name_index=False,
-                   all_names=False,
-                   **kwargs):
-    """
-    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
-    database, where ``db`` is a genome assembly name.
-    Input
-    -----
-    filepath_or_fp : str or file-like
-        Path or url to text file, or buffer.
-    name_patterns : sequence, optional
-        Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-    name_index : bool, optional
-        Index table by chromosome name.
-    all_names : bool, optional
-        Whether to return all scaffolds listed in the file. Default is
-        ``False``.
-    Returns
-    -------
-    Data frame indexed by sequence name, with columns 'name' and 'length'.
-    """
-    chrom_table = read_table(filepath_or_fp,
-                             usecols=[0, 1],
-                             names=['name', 'length'],
-                             **kwargs)
-    if not all_names:
-        parts = []
-        for pattern in name_patterns:
-            part = chrom_table[chrom_table['name'].str.contains(pattern)]
-            chrom_table = chrom_table.drop(part.index)
-            part = part.iloc[argnatsort(part['name'])]
-            parts.append(part)
-        chrom_table = pd.concat(parts, axis=0)
-
-    if name_index:
-        chrom_table.index = chrom_table['name'].values
-
-    return chrom_table
-
-
-def read_gap(filepath_or_fp):
-    df = pd.read_csv(
-            filepath_or_fp, sep='\t', compression='gzip',
-            usecols=[1,2,3,5,6,7,8],
-            names=['chrom', 'start', 'end', 'length_known',
-                   'length', 'type', 'bridge'])
-    df['length_known'] = df['length_known'].apply(lambda x: x == 'N')
-    return df
 
 
 def read_cytoband(filepath_or_fp):

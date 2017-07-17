@@ -53,3 +53,18 @@ SCHEMAS = {
     'bam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
 }
+
+CHROM_NAME_PATTERNS = {
+    'hg19': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_.*_random$', r'^chrUn_.*$', r'^chr(?!Un).+_.*_hap\d+$'),
+    'hg38': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_.*_random$', r'^chrUn_.*$', r'^chr(?!Un).+_.*_alt$'),
+    'mm9': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_random$', r'^chrUn_random$'),
+    'mm10': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
+    'galGal4': (r'^chr[0-9]+$', r'^chr[ZW]$', r'^chrM$', r'^chrLGE64|chrLGE22C19W28_E50C23$',  r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
+    'galGal5': (r'^chr[0-9]+$', r'^chr[ZW]$', r'^chrM$', r'^chrLGE64$', r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
+    'dm3': (r'^chr[234][LR[Het]*]*$', r'^chr[XY][Het]*$', r'^chrM$', r'^chr[U][extra]*$'),
+    'dm6': (r'^chr[234][LR]*', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
+    'ce10': (r'chr[IV]+$', r'^chrX$', r'^chrM$'),
+    'ce11': (r'chr[IV]+$', r'^chrX$', r'^chrM$'),
+    'sacCer3': (r'chr[IXV]+$', r'^chrM$'),
+    'TAIR10': (r'^\d+', r'^MT|Pltd$')
+}
