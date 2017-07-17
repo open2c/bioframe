@@ -200,32 +200,32 @@ class IndexedBedLike(object):
         return pandas.concat((head, tail), axis=0)
 
 
-class Genome:
-    '''
-    Tasks: 
+# class Genome:
+#     '''
+#     Tasks: 
     
-    '''
-    def __init__(self,
-            chromsizes='',
-            centromeres=None,
-            bins=None,
-            fasta_path=None,
-            mapped_frac=False,
-            GC=False,
-            ):
-        pass
+#     '''
+#     def __init__(self,
+#             chromsizes='',
+#             centromeres=None,
+#             bins=None,
+#             fasta_path=None,
+#             mapped_frac=False,
+#             GC=False,
+#             ):
+#         pass
     
-    def from_cache(path):
-        pass
+#     def from_cache(path):
+#         pass
     
-    @property
-    def chroms(self):
-        return self._chroms
+#     @property
+#     def chroms(self):
+#         return self._chroms
     
-    @property
-    def chromarms(self):
-        return self._chromarms
+#     @property
+#     def chromarms(self):
+#         return self._chromarms
  
-    @property
-    def bins(self):
-        return self._bins
+#     @property
+#     def bins(self):
+#         return self._bins
