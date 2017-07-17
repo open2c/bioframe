@@ -24,9 +24,29 @@ def argnatsort(array):
     return np.lexsort(cols[::-1])  # numpy's lexsort is ass-backwards
 
 
+def parse_humanized(s):
+    _NUMERIC_RE = re.compile('([0-9,.]+)')
+    _, value, unit = _NUMERIC_RE.split(s.replace(',', ''))
+    if not len(unit):
+        return int(value)
+    
+    value = float(value)
+    unit = unit.upper().strip()
+    if unit in ('K', 'KB'):
+        value *= 1000
+    elif unit in ('M', 'MB'):
+        value *= 1000000
+    elif unit in ('G', 'GB'):
+        value *= 1000000000
+    else:
+        raise ValueError("Unknown unit '{}'".format(unit))
+    return int(value)
+
+
 def parse_region_string(s):
     """
     Parse a UCSC-style genomic region string into a triple.
+
     Parameters
     ----------
     s : str
@@ -37,49 +57,57 @@ def parse_region_string(s):
     Returns
     -------
     (str, int or None, int or None)
+
     """
     def _tokenize(s):
         token_spec = [
-            ('INT',    r'[0-9,]+'),
-            ('ALNUM',  r'[a-zA-z0-9_|]+'),
-            ('COLON',  r':'),
             ('HYPHEN', r'-'),
+            ('COORD',  r'[0-9,]+(\.[0-9]*)?(?:[a-z]+)?'),
+            ('OTHER',  r'.+')
         ]
         tok_regex = r'\s*' + r'|\s*'.join(
             r'(?P<%s>%s)' % pair for pair in token_spec)
-        tok_regex = re.compile(tok_regex)
+        tok_regex = re.compile(tok_regex, re.IGNORECASE)
         for match in tok_regex.finditer(s):
             typ = match.lastgroup
             yield typ, match.group(typ)
 
-    def _check_next(tokens, expected):
-        try:
-            token = next(tokens)
-        except StopIteration:
-            raise ValueError('Expected {} token missing'.format(expected))
+
+    def _check_token(typ, token, expected):
+        if typ is None:
+            raise ValueError('Expected {} token missing'.format(' or '.join(expected)))
         else:
-            if token[0] not in expected:
-                raise ValueError('Unexpected token "{}"'.format(token[1]))
-        return token[1]
+            if typ not in expected:
+                raise ValueError('Unexpected token "{}"'.format(token))
+
 
     def _expect(tokens):
-        chrom = _check_next(tokens, ['ALNUM', 'INT'])
-        try:
-            token = next(tokens)
-        except StopIteration:
-            return (chrom, None, None)
-        if token[0] != 'COLON':
-            raise ValueError('Got "{}" after chromosome label'.format(token[1]))
+        typ, token = next(tokens, (None, None))
+        _check_token(typ, token, ['COORD'])
+        start = parse_humanized(token)
 
-        start = atoi(_check_next(tokens, ['INT']))
-        _check_next(tokens, ['HYPHEN'])
-        end = atoi(_check_next(tokens, ['INT']))
+        typ, token = next(tokens, (None, None))
+        _check_token(typ, token, ['HYPHEN'])
+
+        typ, token = next(tokens, (None, None))
+        if typ is None:
+            return start, None
+
+        _check_token(typ, token, ['COORD'])    
+        end = parse_humanized(token)
         if end < start:
             raise ValueError('End coordinate less than start')
 
-        return chrom, start, end
+        return start, end
 
-    return _expect(_tokenize(s))
+    parts = s.split(':')
+    chrom = parts[0].strip()
+    if not len(chrom):
+        raise ValueError("Chromosome name cannot be empty")
+    if len(parts) < 2:
+        return (chrom, None, None)
+    start, end = _expect(_tokenize(parts[1]))
+    return (chrom, start, end)
 
 
 def parse_region(reg, chromsizes=None):
