@@ -25,9 +25,7 @@ build: clean-build
 	python setup.py bdist_wheel
 
 publish: build
-	python setup.py register
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	twine upload dist/*
 
 docs-init:
 	conda install --file docs/requirements.txt
