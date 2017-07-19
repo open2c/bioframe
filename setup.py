@@ -36,7 +36,7 @@ def _read(*parts, **kwargs):
 def get_version():
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-        _read('{}.py'.format(PKG_NAME)),
+        _read('{}/_version.py'.format(PKG_NAME)),
         re.MULTILINE).group(1)
     return version
 
