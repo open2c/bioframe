@@ -12,7 +12,7 @@ README_PATH = 'README.md'
 
 
 classifiers = """\
-    Development Status :: 4 - Beta
+    Development Status :: 3 - Alpha
     Operating System :: OS Independent
     Programming Language :: Python
     Programming Language :: Python :: 2
@@ -55,6 +55,9 @@ install_requires = [
     'six', 
     'numpy>=1.9', 
     'pandas>=0.17',
+    'pysam',
+    'pyfaidx',
+    'pypairix',
 ]
 
 
@@ -81,7 +84,7 @@ setup(
     description='Pandas utilities for tab-delimited and other genomic files',
     long_description=get_long_description(),
     #url='',
-    keywords=[],
+    keywords=['pandas', 'bioinformatics'],
     py_modules=[PKG_NAME],
     zip_safe=False,
     classifiers=[s.strip() for s in classifiers.split('\n') if s],
