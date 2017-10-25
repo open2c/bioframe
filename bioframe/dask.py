@@ -108,15 +108,15 @@ def _fetch_region(filepath, chromsizes, slc, chrom1, chrom2=None,
         df.loc[:, col] = df.loc[:, col].astype(dt)
     
     # nasty hack!
-    if len(df) == 0:
-        class fake_loc:
-            def __init__(self, obj):
-                self.obj = obj
-            def __call__(self, *args):
-                return self.obj
-            def __getitem__(self, *args):
-                return self.obj
-        df._loc = fake_loc(df)
+    # if len(df) == 0:
+    #     class fake_loc:
+    #         def __init__(self, obj):
+    #             self.obj = obj
+    #         def __call__(self, *args):
+    #             return self.obj
+    #         def __getitem__(self, *args):
+    #             return self.obj
+    #     df._loc = fake_loc(df)
     return df
 
 
@@ -148,6 +148,8 @@ def daskify_pairix_block(filepath, chromsizes, chrom1, chrom2=None,
         edges = np.r_[edges, nrows]
     spans = zip(edges[:-1], edges[1:])
     for i, (lo, hi) in enumerate(spans):
+        if i == 0:
+            divisions.append(lo)
         divisions.append(hi-1)
         slc = slice(lo, hi)
         dsk[task_name, i] = (_fetch_region, 
@@ -167,3 +169,15 @@ def daskify_pairix(filepath, chromsizes, **kwargs):
             d[chrom1, chrom2] = daskify_pairix_block(
                 filepath, chromsizes, chrom1, chrom2, **kwargs)
     return d
+
+
+def to_parquet(filepath, pairs, compression='SNAPPY'):
+    from itertools import chain
+    df = dd.from_delayed(
+        list(chain.from_iterable(
+            pairs[key].to_delayed() for key in pairs)
+        )
+    )
+    kwargs.set_default('compression', 'SNAPPY')
+    kwargs.set_default('compute', False)
+    return df.to_parquet(filepath, **kwargs)
