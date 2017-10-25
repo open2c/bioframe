@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
 import tempfile
 import json
 import six
@@ -211,8 +211,86 @@ def read_cytoband(filepath_or_fp):
         names=['chrom', 'start', 'end', 'name', 'gieStain'])
 
 
-def read_fasta(*filepaths, **kwargs):
+
+def load_fasta(filepath_or, engine='pysam', **kwargs):
+    """
+    Load lazy fasta sequences from an indexed fasta file (optionally compressed)
+    or from a collection of uncompressed fasta files.
+    
+    Parameters
+    ----------
+    filepath_or : str or iterable
+        If a string, a filepath to a single `.fa` or `.fa.gz` file. Assumed to 
+        be accompanied by a `.fai` index file. Depending on the engine, the 
+        index may be created on the fly, and some compression formats may not 
+        be supported. If not a string, an iterable of fasta file paths each 
+        assumed to contain a single sequence.
+    engine : {'pysam', 'pyfaidx'}, optional
+        Module to use for loading sequences.
+    kwargs : optional
+        Options to pass to ``pysam.FastaFile`` or ``pyfaidx.Fasta``.
+    
+    Returns
+    -------
+    OrderedDict of (lazy) fasta records.
+    
+    Notes
+    -----
+    * pysam/samtools can read .fai and .gzi indexed files, I think.
+    * pyfaidx can handle uncompressed and bgzf compressed files.
+    
+    """
+    class PysamFastaRecord(object):
+        def __init__(self, ff, ref):
+            self.ff = ff
+            if ref not in ff.references:
+                raise KeyError(
+                    "Reference name '{}' not found in '{}'".format(ref, ff))
+            self.ref = ref
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                start, stop = key.start, key.stop
+            else:
+                start = key
+                stop = key + 1
+            return self.ff.fetch(self.ref, start, stop)
+
+    is_multifile = not isinstance(filepath_or, six.string_types)
     records = OrderedDict()
-    for filepath in filepaths:
-        records.update(pyfaidx.Fasta(filepath, **kwargs))
+    
+    if engine == 'pysam':
+        try:
+            import pysam
+        except ImportError:
+            raise ImportError("pysam is required to use engine='pysam'")
+        
+        if is_multifile:
+            for onefile in filepath_or:
+                ff = pysam.FastaFile(onefile, **kwargs)
+                name = ff.references[0]
+                records[name] = PysamFastaRecord(ff, name) 
+        else:
+            ff = pysam.FastaFile(filepath_or, **kwargs)
+            for name in ff.references:
+                records[name] = PysamFastaRecord(ff, name) 
+
+    elif engine == 'pyfaidx':
+        try:
+            import pyfaidx
+        except ImportError:
+            raise ImportError("pyfaidx is required to use engine='pyfaidx'")
+
+        if is_multifile:
+            for onefile in filepath_or:
+                ff = pyfaidx.Fasta(onefile, **kwargs)
+                name = next(iter(ff.keys()))
+                records[name] = ff[name]
+        else:
+            ff = pyfaidx.Fasta(filepath_or, **kwargs)
+            for name in ff.keys():
+                records[name] = ff[name]
+    
+    else:
+        raise ValueError("engine must be 'pysam' or 'pyfaidx'")
+    
     return records
