@@ -10,7 +10,7 @@ import pandas as pd
 import pyfaidx
 import pysam
 from ..core import argnatsort
-from ..schemas import SCHEMAS
+from ..schemas import SCHEMAS, GAP_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
@@ -89,7 +89,7 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
         **kwargs)
     if chroms is not None:
         gap = gap[gap.chrom.isin(chroms)]
-    return chromsorted(gap)
+    return gap
 
 
 def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
