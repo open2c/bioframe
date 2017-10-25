@@ -93,19 +93,25 @@ def frac_mapped(bintable, fasta_records):
 
 
 def frac_gc(bintable, fasta_records, mapped_only=True):
-    def _each(bin):
-        s = str(fasta_records[bin.chrom][bin.start:bin.end])
-        g = s.count('G')
-        g += s.count('g')
-        c = s.count('C')
-        c += s.count('c')
-        nbases = len(s)
-        if mapped_only:
-            n = s.count('N')
-            n += s.count('n')
-            nbases -= n
-        return (g + c) / nbases if nbases > 0 else np.nan
-    return bintable.apply(_each, axis=1)
+    def _each(chrom_group):
+        chrom = chrom_group.name
+        seq = fasta_records[chrom]
+        gc = []
+        for _, bin in chrom_group.iterrows():
+            s = seq[bin.start:bin.end]
+            g = s.count('G')
+            g += s.count('g')
+            c = s.count('C')
+            c += s.count('c')
+            nbases = len(s)
+            if mapped_only:
+                n = s.count('N')
+                n += s.count('n')
+                nbases -= n
+            gc.append((g + c) / nbases if nbases > 0 else np.nan)
+        return gc
+    out = bintable.groupby('chrom', sort=False).apply(_each)
+    return pd.Series(data=np.concatenate(out), index=bintable.index)
 
 
 def bychrom(func, *tables, **kwargs):
@@ -175,6 +181,7 @@ def bychrom(func, *tables, **kwargs):
             return func(chrom, *partials)
 
     return map_impl(run_job, chroms, iter_partials())
+
 
 def chromsorted(df, sort_by=None, reset_index=True, **kw):
     """
