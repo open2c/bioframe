@@ -9,6 +9,44 @@ import pandas as pd
 from .io.process import cmd_exists, run, to_dataframe, tsv
 
 
+def split_chromosomes(chromsizes, split_pos):
+    """
+    Split chromosomes into chromosome arms
+    
+    Parameters
+    ----------
+    chromsizes : pandas.Series
+        Series mapping chromosomes to lengths in bp
+    split_pos : pandas.Series
+        Series mapping chromosomes to split locations
+    
+    Returns
+    -------
+    4-column BED-like DataFrame (chrom, start, end, name)
+    Arm names are chromosome names + L/R suffix.
+    
+    """
+    index = chromsizes.index.intersection(split_pos.index)
+    left_arm = pd.DataFrame(index=index)
+    left_arm['chrom'] = left_arm.index
+    left_arm['start'] = 0
+    left_arm['end'] = split_pos
+    left_arm['name'] = left_arm.index + 'L'
+    left_arm = left_arm.reset_index(drop=True)
+    
+    right_arm = pd.DataFrame(index=index)
+    right_arm['chrom'] = right_arm.index
+    right_arm['start'] = split_pos
+    right_arm['end'] = chromsizes
+    right_arm['name'] = right_arm.index + 'R'
+    right_arm = right_arm.reset_index(drop=True)
+    
+    arms = pd.concat([left_arm, right_arm], axis=0)
+    idx = np.lexsort([arms.name, arms.index])
+    arms = arms.iloc[idx].reset_index(drop=True)
+    return arms
+
+
 def binnify(chromsizes, binsize):
     """
     Divide a genome into evenly sized bins.
@@ -201,6 +239,17 @@ def chromsorted(df, sort_by=None, reset_index=True, **kw):
             ignore_index=reset_index)
 
 
+def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', **kwargs):
+    item_lists = attrs.str.split(item_sep)
+    item_lists = item_lists.apply(
+        lambda items: [item.strip().split(kv_sep) for item in items]
+    )
+    item_lists = item_lists.apply(
+        lambda items: [map(str.strip, item) for item in items if len(item) == 2]
+    )
+    kv_records = item_lists.apply(dict)
+    return pd.DataFrame.from_records(kv_records, **kwargs)
+
 # def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False, 
 #     allow_partial=False, trim_partial=False):
 #     '''
@@ -299,3 +348,70 @@ if cmd_exists("bedtools"):
         shuffle = _register('shuffle')
         annotate = _register('annotate')
 
+
+def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):
+    
+    # hacky, but we don't want to use suffixes when using -v mode
+    if v:
+        suffixes = ('',)
+    
+    bed1_extra = bed1[bed1.columns.difference(['chrom', 'start', 'end'])]
+    bed2_extra = bed2[bed2.columns.difference(['chrom', 'start', 'end'])]
+
+    left = bed1[['chrom', 'start', 'end']].copy()
+    left['index'] = left.index
+
+    right = bed2[['chrom', 'start', 'end']].copy()
+    right['index'] = right.index
+
+    bt_kwargs = {
+        'v': v,
+        'nonamecheck': False,
+    }
+
+    if outer_join:
+        if overlap:
+            bt_kwargs['wao'] = True
+            bt_kwargs['loj'] = False
+        else:
+            bt_kwargs['wao'] = False
+            bt_kwargs['loj'] = True
+    else:
+        if overlap:
+            bt_kwargs['wo'] = True
+
+    with tsv(left) as a, tsv(right) as b:
+        out = bedtools.intersect(a=a.name, b=b.name, **bt_kwargs)
+        
+    bed1_extra_out = bed1_extra.iloc[out[3]].reset_index(drop=True)
+    
+    if v:        
+        out_final = pd.concat([out, bed1_extra_out], axis=1)
+    else:
+        if outer_join:
+            out[4] = out[4].where(out[4] != '.')
+            out[7] = out[7].where(out[7] != '.', -1).astype(int)
+            
+            bed2_extra_out = pd.DataFrame.from_items([
+                (name, pd.Series(data=None, index=out.index, dtype=series.dtype))
+                for name, series in bed2_extra.iteritems()])
+            mask = (out[7] != -1)
+            bed2_extra_out.loc[mask, :] = bed2_extra.iloc[out[7][mask]].values
+        else:
+            bed2_extra_out = bed2_extra.iloc[out[7]].reset_index(drop=True)
+        out_final = pd.concat([out, bed1_extra_out, bed2_extra_out], axis=1)
+    
+    
+    outcols = [c + suffixes[0] for c in ['chrom', 'start', 'end', 'index']]
+    if not v:
+        outcols += [c + suffixes[1] for c in ['chrom', 'start', 'end', 'index']]
+    
+    if overlap and not v:
+        outcols += ['overlap']    
+    
+    outcols += [c + suffixes[0] for c in bed1_extra_out.columns]
+    if not v:
+        outcols += [c + suffixes[1] for c in bed2_extra_out.columns]
+    
+    out_final.columns = outcols
+    return out_final
