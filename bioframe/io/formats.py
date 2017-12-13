@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 from collections import OrderedDict, Mapping
+import subprocess
 import tempfile
 import json
 import six
@@ -9,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pyfaidx
 import pysam
+from .process import run
 from ..core import argnatsort
 from ..schemas import SCHEMAS, GAP_FIELDS
 
@@ -294,3 +296,122 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
         raise ValueError("engine must be 'pysam' or 'pyfaidx'")
     
     return records
+
+
+def to_bigwig(df, chromsizes, outpath, value_field=None):
+    """
+    Save a bedGraph-like dataframe as a binary BigWig track.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data frame with columns 'chrom', 'start', 'end' and one or more value 
+        columns
+    chromsizes : pandas.Series
+        Series indexed by chromosome name mapping to their lengths in bp
+    outpath : str
+        The output BigWig file path
+    value_field : str, optional
+        Select the column label of the data frame to generate the track. Default
+        is to use the fourth column.
+
+    """
+    is_bedgraph = True
+    for col in ['chrom', 'start', 'end']:
+        if col not in df.columns:
+            is_bedgraph = False
+    if len(df.columns) < 4:
+        is_bedgraph = False
+
+    if not is_bedgraph:
+        raise ValueError(
+            "A bedGraph-like DataFrame is required, got {}".format(
+                df.columns))
+
+    if value_field is None:
+        value_field = df.columns[3]
+
+    columns = ['chrom', 'start', 'end', value_field]
+    bg = df[columns].copy()
+    bg['chrom'] = bg['chrom'].astype(str)
+    bg = bg.sort_values(['chrom', 'start', 'end'])
+
+    with tempfile.NamedTemporaryFile(suffix='.bg') as f, \
+         tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
+
+        chromsizes.to_csv(cs, sep='\t')
+        cs.flush()
+
+        bg.to_csv(
+            f.name,
+            sep='\t', 
+            columns=columns,
+            index=False,
+            header=False,
+            na_rep='nan')
+
+        run(['bedGraphToBigWig', f.name, cs.name, outpath], 
+            print_cmd=True)
+
+
+def to_bigbed(df, chromsizes, outpath, schema='bed6'):
+    """
+    Save a bedGraph-like dataframe as a binary BigWig track.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data frame with columns 'chrom', 'start', 'end' and one or more value 
+        columns
+    chromsizes : pandas.Series
+        Series indexed by chromosome name mapping to their lengths in bp
+    outpath : str
+        The output BigWig file path
+    value_field : str, optional
+        Select the column label of the data frame to generate the track. Default
+        is to use the fourth column.
+
+    """
+    import tempfile
+    import subprocess
+    is_bed6 = True
+    for col in ['chrom', 'start', 'end', 'name', 'score', 'strand']:
+        if col not in df.columns:
+            is_bed6 = False
+    if len(df.columns) < 6:
+        is_bed6 = False
+
+    if not is_bed6:
+        raise ValueError(
+            "A bed6-like DataFrame is required, got {}".format(
+                df.columns))
+
+    columns = ['chrom', 'start', 'end', 'name', 'score', 'strand']
+    bed = df[columns].copy()
+    bed['chrom'] = bed['chrom'].astype(str)
+    bed = bed.sort_values(['chrom', 'start', 'end'])
+
+    with tempfile.NamedTemporaryFile(suffix='.bed') as f, \
+         tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
+
+        chromsizes.to_csv(cs, sep='\t')
+        cs.flush()
+
+        bed.to_csv(
+            f.name,
+            sep='\t', 
+            columns=columns,
+            index=False,
+            header=False,
+            na_rep='nan')
+
+        p = subprocess.run([
+                'bedToBigBed', 
+                f'-type={schema}', 
+                f.name, 
+                cs.name, 
+                outpath
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+    return p
