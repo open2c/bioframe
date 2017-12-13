@@ -228,6 +228,18 @@ class IndexedBedLike(object):
 
         return pandas.concat((head, tail), axis=0)
 
+def expand_regions(df, pad_bp, chromsizes, side='both', inplace=False):
+    if not inplace:
+        df = df.copy()
+       
+    if side=='both' or side=='left':
+        df.start = np.maximum(0, df.start.values - pad_bp)
+
+    if side=='both' or side=='right':
+        df.end = np.minimum(df.chrom.apply(chromsizes.__getitem__), 
+                            df.end+pad_bp)
+
+    return df
 
 # class Genome:
 #     '''
