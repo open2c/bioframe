@@ -5,6 +5,7 @@ import tempfile
 import json
 import six
 import os
+import io
 
 import numpy as np
 import pandas as pd
@@ -159,7 +160,7 @@ def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cache
     if cachedir is not None:
         cmd += ['-udcDir={}'.format(cachedir)]
     out = run(cmd, raises=True)
-    return pd.read_csv(StringIO(out), sep='\t', na_values='n/a', header=None).iloc[0].values
+    return pd.read_csv(io.StringIO(out), sep='\t', na_values='n/a', header=None).iloc[0].values
 
 
 def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False):
@@ -190,7 +191,7 @@ def read_tabix(fp, chrom=None, start=None, end=None):
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
         df = pd.read_csv(
-            StringIO('\n'.join(f.fetch(chrom, start, end))),
+            io.StringIO('\n'.join(f.fetch(chrom, start, end))),
             sep='\t', header=None, names=names)
     return df
 
