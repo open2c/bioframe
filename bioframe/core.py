@@ -183,20 +183,44 @@ def bg2slice_frame(bg2, region1, region2):
     return out
 
 
-def bedslice_frame(bed, region):
+def _find_block_span(arr, val):
+    '''Find the first and the last occurence + 1 of the value in the array.
+    '''
+    # it can be done via bisection, but for now BRUTE FORCE
+    block_idxs = np.where(arr==val)[0]
+    lo, hi = block_idxs[0], block_idxs[-1]+1
+    
+    return lo,hi
+
+
+def bisect_bedframe(bedf, region):
+    """Return the span of a block of rows corresponding to 
+    the genomic region.
+    Rows must be sorted by `start` and `end`; 
+    `chrom` must be grouped, but does not have to be sorted.
     """
-    Slice a dataframe with sorted columns ['chrom', 'start', 'end'].
-    Assumes no proper nesting of intervals.
-    """
-    chrom, start, end = region
-    grouped = bed.groupby('chrom')
-    chromdf = grouped.get_group(chrom)
-    lo = chromdf['end'].values.searchsorted(start, side='right')
+    
+    chrom, start, end = parse_region(region)
+    
+    lo, hi = _find_block_span(bedf.chrom.values, chrom)
+
+    lo += bedf['end'].values[lo:hi].searchsorted(start, side='right')
     if end is not None:
-        hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
+        hi = lo + bedf['start'].values[lo:hi].searchsorted(end, side='left')
     else:
         hi = None
-    return chromdf.iloc[lo:hi]
+    return lo, hi
+
+
+def slice_bedframe(bedf, region):
+    """Return a block of rows corresponding to the genomic region.
+    Rows must be sorted by `start` and `end`; 
+    `chrom` must be grouped, but does not have to be sorted.
+    """
+        
+    lo, hi = bisect_bedframe(bedf, region)
+
+    return bedf.iloc[lo:hi]
 
 
 def bedslice_series(bed, region):
