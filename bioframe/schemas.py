@@ -30,6 +30,11 @@ GAP_FIELDS = ['bin',
               'ix', 'n', 
               'length', 'type', 'bridge']
 
+UCSC_MRNA_FIELDS = [
+    'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 
+    'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize', 
+    'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount', 
+    'blockSizes', 'qStarts', 'tStarts' ]
 # http://ga4gh.org/#/fileformats-team
 BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
               'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL', 'TAGs']

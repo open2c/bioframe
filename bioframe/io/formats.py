@@ -13,7 +13,7 @@ import pyfaidx
 import pysam
 from .process import run
 from ..core import argnatsort
-from ..schemas import SCHEMAS, GAP_FIELDS
+from ..schemas import SCHEMAS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
@@ -416,3 +416,14 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
     return p
+
+def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
+    mrna = pd.read_csv(
+        filepath_or_fp,
+        sep='\t',
+        names=UCSC_MRNA_FIELDS,
+        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
+        **kwargs)
+    if chroms is not None:
+        mrna = mrna[mrna.chrom.isin(chroms)]
+    return mrna
