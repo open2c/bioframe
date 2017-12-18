@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 
 from .io.process import cmd_exists, run, to_dataframe, tsv
+from .io.resources import fetch_ucsc_mrna
+
 
 
 def split_chromosomes(chromsizes, split_pos):
@@ -150,6 +152,23 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
         return gc
     out = bintable.groupby('chrom', sort=False).apply(_each)
     return pd.Series(data=np.concatenate(out), index=bintable.index)
+
+
+def frac_gene_coverage(bintable, db):
+    mrna = fetch_ucsc_mrna('dm3')
+    mrna = mrna[['tName','tStart','tEnd']]
+    mrna.columns=['chrom','start','end']
+    mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
+
+    with tsv(bintable) as a, tsv(mrna) as b:
+        cov = bedtools.coverage(a=a.name, b=b.name)
+
+    bintable = bintable.copy()
+    bintable['gene_count'] = cov.iloc[:,-4]
+    bintable['gene_coverage'] = cov.iloc[:,-1]
+                        
+    return bintable
+
 
 
 def bychrom(func, *tables, **kwargs):
