@@ -407,7 +407,7 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
 
         p = subprocess.run([
                 'bedToBigBed', 
-                f'-type={schema}', 
+                '-type={}'.format(schema), 
                 f.name, 
                 cs.name, 
                 outpath
