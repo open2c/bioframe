@@ -7,6 +7,8 @@ BED12_FIELDS = ['chrom', 'start', 'end',
                 'blockCount', 'blockSizes', 'blockStarts']
 BED_FIELDS = BED12_FIELDS[:6]
 
+BEDGRAPH_FIELDS = ['chrom', 'start', 'end', 'value']
+
 BEDPE_FIELDS = ['chrom1', 'start1', 'end1',
                 'chrom2', 'start2', 'end2',
                 'name', 'score', 'strand1', 'strand2']
@@ -42,9 +44,9 @@ VCF_FIELDS = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
 
 SCHEMAS = {
     'bed': BED_FIELDS,
-    'bedGraph': BED_FIELDS[:3],
     'bed3': BED_FIELDS[:3],
     'bed4': BED_FIELDS[:4],
+    'bedGraph': BEDGRAPH_FIELDS,
     'bed5': BED_FIELDS[:5],
     'bed6': BED_FIELDS,
     'bed9': BED12_FIELDS[:9],
