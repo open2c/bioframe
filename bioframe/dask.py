@@ -93,30 +93,26 @@ def _fetch_region(filepath, chromsizes, slc, chrom1, chrom2=None,
         start, end = 0, chromsizes[chrom1]
     else:
         start, end = slc.start, slc.stop
-    f = pypairix.open(filepath, 'r')
-    df = pd.DataFrame.from_records(
-        f.query2D(chrom1, start, end, chrom2, 0, chromsizes[chrom2]), 
-        columns=columns)
 
+    f = pypairix.open(filepath, 'r')
+    it = f.query2D(chrom1, start, end, chrom2, 0, chromsizes[chrom2])
+    if usecols is not None:
+        records = [
+            (record[i] for i in usecols) for record in it
+        ]
+    else:
+        records = it
+
+    df = pd.DataFrame.from_records(records, columns=columns)
     if not len(df):
         df = meta.copy()
-    elif usecols is not None:
-        usecols = set(usecols)
-        df = df[[col for col in meta.columns if col in usecols]]
+    # elif usecols is not None:
+    #     usecols = set(usecols)
+    #     df = df[[col for col in meta.columns if col in usecols]]
     
     for col, dt in meta.dtypes.items():
         df.loc[:, col] = df.loc[:, col].astype(dt)
-    
-    # nasty hack!
-    # if len(df) == 0:
-    #     class fake_loc:
-    #         def __init__(self, obj):
-    #             self.obj = obj
-    #         def __call__(self, *args):
-    #             return self.obj
-    #         def __getitem__(self, *args):
-    #             return self.obj
-    #     df._loc = fake_loc(df)
+
     return df
 
 
