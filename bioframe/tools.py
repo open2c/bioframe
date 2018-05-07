@@ -11,7 +11,7 @@ from .io.resources import fetch_ucsc_mrna
 
 
 
-def split_chromosomes(chromsizes, split_pos):
+def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
     """
     Split chromosomes into chromosome arms
     
@@ -33,14 +33,14 @@ def split_chromosomes(chromsizes, split_pos):
     left_arm['chrom'] = left_arm.index
     left_arm['start'] = 0
     left_arm['end'] = split_pos
-    left_arm['name'] = left_arm.index + 'L'
+    left_arm['name'] = left_arm.index + suffixes[0]
     left_arm = left_arm.reset_index(drop=True)
     
     right_arm = pd.DataFrame(index=index)
     right_arm['chrom'] = right_arm.index
     right_arm['start'] = split_pos
     right_arm['end'] = chromsizes
-    right_arm['name'] = right_arm.index + 'R'
+    right_arm['name'] = right_arm.index + suffixes[1]
     right_arm = right_arm.reset_index(drop=True)
     
     arms = pd.concat([left_arm, right_arm], axis=0)
