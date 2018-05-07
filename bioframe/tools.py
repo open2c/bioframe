@@ -49,54 +49,63 @@ def split_chromosomes(chromsizes, split_pos):
     return arms
 
 
-def binnify(chromsizes, binsize):
+def binnify(chromsizes, binsize, rel_ids=False):
     """
     Divide a genome into evenly sized bins.
+    
     Parameters
     ----------
     chromsizes : Series
         pandas Series indexed by chromosome name with chromosome lengths in bp.
     binsize : int
         size of bins in bp
+
     Returns
     -------
     Data frame with columns: 'chrom', 'start', 'end'.
+
     """
     def _each(chrom):
         clen = chromsizes[chrom]
         n_bins = int(np.ceil(clen / binsize))
-        binidxs = np.arange(0, (n_bins+1))
-        binedges = binidxs * binsize
+        binedges = np.arange(0, (n_bins+1)) * binsize
         binedges[-1] = clen
         return pd.DataFrame({
                 'chrom': [chrom]*n_bins,
                 'start': binedges[:-1],
                 'end': binedges[1:],
-                'binidx' : binidxs[:-1],
-            }, columns=['chrom', 'start', 'end','binidx',])
+            }, columns=['chrom', 'start', 'end'])
 
-    chromTable = pd.concat(map(_each, chromsizes.keys()),
+    bintable = pd.concat(map(_each, chromsizes.keys()),
                                axis=0, ignore_index=True)
 
-#    chromTable['chrom'] = pd.Categorical(
-#        chromTable.chrom, 
-#        categories=list(chromsizes.keys()), 
-#        ordered=True)
-    return chromTable
+    if rel_ids:
+        bintable['rel_id'] = bintable.groupby('chrom').cumcount()
+
+    # if as_cat:
+    #     bintable['chrom'] = pd.Categorical(
+    #         bintable['chrom'], 
+    #         categories=list(chromsizes.keys()), 
+    #         ordered=True)
+    
+    return bintable
 
 
 def digest(fasta_records, enzyme):
     """
     Divide a genome into restriction fragments.
+
     Parameters
     ----------
     fasta_records : OrderedDict
         Dictionary of chromosome names to sequence records.
     enzyme: str
         Name of restriction enzyme.
+    
     Returns
     -------
     Dataframe with columns: 'chrom', 'start', 'end'.
+    
     """
     import Bio.Restriction as biorst
     import Bio.Seq as bioseq
@@ -155,7 +164,7 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 
 def frac_gene_coverage(bintable, db):
-    mrna = fetch_ucsc_mrna('dm3')
+    mrna = fetch_ucsc_mrna(db)
     mrna = mrna[['tName','tStart','tEnd']]
     mrna.columns=['chrom','start','end']
     mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
