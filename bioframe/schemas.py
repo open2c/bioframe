@@ -75,3 +75,17 @@ CHROM_NAME_PATTERNS = {
     'sacCer3': (r'chr[IXV]+$', r'^chrM$'),
     'TAIR10': (r'^\d+', r'^MT|Pltd$')
 }
+
+
+UCSC_AUTOSOMES = r'^chr[0-9]+[A-Za-z]*$'
+UCSC_SEXCHROMS = r'^chr[XYZW][A-Za-z]*$'
+UCSC_NONNUCLEAR = r'^chrM$'
+UCSC_OTHER = r'^chrLGE.*$'
+UCSC_UNLOCALIZED = r'^chr(?!Un).+.*_random$'
+UCSC_UNPLACED = r'^chrUn_.*$|^chrU[A-Za-z]*$'
+UCSC_ALTCHROMS = r'^chr(?!Un).+_.*_hap\d+$|^chr(?!Un).+_.*_alt$'
+NCBI_AUTOSOMES = r'^[0-9]+$'
+NCBI_SEXCHROMS = r'^[XYZW]$'
+NCBI_NONNUCLEAR = r'^MT$|^Pltd$'
+ROMAN_LT10 = [r'^chrI+$', r'^chrIV$', r'^chrVI*$', r'^chrIX$']
+ROMAN_LT20 = ROMAN_LT10 + [r'^chrX$', r'^chrXI*$', r'^chrXIV$', r'^chrXVI*$', r'^chrXIX$']
