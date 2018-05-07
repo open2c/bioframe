@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 from collections import OrderedDict
+from contextlib import closing
 
 import numpy as np
 import pandas as pd
@@ -85,8 +86,9 @@ def range_partition(start, stop, step):
                 for i in range(start, stop, step))
 
 
-def _fetch_region(filepath, chromsizes, slc, chrom1, chrom2=None, 
-                 columns=None, usecols=None, meta=None):
+def _fetch_region(filepath, chromsizes, slc, block, columns=None, 
+                  usecols=None, meta=None):
+    chrom1, chrom2 = block
     if chrom2 is None:
         chrom2 = chrom1
     if slc is None:
@@ -116,24 +118,34 @@ def _fetch_region(filepath, chromsizes, slc, chrom1, chrom2=None,
     return df
 
 
-def daskify_pairix_block(filepath, chromsizes, chrom1, chrom2=None, 
-                         columns=None, dtypes=None, usecols=None, 
-                         chunk_level=2):
+def read_pairix_block(filepath, block, names=None, dtypes=None, 
+                      usecols=None, chromsizes=None, chunk_level=0):
+    if chromsizes is None:
+        f = pypairix.open(filepath)
+        cs = f.get_chromsize()
+        if not len(cs):
+            raise ValueError("No chromsize headers found in file. "
+                             "They must be provided explicitly.")
+        chromsizes = pd.Series(dict([(c, int(s)) for c, s in cs]))
+        del f
+
+    chrom1, chrom2 = block
     nrows = chromsizes[chrom1]
+    
     meta = pd.read_csv(
         filepath, 
         sep='\t', 
         comment='#', 
         header=None,
-        names=columns,
+        names=names,
         dtype=dtypes,
         usecols=usecols,
         iterator=True).read(1024).iloc[0:0]
 
     # Make a unique task name
-    token = tokenize(filepath, chromsizes, chrom1, chrom2, 
-                     columns, dtypes, usecols, chunk_level)
-    task_name = 'daskify-pairix-' + token
+    token = tokenize(filepath, chromsizes, block, 
+                     names, dtypes, usecols, chunk_level)
+    task_name = 'read-pairix-block-' + token
 
     # Build the task graph
     divisions = []
@@ -150,18 +162,56 @@ def daskify_pairix_block(filepath, chromsizes, chrom1, chrom2=None,
         slc = slice(lo, hi)
         dsk[task_name, i] = (_fetch_region, 
                              filepath, chromsizes, slc, 
-                             chrom1, chrom2, columns, usecols, meta)
+                             block, names, usecols, meta)
         
     # Generate ddf from dask graph
     return dd.DataFrame(dsk, task_name, meta, tuple(divisions))
 
 
-def daskify_pairix(filepath, chromsizes, **kwargs):
+def read_pairix(filepath, names, blocks=None, chromsizes=None, **kwargs):
+    """
+    Read a Pairix-indexed BEDPE-like file as a dask dataframe.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the pairs or paired-end interval file, not the index file.
+        (i.e. omit the .px2 extension).
+    names : sequence of str
+        Names for the columns in the pairs file.
+    blocks : sequence of str or tuple
+        List of paired chromosome blocks to load.
+        If a list of single chromosome names is given, then all pair
+        permutations are loaded.
+    chromsizes : dict or Series, optional
+        Chromosome lengths to use if chromsizes headers are 
+        not available.
+    chunk_level : {0, 1, 2, 3, 4}
+        Increase for a finer partition.
+
+    Returns
+    -------
+    OrderedDict
+        A mapping of chromosome pairs to dask dataframes.
+
+    """
     f = pypairix.open(filepath)
-    blocks = [s.split('|') for s in f.get_blocknames()]
-    d = OrderedDict()
+    if chromsizes is None:
+        cs = f.get_chromsize()
+        if not len(cs):
+            raise ValueError("No chromsize headers found in file. "
+                             "They must be provided explicitly.")
+        chromsizes = pd.Series(dict([(c, int(s)) for c, s in cs]))
+
+    if blocks is None:
+        blocks = [s.split('|') for s in f.get_blocknames()]
+    elif isinstance(blocks[0], str):
+        blocks = [(ci, cj) for ci in blocks for cj in blocks]
+
+    dct = OrderedDict()
     for chrom1, chrom2 in blocks:
         if chrom1 in chromsizes and chrom2 in chromsizes:
-            d[chrom1, chrom2] = daskify_pairix_block(
-                filepath, chromsizes, chrom1, chrom2, **kwargs)
-    return d
+            dct[chrom1, chrom2] = read_pairix_block(
+                filepath, (chrom1, chrom2), names, 
+                chromsizes=chromsizes, **kwargs)
+    return dct
