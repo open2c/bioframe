@@ -41,14 +41,16 @@ def get_version():
     return version
 
 
+# def get_long_description():
+#     descr = _read(README_PATH)
+#     try:
+#         import pypandoc
+#         descr = pypandoc.convert_text(descr, to='rst', format='md')
+#     except (IOError, ImportError):
+#         pass
+#     return descr
 def get_long_description():
-    descr = _read(README_PATH)
-    try:
-        import pypandoc
-        descr = pypandoc.convert_text(descr, to='rst', format='md')
-    except (IOError, ImportError):
-        pass
-    return descr
+    return _read(README_PATH)
 
 
 install_requires = [
@@ -83,6 +85,7 @@ setup(
     license='MIT',
     description='Pandas utilities for tab-delimited and other genomic files',
     long_description=get_long_description(),
+    long_description_content_type="text/markdown",
     url='https://github.com/mirnylab/bioframe',
     keywords=['pandas', 'bioinformatics'],
     packages=find_packages(),
