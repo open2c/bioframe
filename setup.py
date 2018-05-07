@@ -87,7 +87,7 @@ setup(
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     url='https://github.com/mirnylab/bioframe',
-    keywords=['pandas', 'bioinformatics'],
+    keywords=['pandas', 'dataframe', 'genomics', 'epigenomics', 'bioinformatics'],
     packages=find_packages(),
     zip_safe=False,
     classifiers=[s.strip() for s in classifiers.split('\n') if s],
