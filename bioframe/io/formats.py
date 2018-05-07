@@ -207,12 +207,22 @@ def read_bam(fp, chrom=None, start=None, end=None):
     return df
 
 
-
 def read_cytoband(filepath_or_fp):
     return pd.read_csv(
         filepath_or_fp, sep='\t', compression='gzip',
         names=['chrom', 'start', 'end', 'name', 'gieStain'])
 
+
+def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
+    mrna = pd.read_csv(
+        filepath_or_fp,
+        sep='\t',
+        names=UCSC_MRNA_FIELDS,
+        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
+        **kwargs)
+    if chroms is not None:
+        mrna = mrna[mrna.chrom.isin(chroms)]
+    return mrna
 
 
 def load_fasta(filepath_or, engine='pysam', **kwargs):
@@ -417,13 +427,55 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
             stderr=subprocess.PIPE)
     return p
 
-def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
-    mrna = pd.read_csv(
-        filepath_or_fp,
-        sep='\t',
-        names=UCSC_MRNA_FIELDS,
-        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs)
-    if chroms is not None:
-        mrna = mrna[mrna.chrom.isin(chroms)]
-    return mrna
+
+def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
+               use_dictionary=True, version=2.0, **kwargs):
+    """
+    Save an iterable of dataframe chunks to a single Apache Parquet file. For 
+    more info about Parquet, see https://arrow.apache.org/docs/python/parquet.html.
+
+    Parameters
+    ----------
+    pieces : DataFrame or iterable of DataFrame
+        Chunks to write
+    outpath : str
+        Path to output file
+    row_group_size : int
+        Number of rows per row group
+    compression : {'snappy', 'gzip', 'brotli', 'none'}, optional
+        Compression algorithm. Can be set on a per-column basis with a 
+        dictionary of column names to compression lib.
+    use_dictionary : bool, optional
+        Use dictionary encoding. Can be set on a per-column basis with a list
+        of column names.
+
+    See also
+    --------
+    pyarrow.parquet.write_table
+    pyarrow.parquet.ParquetFile
+    fastparquet
+
+    """
+    try:
+        import pyarrow.parquet
+        import pyarrow as pa
+    except ImportError:
+        raise ImportError('Saving to parquet requires the `pyarrow` package')
+
+    if isinstance(pieces, pd.DataFrame):
+        pieces = (pieces,)
+
+    try:
+        for i, piece in enumerate(pieces):
+            table = pa.Table.from_pandas(piece, preserve_index=False)
+            if i == 0:
+                writer = pa.parquet.ParquetWriter(
+                    outpath,
+                    table.schema,
+                    compression=compression,
+                    use_dictionary=use_dictionary,
+                    version=version,
+                    **kwargs)
+            writer.write_table(table, row_group_size=row_group_size)
+    finally:
+        writer.close()

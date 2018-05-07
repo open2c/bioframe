@@ -165,15 +165,3 @@ def daskify_pairix(filepath, chromsizes, **kwargs):
             d[chrom1, chrom2] = daskify_pairix_block(
                 filepath, chromsizes, chrom1, chrom2, **kwargs)
     return d
-
-
-def to_parquet(filepath, pairs, compression='SNAPPY'):
-    from itertools import chain
-    df = dd.from_delayed(
-        list(chain.from_iterable(
-            pairs[key].to_delayed() for key in pairs)
-        )
-    )
-    kwargs.set_default('compression', 'SNAPPY')
-    kwargs.set_default('compute', False)
-    return df.to_parquet(filepath, **kwargs)
