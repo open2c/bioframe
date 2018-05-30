@@ -267,13 +267,15 @@ def chromsorted(df, sort_by=None, reset_index=True, **kw):
             ignore_index=reset_index)
 
 
-def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', **kwargs):
+def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwargs):
     item_lists = attrs.str.split(item_sep)
     item_lists = item_lists.apply(
         lambda items: [item.strip().split(kv_sep) for item in items]
     )
+    stripchars = quotechar + ' '
     item_lists = item_lists.apply(
-        lambda items: [map(str.strip, item) for item in items if len(item) == 2]
+        lambda items: [map(lambda x: x.strip(stripchars), item) 
+                        for item in items if len(item) == 2]
     )
     kv_records = item_lists.apply(dict)
     return pd.DataFrame.from_records(kv_records, **kwargs)
@@ -344,6 +346,8 @@ if cmd_exists("bedtools"):
                     cmd.append('-{}'.format(k))
                     cmd.append(str(v))
             out = run(cmd, **run_kws)
+            if not len(out):
+                return pd.DataFrame(columns=columns)
             return to_dataframe(out, columns=columns)
 
         # Call once to generate docstring from usage text
