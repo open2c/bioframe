@@ -5,6 +5,7 @@
 *.py[cod]
 __pycache__
 .cache
+.pytest_cache
 
 # setup and build
 docs/_*
