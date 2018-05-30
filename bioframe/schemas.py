@@ -57,7 +57,7 @@ SCHEMAS = {
     'narrowPeak': NARROWPEAK_FIELDS,
     'broadPeak': BROADPEAK_FIELDS,
     'gappedPeak': GAPPEDPEAK_FIELDS,
-    'bam': BAM_FIELDS,
+    'sam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
 }
 
