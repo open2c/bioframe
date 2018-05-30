@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 from collections import OrderedDict, Mapping
+from contextlib import closing
 import subprocess
 import tempfile
 import json
@@ -13,7 +14,7 @@ import pyfaidx
 import pysam
 from .process import run
 from ..core import argnatsort
-from ..schemas import SCHEMAS, GAP_FIELDS, UCSC_MRNA_FIELDS
+from ..schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
@@ -197,7 +198,7 @@ def read_tabix(fp, chrom=None, start=None, end=None):
 
 
 def read_bam(fp, chrom=None, start=None, end=None):
-    with closing(pysam.AlignmentFile(fp), 'rb') as f:
+    with closing(pysam.AlignmentFile(fp, 'rb')) as f:
         bam_iter = f.fetch(chrom, start, end)
         records = [(s.qname, s.flag, s.rname, s.pos, s.mapq,
                     s.cigarstring if s.mapq != 0 else np.nan,
