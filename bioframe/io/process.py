@@ -17,7 +17,7 @@ def tsv(df, **kwargs):
 
     """
     fh = tempfile.NamedTemporaryFile(mode='w+t')
-    df.to_csv(fh, sep=str('\t'), index=False, header=False, **kwargs)
+    df.to_csv(fh, sep=str('\t'), index=False, header=False, na_rep='nan', **kwargs)
     fh.flush()  # DON'T FORGET TO FLUSH!!!
     fh.seek(0)
     return fh
