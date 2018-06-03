@@ -8,12 +8,13 @@ import six
 import os
 import io
 
+import cytoolz as toolz
 import numpy as np
 import pandas as pd
 import pyfaidx
 import pysam
 from .process import run
-from ..core import argnatsort
+from ..core import argnatsort, parse_region
 from ..schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
@@ -194,6 +195,50 @@ def read_tabix(fp, chrom=None, start=None, end=None):
         df = pd.read_csv(
             io.StringIO('\n'.join(f.fetch(chrom, start, end))),
             sep='\t', header=None, names=names)
+    return df
+
+
+def read_pairix(fp, region1, region2=None, chromsizes=None, 
+                columns=None, usecols=None, dtypes=None, **kwargs):
+    import pypairix
+    if dtypes is None:
+        dtypes = {}
+    f = pypairix.open(fp, 'r')
+    
+    header = f.get_header()
+    if len(header):
+        header_groups = toolz.groupby(lambda x: x.split(':')[0], header)
+        if '#chromsize' in header_groups and chromsizes is None:
+            items = [line.split()[1:] for line in header_groups['#chromsize']]
+            if len(items) and chromsizes is None:
+                names, lengths = zip(*((item[0], int(item[1])) for item in items))
+                chromsizes = pd.Series(index=names, data=lengths)
+        if '#columns' in header_groups and columns is None:
+            columns = header_groups['#columns'][0].split()[1:]
+    
+    chrom1, start1, end1 = parse_region(region1, chromsizes)
+    if region2 is not None:
+        chrom2, start2, end2 = parse_region(region2, chromsizes)
+    else:
+        chrom2, start2, end2 = chrom1, start1, end1
+    
+    it = f.query2D(chrom1, start1, end1, chrom2, start2, end2)
+    if usecols is not None:
+        argusecols = [columns.index(col) for col in usecols]
+        records = [
+            (record[i] for i in argusecols) for record in it
+        ]
+        columns = usecols
+    else:
+        records = it
+    
+    df = pd.DataFrame.from_records(records, columns=columns)
+    if columns is not None:
+        for col in columns:
+            if col in dtypes:
+                df[col] = df[col].astype(dtypes[col])
+            else:
+                df[col] = pd.to_numeric(df[col], 'ignore')
     return df
 
 
