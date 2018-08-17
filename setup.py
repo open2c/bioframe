@@ -60,6 +60,7 @@ install_requires = [
     'pysam',
     'pyfaidx',
     'pypairix',
+    'requests',
 ]
 
 
