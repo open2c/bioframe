@@ -141,9 +141,7 @@ def parse_region(reg, chromsizes=None):
     
     start = 0 if start is None else start
     if end is None:
-        if clen is None:  # TODO --- remove?
-            raise ValueError("Cannot determine end coordinate.")
-        end = clen
+        end = clen # if clen is None, end is None too!
 
     if end < start:
         raise ValueError("End cannot be less than start")
@@ -159,7 +157,8 @@ def bedslice(grouped, chrom, start, end):
     """Assumes no proper nesting of intervals"""
     chromdf = grouped.get_group(chrom)
     lo = chromdf['end'].values.searchsorted(start, side='right')
-    hi = lo + chromdf['start'].values[lo:].searchsorted(end, side='left')
+    hi = (None if end is None else
+        lo + chromdf['start'].values[lo:].searchsorted(end, side='left'))
     return chromdf.iloc[lo:hi]
 
 
