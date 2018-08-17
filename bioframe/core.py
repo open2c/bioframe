@@ -143,7 +143,7 @@ def parse_region(reg, chromsizes=None):
     if end is None:
         end = clen # if clen is None, end is None too!
 
-    if end < start:
+    if (end is not None) and (end < start):
         raise ValueError("End cannot be less than start")
     
     if start < 0 or (clen is not None and end > clen):
