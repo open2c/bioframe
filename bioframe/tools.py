@@ -147,7 +147,7 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
         seq = fasta_records[chrom]
         gc = []
         for _, bin in chrom_group.iterrows():
-            s = seq[bin.start:bin.end]
+            s = str(seq[bin.start:bin.end])
             g = s.count('G')
             g += s.count('g')
             c = s.count('C')
