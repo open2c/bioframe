@@ -27,20 +27,36 @@ GAPPEDPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'thickStart', 'thickEnd', 'rgb',
                      'blockCount', 'blockSizes', 'blockStarts',
                      'fc', '-log10p', '-log10q']
-GAP_FIELDS = ['bin', 
-              'chrom', 'start', 'end', 
-              'ix', 'n', 
+GAP_FIELDS = ['bin',
+              'chrom', 'start', 'end',
+              'ix', 'n',
               'length', 'type', 'bridge']
 
 UCSC_MRNA_FIELDS = [
-    'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 
-    'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize', 
-    'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount', 
+    'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
+    'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize',
+    'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount',
     'blockSizes', 'qStarts', 'tStarts' ]
 # http://ga4gh.org/#/fileformats-team
 BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
               'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL', 'TAGs']
 VCF_FIELDS = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+
+CENTXT_FIELDS = [
+    'bin',
+    'chrom',
+    'start',
+    'end',
+    'name'
+]
+
+CYTOBAND_FIELDS = [
+    'chrom',
+    'start',
+    'end',
+    'name',
+    'gieStain',
+]
 
 SCHEMAS = {
     'bed': BED_FIELDS,
@@ -59,6 +75,8 @@ SCHEMAS = {
     'gappedPeak': GAPPEDPEAK_FIELDS,
     'sam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
+    'centxt': CENTXT_FIELDS,
+    'cytoband': CYTOBAND_FIELDS,
 }
 
 CHROM_NAME_PATTERNS = {

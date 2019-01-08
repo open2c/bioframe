@@ -70,7 +70,7 @@ def read_chromsizes(filepath_or,
     chromtable = pd.read_csv(
         filepath_or, sep='\t', usecols=[0, 1],
         names=['name', 'length'], dtype={'name':str}, **kwargs)
-    
+
     if name_patterns != 'all':
         parts = []
         for pattern in name_patterns:
@@ -80,7 +80,7 @@ def read_chromsizes(filepath_or,
                 part = part.iloc[argnatsort(part['name'])]
             parts.append(part)
         chromtable = pd.concat(parts, axis=0)
-    
+
     chromtable.index = chromtable['name'].values
     return chromtable['length']
 
@@ -135,7 +135,7 @@ def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
 def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cachedir=None):
     """
     Get summary data from bigWig for indicated region, broken into ``nbins`` equal parts.
-    
+
     Parameters
     ----------
     filepath : str
@@ -153,7 +153,7 @@ def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cache
         'min' - minimum value in region
         'max' - maximum value in region
         'coverage' - % of region that is covered
-    
+
     """
     cmd = ['bigWigSummary',
            filepath, chrom, str(start+1), str(end), str(nbins)]
@@ -198,13 +198,13 @@ def read_tabix(fp, chrom=None, start=None, end=None):
     return df
 
 
-def read_pairix(fp, region1, region2=None, chromsizes=None, 
+def read_pairix(fp, region1, region2=None, chromsizes=None,
                 columns=None, usecols=None, dtypes=None, **kwargs):
     import pypairix
     if dtypes is None:
         dtypes = {}
     f = pypairix.open(fp, 'r')
-    
+
     header = f.get_header()
     if len(header):
         header_groups = toolz.groupby(lambda x: x.split(':')[0], header)
@@ -215,13 +215,13 @@ def read_pairix(fp, region1, region2=None, chromsizes=None,
                 chromsizes = pd.Series(index=names, data=lengths)
         if '#columns' in header_groups and columns is None:
             columns = header_groups['#columns'][0].split()[1:]
-    
+
     chrom1, start1, end1 = parse_region(region1, chromsizes)
     if region2 is not None:
         chrom2, start2, end2 = parse_region(region2, chromsizes)
     else:
         chrom2, start2, end2 = chrom1, start1, end1
-    
+
     it = f.query2D(chrom1, start1, end1, chrom2, start2, end2)
     if usecols is not None:
         argusecols = [columns.index(col) for col in usecols]
@@ -231,7 +231,7 @@ def read_pairix(fp, region1, region2=None, chromsizes=None,
         columns = usecols
     else:
         records = it
-    
+
     df = pd.DataFrame.from_records(records, columns=columns)
     if columns is not None:
         for col in columns:
@@ -259,6 +259,30 @@ def read_cytoband(filepath_or_fp):
         names=['chrom', 'start', 'end', 'name', 'gieStain'])
 
 
+def extract_centromeres(df, schema=None, merge=True):
+    if schema == 'centxt':
+        cens = df
+    elif schema == 'cytoband':
+        cens = df[df['gieStain'] == 'acen']
+    elif schema == 'gap':
+        cens = df[df['type'] == 'centromere']
+    else:
+        raise ValueError(
+            '`schema` must be one of {"centxt", "cytoband", "gap"}.')
+
+    if merge:
+        cens = (cens.groupby('chrom')
+                    .agg({'start': np.min, 'end': np.max})
+                    .reset_index())
+
+    cens['mid'] = (cens['start'] + cens['end'])//2
+    cens = (cens[['chrom', 'start', 'end', 'mid']]
+            .sort_values('chrom')
+            .reset_index(drop=True))
+
+    return cens
+
+
 def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
     mrna = pd.read_csv(
         filepath_or_fp,
@@ -275,29 +299,29 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
     """
     Load lazy fasta sequences from an indexed fasta file (optionally compressed)
     or from a collection of uncompressed fasta files.
-    
+
     Parameters
     ----------
     filepath_or : str or iterable
-        If a string, a filepath to a single `.fa` or `.fa.gz` file. Assumed to 
-        be accompanied by a `.fai` index file. Depending on the engine, the 
-        index may be created on the fly, and some compression formats may not 
-        be supported. If not a string, an iterable of fasta file paths each 
+        If a string, a filepath to a single `.fa` or `.fa.gz` file. Assumed to
+        be accompanied by a `.fai` index file. Depending on the engine, the
+        index may be created on the fly, and some compression formats may not
+        be supported. If not a string, an iterable of fasta file paths each
         assumed to contain a single sequence.
     engine : {'pysam', 'pyfaidx'}, optional
         Module to use for loading sequences.
     kwargs : optional
         Options to pass to ``pysam.FastaFile`` or ``pyfaidx.Fasta``.
-    
+
     Returns
     -------
     OrderedDict of (lazy) fasta records.
-    
+
     Notes
     -----
     * pysam/samtools can read .fai and .gzi indexed files, I think.
     * pyfaidx can handle uncompressed and bgzf compressed files.
-    
+
     """
     class PysamFastaRecord(object):
         def __init__(self, ff, ref):
@@ -316,22 +340,22 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
 
     is_multifile = not isinstance(filepath_or, six.string_types)
     records = OrderedDict()
-    
+
     if engine == 'pysam':
         try:
             import pysam
         except ImportError:
             raise ImportError("pysam is required to use engine='pysam'")
-        
+
         if is_multifile:
             for onefile in filepath_or:
                 ff = pysam.FastaFile(onefile, **kwargs)
                 name = ff.references[0]
-                records[name] = PysamFastaRecord(ff, name) 
+                records[name] = PysamFastaRecord(ff, name)
         else:
             ff = pysam.FastaFile(filepath_or, **kwargs)
             for name in ff.references:
-                records[name] = PysamFastaRecord(ff, name) 
+                records[name] = PysamFastaRecord(ff, name)
 
     elif engine == 'pyfaidx':
         try:
@@ -348,10 +372,10 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
             ff = pyfaidx.Fasta(filepath_or, **kwargs)
             for name in ff.keys():
                 records[name] = ff[name]
-    
+
     else:
         raise ValueError("engine must be 'pysam' or 'pyfaidx'")
-    
+
     return records
 
 
@@ -362,7 +386,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
     Parameters
     ----------
     df : pandas.DataFrame
-        Data frame with columns 'chrom', 'start', 'end' and one or more value 
+        Data frame with columns 'chrom', 'start', 'end' and one or more value
         columns
     chromsizes : pandas.Series
         Series indexed by chromosome name mapping to their lengths in bp
@@ -401,13 +425,13 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
 
         bg.to_csv(
             f.name,
-            sep='\t', 
+            sep='\t',
             columns=columns,
             index=False,
             header=False,
             na_rep='nan')
 
-        run(['bedGraphToBigWig', f.name, cs.name, outpath], 
+        run(['bedGraphToBigWig', f.name, cs.name, outpath],
             print_cmd=True)
 
 
@@ -418,7 +442,7 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
     Parameters
     ----------
     df : pandas.DataFrame
-        Data frame with columns 'chrom', 'start', 'end' and one or more value 
+        Data frame with columns 'chrom', 'start', 'end' and one or more value
         columns
     chromsizes : pandas.Series
         Series indexed by chromosome name mapping to their lengths in bp
@@ -456,17 +480,17 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
 
         bed.to_csv(
             f.name,
-            sep='\t', 
+            sep='\t',
             columns=columns,
             index=False,
             header=False,
             na_rep='nan')
 
         p = subprocess.run([
-                'bedToBigBed', 
-                '-type={}'.format(schema), 
-                f.name, 
-                cs.name, 
+                'bedToBigBed',
+                '-type={}'.format(schema),
+                f.name,
+                cs.name,
                 outpath
             ],
             stdout=subprocess.PIPE,
@@ -477,7 +501,7 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
 def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
                use_dictionary=True, version=2.0, **kwargs):
     """
-    Save an iterable of dataframe chunks to a single Apache Parquet file. For 
+    Save an iterable of dataframe chunks to a single Apache Parquet file. For
     more info about Parquet, see https://arrow.apache.org/docs/python/parquet.html.
 
     Parameters
@@ -489,7 +513,7 @@ def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
     row_group_size : int
         Number of rows per row group
     compression : {'snappy', 'gzip', 'brotli', 'none'}, optional
-        Compression algorithm. Can be set on a per-column basis with a 
+        Compression algorithm. Can be set on a per-column basis with a
         dictionary of column names to compression lib.
     use_dictionary : bool, optional
         Use dictionary encoding. Can be set on a per-column basis with a list
