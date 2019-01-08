@@ -379,6 +379,7 @@ if cmd_exists("bedtools"):
         random = _register('random')
         shuffle = _register('shuffle')
         annotate = _register('annotate')
+        jaccard = _register('jaccard')
 
 
 def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):
