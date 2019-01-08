@@ -1,4 +1,5 @@
 from __future__ import division, print_function
+from functools import partial
 from six.moves.urllib.parse import urljoin, urlencode
 import urllib
 import posixpath as pp
@@ -7,7 +8,13 @@ import pandas as pd
 import requests
 import glob
 
-from .formats import read_chromsizes, read_gapfile, read_ucsc_mrnafile
+from .formats import (
+    read_table,
+    read_chromsizes,
+    read_gapfile,
+    read_ucsc_mrnafile,
+    extract_centromeres,
+)
 
 
 def check_connectivity(reference='http://www.google.com'):
