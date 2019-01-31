@@ -11,8 +11,6 @@ import io
 import cytoolz as toolz
 import numpy as np
 import pandas as pd
-import pyfaidx
-import pysam
 from .process import run
 from ..core import argnatsort, parse_region
 from ..schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
@@ -190,6 +188,7 @@ def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False)
 
 
 def read_tabix(fp, chrom=None, start=None, end=None):
+    import pysam
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
         df = pd.read_csv(
@@ -243,6 +242,7 @@ def read_pairix(fp, region1, region2=None, chromsizes=None,
 
 
 def read_bam(fp, chrom=None, start=None, end=None):
+    import pysam
     with closing(pysam.AlignmentFile(fp, 'rb')) as f:
         bam_iter = f.fetch(chrom, start, end)
         records = [(s.qname, s.flag, s.rname, s.pos, s.mapq,
