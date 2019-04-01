@@ -29,6 +29,18 @@ def fetch_chromsizes(db, **kwargs):
     """
     Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
     chromosome label.
+    
+    Parameters
+    ----------
+    db : str 
+        The name of a UCSC genome assembly.
+    name_patterns : sequence, optional
+        Sequence of regular expressions to capture desired sequence names.
+        Each corresponding set of records will be sorted in natural order.
+        Default is (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$').
+    all_names : bool, optional
+        Whether to return all contigs listed in the file. Default is
+        ``False``.
 
     """
     return read_chromsizes(
