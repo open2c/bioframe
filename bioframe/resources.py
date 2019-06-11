@@ -17,7 +17,7 @@ from .formats import (
 )
 
 
-def check_connectivity(reference='http://www.google.com'):
+def _check_connectivity(reference='http://www.google.com'):
     try:
         urllib.request.urlopen(reference, timeout=1)
         return True
@@ -25,14 +25,14 @@ def check_connectivity(reference='http://www.google.com'):
         return False
 
 
-def fetch_chromsizes(db, **kwargs):
+def fetch_ucsc_chromsizes(db, **kwargs):
     """
     Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
     chromosome label.
-    
+
     Parameters
     ----------
-    db : str 
+    db : str
         The name of a UCSC genome assembly.
     name_patterns : sequence, optional
         Sequence of regular expressions to capture desired sequence names.
@@ -54,13 +54,13 @@ def fetch_ucsc_mrna(db, **kwargs):
         **kwargs)
 
 
-def fetch_gaps(db, **kwargs):
+def fetch_ucsc_gaps(db, **kwargs):
     return read_gapfile(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db),
         **kwargs)
 
 
-def fetch_cytoband(db, ideo=True, **kwargs):
+def fetch_ucsc_cytoband(db, ideo=True, **kwargs):
     if ideo:
         return read_table(
             'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBandIdeo.txt.gz'.format(db),
@@ -73,14 +73,18 @@ def fetch_cytoband(db, ideo=True, **kwargs):
             **kwargs)
 
 
-def fetch_centxt(db,**kwargs):
+def fetch_ucsc_centromeres(db,**kwargs):
     return read_table(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/centromeres.txt.gz'.format(db),
         schema='centxt',
         **kwargs)
 
 
-def fetch_centromeres(db, merge=True, verbose=False):
+def fetch_chromsizes(db, provider=None):
+    pass
+
+
+def fetch_centromeres(db, provider=None, merge=True, verbose=False):
 
     # the priority goes as
     # - Local
@@ -92,17 +96,17 @@ def fetch_centromeres(db, merge=True, verbose=False):
     # if db in CENTROMERES:
     #     return CENTROMERES[db]
 
-    if not check_connectivity('http://www.google.com'):
+    if not _check_connectivity('http://www.google.com'):
         raise ConnectionError('No internet connection!')
 
-    if not check_connectivity('http://hgdownload.cse.ucsc.edu'):
+    if not _check_connectivity('http://hgdownload.cse.ucsc.edu'):
         raise ConnectionError('No connection to the genome database at hgdownload.cse.ucsc.edu!')
 
     fetchers = [
-        ('centxt', fetch_centxt),
-        ('cytoband', fetch_cytoband),
-        ('cytoband', partial(fetch_cytoband, ideo=True)),
-        ('gap', fetch_gaps)
+        ('centxt', fetch_ucsc_centxt),
+        ('cytoband', fetch_ucsc_cytoband),
+        ('cytoband', partial(fetch_ucsc_cytoband, ideo=True)),
+        ('gap', fetch_ucsc_gaps)
     ]
 
     for schema, fetcher in fetchers:

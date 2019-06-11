@@ -11,9 +11,11 @@ import io
 import cytoolz as toolz
 import numpy as np
 import pandas as pd
-from .process import run
-from ..core import argnatsort, parse_region
-from ..schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+
+from ._process import run
+from .region import parse_region
+from .frameops import argnatsort
+from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
@@ -31,8 +33,23 @@ def read_table(filepath_or, schema=None, **kwargs):
     return pd.read_csv(filepath_or, **kwargs)
 
 
+def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwargs):
+    item_lists = attrs.str.split(item_sep)
+    item_lists = item_lists.apply(
+        lambda items: [item.strip().split(kv_sep) for item in items]
+    )
+    stripchars = quotechar + ' '
+    item_lists = item_lists.apply(
+        lambda items: [map(lambda x: x.strip(stripchars), item)
+                        for item in items if len(item) == 2]
+    )
+    kv_records = item_lists.apply(dict)
+    return pd.DataFrame.from_records(kv_records, **kwargs)
+
+
 def read_chromsizes(filepath_or,
-                    name_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
+                    filter_chroms=False,
+                    chrom_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
                     natsort=True,
                     **kwargs):
     """
@@ -43,16 +60,22 @@ def read_chromsizes(filepath_or,
     ----------
     filepath_or : str or file-like
         Path or url to text file, or buffer.
-    name_patterns : sequence, optional
+    filter_chroms : bool, optional
+        Filter for chromosome names given in ``chrom_patterns``.
+    chrom_patterns : sequence, optional
         Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-    all_names : bool, optional
-        Whether to return all contigs listed in the file. Default is
-        ``False``.
+    natsort : bool, optional
+        Sort each captured group of names in natural order. Default is True.
+    **kwargs :
+        Passed to :func:`pandas.read_csv`
 
     Returns
     -------
     Series of integer bp lengths indexed by sequence name.
+
+    Notes
+    -----
+    Mention name patterns
 
     See also
     --------
@@ -60,8 +83,6 @@ def read_chromsizes(filepath_or,
     * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions>
 
     """
-    if kwargs.pop('all_names', False):
-        name_patterns = 'all'
     if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
         kwargs.setdefault('compression', 'gzip')
 
@@ -69,9 +90,9 @@ def read_chromsizes(filepath_or,
         filepath_or, sep='\t', usecols=[0, 1],
         names=['name', 'length'], dtype={'name':str}, **kwargs)
 
-    if name_patterns != 'all':
+    if filter_chroms:
         parts = []
-        for pattern in name_patterns:
+        for pattern in chrom_patterns:
             if not len(pattern): continue
             part = chromtable[chromtable['name'].str.contains(pattern)]
             if natsort:
@@ -295,6 +316,22 @@ def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
     return mrna
 
 
+class PysamFastaRecord(object):
+    def __init__(self, ff, ref):
+        self.ff = ff
+        if ref not in ff.references:
+            raise KeyError(
+                "Reference name '{}' not found in '{}'".format(ref, ff))
+        self.ref = ref
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start, stop = key.start, key.stop
+        else:
+            start = key
+            stop = key + 1
+        return self.ff.fetch(self.ref, start, stop)
+
+
 def load_fasta(filepath_or, engine='pysam', **kwargs):
     """
     Load lazy fasta sequences from an indexed fasta file (optionally compressed)
@@ -323,21 +360,6 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
     * pyfaidx can handle uncompressed and bgzf compressed files.
 
     """
-    class PysamFastaRecord(object):
-        def __init__(self, ff, ref):
-            self.ff = ff
-            if ref not in ff.references:
-                raise KeyError(
-                    "Reference name '{}' not found in '{}'".format(ref, ff))
-            self.ref = ref
-        def __getitem__(self, key):
-            if isinstance(key, slice):
-                start, stop = key.start, key.stop
-            else:
-                start = key
-                stop = key + 1
-            return self.ff.fetch(self.ref, start, stop)
-
     is_multifile = not isinstance(filepath_or, six.string_types)
     records = OrderedDict()
 

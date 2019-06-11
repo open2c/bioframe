@@ -37,10 +37,6 @@ UCSC_MRNA_FIELDS = [
     'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize',
     'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount',
     'blockSizes', 'qStarts', 'tStarts' ]
-# http://ga4gh.org/#/fileformats-team
-BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
-              'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL', 'TAGs']
-VCF_FIELDS = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
 
 CENTXT_FIELDS = [
     'bin',
@@ -57,6 +53,14 @@ CYTOBAND_FIELDS = [
     'name',
     'gieStain',
 ]
+
+
+# http://ga4gh.org/#/fileformats-team
+BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
+              'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL', 'TAGs']
+
+VCF_FIELDS = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+
 
 SCHEMAS = {
     'bed': BED_FIELDS,
