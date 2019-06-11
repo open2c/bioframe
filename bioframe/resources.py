@@ -97,7 +97,7 @@ def fetch_ucsc_cytoband(db, ideo=True, **kwargs):
 def fetch_ucsc_centromeres(db,**kwargs):
     return read_table(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/centromeres.txt.gz'.format(db),
-        schema='centxt',
+        schema='centromeres',
         **kwargs)
 
 

@@ -1,5 +1,6 @@
 #-*- coding: utf-8 -*-
 
+# UCSC File Formats
 # https://genome.ucsc.edu/FAQ/FAQformat.html
 BED12_FIELDS = ['chrom', 'start', 'end',
                 'name', 'score', 'strand',
@@ -12,25 +13,32 @@ BEDGRAPH_FIELDS = ['chrom', 'start', 'end', 'value']
 BEDPE_FIELDS = ['chrom1', 'start1', 'end1',
                 'chrom2', 'start2', 'end2',
                 'name', 'score', 'strand1', 'strand2']
+
 GFF_FIELDS = ['chrom', 'source', 'feature', 'start', 'end',
               'score', 'strand', 'frame', 'attributes']
 
 PGSNP_FIELDS = ['chrom', 'start', 'end', 'name',
                 'alleleCount', 'alleleFreq', 'alleleScores']
+
 BEDRNAELEMENTS_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
               'level', 'signif', 'score2']
+
 NARROWPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'fc', '-log10p', '-log10q', 'relSummit']
+
 BROADPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'fc', '-log10p', '-log10q']
+
 GAPPEDPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'thickStart', 'thickEnd', 'rgb',
                      'blockCount', 'blockSizes', 'blockStarts',
                      'fc', '-log10p', '-log10q']
-GAP_FIELDS = ['bin',
-              'chrom', 'start', 'end',
-              'ix', 'n',
-              'length', 'type', 'bridge']
+
+GAP_FIELDS = [
+    'bin',
+    'chrom', 'start', 'end',
+    'ix', 'n',
+    'length', 'type', 'bridge']
 
 UCSC_MRNA_FIELDS = [
     'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
@@ -55,6 +63,7 @@ CYTOBAND_FIELDS = [
 ]
 
 
+# GA4GH File Formats
 # http://ga4gh.org/#/fileformats-team
 BAM_FIELDS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
               'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL', 'TAGs']
@@ -79,13 +88,14 @@ SCHEMAS = {
     'gappedPeak': GAPPEDPEAK_FIELDS,
     'sam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
-    'centxt': CENTXT_FIELDS,
+    'centromeres': CENTXT_FIELDS,
     'cytoband': CYTOBAND_FIELDS,
 }
 
+
 CHROM_NAME_PATTERNS = {
     'hg19': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_.*_random$', r'^chrUn_.*$', r'^chr(?!Un).+_.*_hap\d+$'),
-    'hg38': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_.*_random$', r'^chrUn_.*$', r'^chr(?!Un).+_.*_alt$'),
+    'hg38': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chrEBV$', r'^chr(?!Un).+_.*_random$', r'^chrUn_.*$', r'^chr(?!Un).+_.*_alt$'),
     'mm9': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_random$', r'^chrUn_random$'),
     'mm10': (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$', r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
     'galGal4': (r'^chr[0-9]+$', r'^chr[ZW]$', r'^chrM$', r'^chrLGE64|chrLGE22C19W28_E50C23$',  r'^chr(?!Un).+_random$', r'^chrUn_.*$'),
