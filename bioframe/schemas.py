@@ -21,7 +21,7 @@ PGSNP_FIELDS = ['chrom', 'start', 'end', 'name',
                 'alleleCount', 'alleleFreq', 'alleleScores']
 
 BEDRNAELEMENTS_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
-              'level', 'signif', 'score2']
+                         'level', 'signif', 'score2']
 
 NARROWPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'fc', '-log10p', '-log10q', 'relSummit']
@@ -40,19 +40,19 @@ GAP_FIELDS = [
     'ix', 'n',
     'length', 'type', 'bridge']
 
-UCSC_MRNA_FIELDS = [
-    'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
-    'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize',
-    'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount',
-    'blockSizes', 'qStarts', 'tStarts' ]
-
-CENTXT_FIELDS = [
+CENTROMERES_FIELDS = [
     'bin',
     'chrom',
     'start',
     'end',
     'name'
 ]
+
+UCSC_MRNA_FIELDS = [
+    'bin', 'matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
+    'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize',
+    'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'blockCount',
+    'blockSizes', 'qStarts', 'tStarts' ]
 
 CYTOBAND_FIELDS = [
     'chrom',
@@ -86,10 +86,10 @@ SCHEMAS = {
     'narrowPeak': NARROWPEAK_FIELDS,
     'broadPeak': BROADPEAK_FIELDS,
     'gappedPeak': GAPPEDPEAK_FIELDS,
+    'centromeres': CENTROMERES_FIELDS,
+    'cytoband': CYTOBAND_FIELDS,
     'sam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
-    'centromeres': CENTXT_FIELDS,
-    'cytoband': CYTOBAND_FIELDS,
 }
 
 

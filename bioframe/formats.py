@@ -116,6 +116,18 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
     return gap
 
 
+def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
+    mrna = pd.read_csv(
+        filepath_or_fp,
+        sep='\t',
+        names=UCSC_MRNA_FIELDS,
+        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
+        **kwargs)
+    if chroms is not None:
+        mrna = mrna[mrna.chrom.isin(chroms)]
+    return mrna
+
+
 def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
     # https://sebastienvigneau.wordpress.com/2014/01/10/bigwig-to-bedgraph-to-wig/
     # http://redmine.soe.ucsc.edu/forum/index.php?t=msg&goto=5492&S=2925a24be1c20bb064fc09bd054f862d
@@ -274,14 +286,8 @@ def read_bam(fp, chrom=None, start=None, end=None):
     return df
 
 
-def read_cytoband(filepath_or_fp):
-    return pd.read_csv(
-        filepath_or_fp, sep='\t', compression='gzip',
-        names=['chrom', 'start', 'end', 'name', 'gieStain'])
-
-
 def extract_centromeres(df, schema=None, merge=True):
-    if schema == 'centxt':
+    if schema == 'centromeres':
         cens = df
     elif schema == 'cytoband':
         cens = df[df['gieStain'] == 'acen']
@@ -289,7 +295,7 @@ def extract_centromeres(df, schema=None, merge=True):
         cens = df[df['type'] == 'centromere']
     else:
         raise ValueError(
-            '`schema` must be one of {"centxt", "cytoband", "gap"}.')
+            '`schema` must be one of {"centromeres", "cytoband", "gap"}.')
 
     if merge:
         cens = (cens.groupby('chrom')
@@ -302,18 +308,6 @@ def extract_centromeres(df, schema=None, merge=True):
             .reset_index(drop=True))
 
     return cens
-
-
-def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
-    mrna = pd.read_csv(
-        filepath_or_fp,
-        sep='\t',
-        names=UCSC_MRNA_FIELDS,
-        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs)
-    if chroms is not None:
-        mrna = mrna[mrna.chrom.isin(chroms)]
-    return mrna
 
 
 class PysamFastaRecord(object):

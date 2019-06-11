@@ -8,10 +8,9 @@ import pandas as pd
 import requests
 import glob
 
-from .formats import read_chromsizes, read_table, SCHEMAS
-
 import pkg_resources
 
+from .schemas import SCHEMAS
 from .formats import (
     read_table,
     read_chromsizes,
@@ -48,20 +47,18 @@ def _check_connectivity(reference='http://www.google.com'):
 
 def fetch_ucsc_chromsizes(db, **kwargs):
     """
-    Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
-    chromosome label.
+    Download chromosome sizes from UCSC as a :class:`pandas.Series`, indexed
+    by chromosome label.
 
     Parameters
     ----------
     db : str
         The name of a UCSC genome assembly.
-    name_patterns : sequence, optional
-        Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-        Default is (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$').
-    all_names : bool, optional
-        Whether to return all contigs listed in the file. Default is
-        ``False``.
+
+    Other Parameters
+    ----------------
+    **kwargs :
+        Passed to :func:`read_chromsizes`.
 
     """
     return read_chromsizes(
@@ -124,7 +121,7 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
         raise ConnectionError('No connection to the genome database at hgdownload.cse.ucsc.edu!')
 
     fetchers = [
-        ('centxt', fetch_ucsc_centxt),
+        ('centromeres', fetch_ucsc_centromeres),
         ('cytoband', fetch_ucsc_cytoband),
         ('cytoband', partial(fetch_ucsc_cytoband, ideo=True)),
         ('gap', fetch_ucsc_gaps)
