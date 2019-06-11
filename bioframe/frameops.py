@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 import subprocess
+import re
 import os
 
 import numpy as np
@@ -55,7 +56,7 @@ def bedbisect(bedf, region):
 
 
 def bedslice(bedf, region):
-    """Return a block of rows corresponding to the genomic region.
+    """eeturn a block of rows corresponding to the genomic region.
     Rows must be sorted by `start` and `end`;
     `chrom` must be grouped, but does not have to be sorted.
     """

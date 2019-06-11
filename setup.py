@@ -78,7 +78,6 @@ install_requires = [
 #     ]
 # }
 
-
 setup(
     name=PKG_NAME,
     author='Nezar Abdennur',
@@ -91,6 +90,9 @@ setup(
     url='https://github.com/mirnylab/bioframe',
     keywords=['pandas', 'dataframe', 'genomics', 'epigenomics', 'bioinformatics'],
     packages=find_packages(),
+    package_data={
+        'bioframe': ['data/*']
+    },
     zip_safe=False,
     classifiers=[s.strip() for s in classifiers.split('\n') if s],
     install_requires=install_requires,

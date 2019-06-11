@@ -8,6 +8,10 @@ import pandas as pd
 import requests
 import glob
 
+from .formats import read_chromsizes, read_table, SCHEMAS
+
+import pkg_resources
+
 from .formats import (
     read_table,
     read_chromsizes,
@@ -15,6 +19,23 @@ from .formats import (
     read_ucsc_mrnafile,
     extract_centromeres,
 )
+
+
+LOCAL_CHROMSIZES = {
+    path[:-12]: lambda : read_chromsizes(
+        pkg_resources.resource_filename(__name__, 'data/'+path))
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.chrom.sizes')
+}
+
+
+LOCAL_CENTROMERES = {
+    path[:-12]: lambda : read_table(
+        pkg_resources.resource_filename(__name__, 'data/'+path),
+        SCHEMAS['bed3'])
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.centromeres')
+}
 
 
 def _check_connectivity(reference='http://www.google.com'):
