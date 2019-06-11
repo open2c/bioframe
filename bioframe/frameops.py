@@ -357,7 +357,7 @@ def frac_gene_coverage(bintable, mrna):
 
     mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
 
-    with tsv(bintable) as a, tsv(mrna) as b:
+    with tsv(bintable) as a, tsv(mrna[['chrom','start','end']]) as b:
         cov = bedtools.coverage(a=a.name, b=b.name)
 
     bintable = bintable.copy()
