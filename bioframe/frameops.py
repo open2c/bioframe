@@ -7,6 +7,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from .region import parse_region
+
 
 def atoi(s):
     return int(s.replace(',', ''))
