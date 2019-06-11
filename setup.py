@@ -22,6 +22,7 @@ classifiers = """\
     Programming Language :: Python :: 3.4
     Programming Language :: Python :: 3.5
     Programming Language :: Python :: 3.6
+    Programming Language :: Python :: 3.7
 """
 
 
@@ -54,8 +55,8 @@ def get_long_description():
 
 
 install_requires = [
-    'six', 
-    'numpy>=1.9', 
+    'six',
+    'numpy>=1.9',
     'pandas>=0.17',
     'pysam',
     'pyfaidx',
@@ -72,7 +73,7 @@ install_requires = [
 
 # extras_require = {
 #     'docs': [
-#         'Sphinx>=1.1', 
+#         'Sphinx>=1.1',
 #         'numpydoc>=0.5'
 #     ]
 # }
