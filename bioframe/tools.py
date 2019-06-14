@@ -1,4 +1,7 @@
 from __future__ import absolute_import, division, print_function
+import subprocess
+import pandas as pd
+
 from ._process import cmd_exists, run, to_dataframe, tsv
 
 
@@ -8,8 +11,16 @@ if cmd_exists("bedtools"):
         # Wrapper calls bedtools
         def wrapper(**kwargs):
             columns = kwargs.pop('_schema', None)
-            run_kws = {kw[1:]: kwargs.pop(kw) for kw in list(kwargs.keys())
-                           if kw.startswith('_')}
+
+            run_kws = {}
+            pandas_inputs = {}
+            for arg in list(kwargs.keys()):
+                if arg.startswith('_'):
+                    run_kws[arg[1:]] = kwargs.pop(arg)
+                elif isinstance(kwargs[arg], pd.DataFrame):
+                    tmp_file = tsv(kwargs[arg])
+                    pandas_inputs[arg] = tmp_file
+                    kwargs[arg] = tmp_file.name
 
             cmd = ['bedtools', name]
             for k, v in kwargs.items():
@@ -19,7 +30,13 @@ if cmd_exists("bedtools"):
                 else:
                     cmd.append('-{}'.format(k))
                     cmd.append(str(v))
-            out = run(cmd, **run_kws)
+
+            try:
+                out = run(cmd, **run_kws)
+            finally:
+                for tmp_file in pandas_inputs.values():
+                    tmp_file.close()
+
             if not len(out):
                 return pd.DataFrame(columns=columns)
             return to_dataframe(out, columns=columns)
