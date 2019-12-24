@@ -98,8 +98,14 @@ def fetch_ucsc_centromeres(db,**kwargs):
         **kwargs)
 
 
-def fetch_chromsizes(db, provider=None):
-    pass
+def fetch_chromsizes(db, provider=None, **kwargs):
+    if provider == 'local' or db in LOCAL_CHROMSIZES:
+        pass
+
+    if provider == 'ucsc' or provider is None:
+        return fetch_ucsc_chromsizes(db, **kwargs)
+    else:
+        raise ValueError("Unknown provider '{}'".format(provider))
 
 
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
