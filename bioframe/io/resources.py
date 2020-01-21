@@ -29,10 +29,10 @@ def fetch_chromsizes(db, **kwargs):
     """
     Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
     chromosome label.
-    
+
     Parameters
     ----------
-    db : str 
+    db : str
         The name of a UCSC genome assembly.
     name_patterns : sequence, optional
         Sequence of regular expressions to capture desired sequence names.
@@ -165,7 +165,8 @@ class EncodeClient:
         filename = op.split(url)[1]
         path = op.join(self.cachedir, filename)
         if op.exists(path):
-            print('File "{}" available'.format(filename))
+            pass
+            # print('File "{}" available'.format(filename))
         else:
             print('Downloading "{}"'.format(filename))
             r = requests.get(url)
@@ -211,7 +212,8 @@ class FDNClient:
         filename = op.split(url)[1]
         path = op.join(self.cachedir, filename)
         if op.exists(path):
-            print('File "{}" available'.format(filename))
+            pass
+            # print('File "{}" available'.format(filename))
         else:
             print('Downloading "{}"'.format(filename))
             r = requests.get(url)
