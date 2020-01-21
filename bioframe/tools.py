@@ -14,19 +14,19 @@ from .io.resources import fetch_ucsc_mrna
 def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
     """
     Split chromosomes into chromosome arms
-    
+
     Parameters
     ----------
     chromsizes : pandas.Series
         Series mapping chromosomes to lengths in bp
     split_pos : pandas.Series
         Series mapping chromosomes to split locations
-    
+
     Returns
     -------
     4-column BED-like DataFrame (chrom, start, end, name)
     Arm names are chromosome names + L/R suffix.
-    
+
     """
     index = chromsizes.index.intersection(split_pos.index)
     left_arm = pd.DataFrame(index=index)
@@ -35,14 +35,14 @@ def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
     left_arm['end'] = split_pos
     left_arm['name'] = left_arm.index + suffixes[0]
     left_arm = left_arm.reset_index(drop=True)
-    
+
     right_arm = pd.DataFrame(index=index)
     right_arm['chrom'] = right_arm.index
     right_arm['start'] = split_pos
     right_arm['end'] = chromsizes
     right_arm['name'] = right_arm.index + suffixes[1]
     right_arm = right_arm.reset_index(drop=True)
-    
+
     arms = pd.concat([left_arm, right_arm], axis=0)
     idx = np.lexsort([arms.name, arms.index])
     arms = arms.iloc[idx].reset_index(drop=True)
@@ -52,7 +52,7 @@ def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
 def binnify(chromsizes, binsize, rel_ids=False):
     """
     Divide a genome into evenly sized bins.
-    
+
     Parameters
     ----------
     chromsizes : Series
@@ -84,10 +84,10 @@ def binnify(chromsizes, binsize, rel_ids=False):
 
     # if as_cat:
     #     bintable['chrom'] = pd.Categorical(
-    #         bintable['chrom'], 
-    #         categories=list(chromsizes.keys()), 
+    #         bintable['chrom'],
+    #         categories=list(chromsizes.keys()),
     #         ordered=True)
-    
+
     return bintable
 
 
@@ -101,11 +101,11 @@ def digest(fasta_records, enzyme):
         Dictionary of chromosome names to sequence records.
     enzyme: str
         Name of restriction enzyme.
-    
+
     Returns
     -------
     Dataframe with columns: 'chrom', 'start', 'end'.
-    
+
     """
     import Bio.Restriction as biorst
     import Bio.Seq as bioseq
@@ -175,7 +175,7 @@ def frac_gene_coverage(bintable, db):
     bintable = bintable.copy()
     bintable['gene_count'] = cov.iloc[:,-4]
     bintable['gene_coverage'] = cov.iloc[:,-1]
-                        
+
     return bintable
 
 
@@ -274,17 +274,17 @@ def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwarg
     )
     stripchars = quotechar + ' '
     item_lists = item_lists.apply(
-        lambda items: [map(lambda x: x.strip(stripchars), item) 
+        lambda items: [map(lambda x: x.strip(stripchars), item)
                         for item in items if len(item) == 2]
     )
     kv_records = item_lists.apply(dict)
     return pd.DataFrame.from_records(kv_records, **kwargs)
 
-# def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False, 
+# def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False,
 #     allow_partial=False, trim_partial=False):
 #     '''
 #     Extract all bins of `chrom` between `start` and `end`.
-    
+
 # #     '''
 # #     pass
 
@@ -334,8 +334,16 @@ if cmd_exists("bedtools"):
         # Wrapper calls bedtools
         def wrapper(**kwargs):
             columns = kwargs.pop('_schema', None)
-            run_kws = {kw[1:]: kwargs.pop(kw) for kw in list(kwargs.keys())
-                           if kw.startswith('_')}
+
+            run_kws = {}
+            pandas_inputs = {}
+            for arg in list(kwargs.keys()):
+                if arg.startswith('_'):
+                    run_kws[arg[1:]] = kwargs.pop(arg)
+                elif isinstance(kwargs[arg], pd.DataFrame):
+                    tmp_file = tsv(kwargs[arg])
+                    pandas_inputs[arg] = tmp_file
+                    kwargs[arg] = tmp_file.name
 
             cmd = ['bedtools', name]
             for k, v in kwargs.items():
@@ -345,7 +353,13 @@ if cmd_exists("bedtools"):
                 else:
                     cmd.append('-{}'.format(k))
                     cmd.append(str(v))
-            out = run(cmd, **run_kws)
+
+            try:
+                out = run(cmd, **run_kws)
+            finally:
+                for tmp_file in pandas_inputs.values():
+                    tmp_file.close()
+
             if not len(out):
                 return pd.DataFrame(columns=columns)
             return to_dataframe(out, columns=columns)
@@ -383,11 +397,11 @@ if cmd_exists("bedtools"):
 
 
 def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):
-    
+
     # hacky, but we don't want to use suffixes when using -v mode
     if v:
         suffixes = ('',)
-    
+
     bed1_extra = bed1[bed1.columns.difference(['chrom', 'start', 'end'])]
     bed2_extra = bed2[bed2.columns.difference(['chrom', 'start', 'end'])]
 
@@ -415,16 +429,16 @@ def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, s
 
     with tsv(left) as a, tsv(right) as b:
         out = bedtools.intersect(a=a.name, b=b.name, **bt_kwargs)
-        
+
     bed1_extra_out = bed1_extra.iloc[out[3]].reset_index(drop=True)
-    
-    if v:        
+
+    if v:
         out_final = pd.concat([out, bed1_extra_out], axis=1)
     else:
         if outer_join:
             out[4] = out[4].where(out[4] != '.')
             out[7] = out[7].where(out[7] != '.', -1).astype(int)
-            
+
             bed2_extra_out = pd.DataFrame.from_items([
                 (name, pd.Series(data=None, index=out.index, dtype=series.dtype))
                 for name, series in bed2_extra.iteritems()])
@@ -433,18 +447,18 @@ def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, s
         else:
             bed2_extra_out = bed2_extra.iloc[out[7]].reset_index(drop=True)
         out_final = pd.concat([out, bed1_extra_out, bed2_extra_out], axis=1)
-    
-    
+
+
     outcols = [c + suffixes[0] for c in ['chrom', 'start', 'end', 'index']]
     if not v:
         outcols += [c + suffixes[1] for c in ['chrom', 'start', 'end', 'index']]
-    
+
     if overlap and not v:
-        outcols += ['overlap']    
-    
+        outcols += ['overlap']
+
     outcols += [c + suffixes[0] for c in bed1_extra_out.columns]
     if not v:
         outcols += [c + suffixes[1] for c in bed2_extra_out.columns]
-    
+
     out_final.columns = outcols
     return out_final
