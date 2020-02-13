@@ -420,7 +420,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
     with tempfile.NamedTemporaryFile(suffix='.bg') as f, \
          tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
 
-        chromsizes.to_csv(cs, sep='\t')
+        chromsizes.to_csv(cs, sep='\t', header=False)
         cs.flush()
 
         bg.to_csv(
@@ -475,7 +475,7 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
     with tempfile.NamedTemporaryFile(suffix='.bed') as f, \
          tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
 
-        chromsizes.to_csv(cs, sep='\t')
+        chromsizes.to_csv(cs, sep='\t', header=False)
         cs.flush()
 
         bed.to_csv(
