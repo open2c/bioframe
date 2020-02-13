@@ -578,6 +578,8 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
     DataFrame or ParquetFileIterator
 
     """
+    use_threads = kwargs.pop('use_threads', True)
+
     if not iterator:
         return pd.read_parquet(filepath, columns=columns,
                                use_threads=use_threads, **kwargs)
@@ -587,8 +589,6 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
         except ImportError:
             raise ImportError(
                 'Iterating over Parquet data requires the `pyarrow` package.')
-
-        use_threads = kwargs.pop('use_threads', True)
 
         class ParquetFileIterator(ParquetFile):
             def __iter__(self):
