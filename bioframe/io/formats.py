@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
 from contextlib import closing
 import subprocess
 import tempfile
