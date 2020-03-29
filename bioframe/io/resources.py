@@ -6,6 +6,7 @@ import posixpath as pp
 import os.path as op
 import pandas as pd
 import requests
+import base64
 import glob
 
 from .formats import (
@@ -182,7 +183,7 @@ class EncodeClient:
 class FDNClient:
     BASE_URL = 'https://data.4dnucleome.org/'
 
-    def __init__(self, cachedir, assembly, metadata=None):
+    def __init__(self, cachedir, assembly, metadata=None, key_id=None, key_secret=None):
         self.cachedir = op.join(cachedir, assembly)
         if not op.isdir(self.cachedir):
             raise OSError("Directory doesn't exist: '{}'".format(cachedir))
@@ -190,10 +191,16 @@ class FDNClient:
             metadata_paths = sorted(glob.glob(op.join(cachedir, 'metadata*.tsv')))
             metadata_path = metadata_paths[-1]
             self._meta = pd.read_table(metadata_path, low_memory=False, comment='#')
-            #self._meta = self._meta[self._meta['Assembly'] == assembly].copy()
+            if assembly == 'GRCh38':
+                self._meta = self._meta[self._meta['Organism'] == 'human'].copy()
             self._meta = self._meta.set_index('File Accession')
         else:
             self._meta = metadata
+        if key_id is not None:
+            credential = (key_id + ':' + key_secret).encode('utf-8')
+            self._token = base64.b64encode(credential)
+        else:
+            self._token = None
 
     @property
     def meta(self):
@@ -216,7 +223,13 @@ class FDNClient:
             # print('File "{}" available'.format(filename))
         else:
             print('Downloading "{}"'.format(filename))
-            r = requests.get(url)
+            if self._token:
+                headers = {
+                    'Authorization': b'Basic ' + self._token
+                }
+            else:
+                headers = None
+            r = requests.get(url, headers=headers)
             r.raise_for_status()
             with open(path, 'wb') as f:
                 f.write(r.content)
