@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
 from contextlib import closing
 import subprocess
 import tempfile
@@ -420,7 +420,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
     with tempfile.NamedTemporaryFile(suffix='.bg') as f, \
          tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
 
-        chromsizes.to_csv(cs, sep='\t')
+        chromsizes.to_csv(cs, sep='\t', header=False)
         cs.flush()
 
         bg.to_csv(
@@ -475,7 +475,7 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
     with tempfile.NamedTemporaryFile(suffix='.bed') as f, \
          tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
 
-        chromsizes.to_csv(cs, sep='\t')
+        chromsizes.to_csv(cs, sep='\t', header=False)
         cs.flush()
 
         bed.to_csv(
@@ -578,6 +578,8 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
     DataFrame or ParquetFileIterator
 
     """
+    use_threads = kwargs.pop('use_threads', True)
+
     if not iterator:
         return pd.read_parquet(filepath, columns=columns,
                                use_threads=use_threads, **kwargs)
@@ -587,8 +589,6 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
         except ImportError:
             raise ImportError(
                 'Iterating over Parquet data requires the `pyarrow` package.')
-
-        use_threads = kwargs.pop('use_threads', True)
 
         class ParquetFileIterator(ParquetFile):
             def __iter__(self):
