@@ -1,52 +1,82 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function
 import subprocess
-import os
 
 import numpy as np
 import pandas as pd
 
+from .core import natsorted
 from .io.process import cmd_exists, run, to_dataframe, tsv
 from .io.resources import fetch_ucsc_mrna
 
 
+# def cut(chromsizes, edges, binsize=None, labels=None):
+#     chromosomes = [chrom for chrom in chromsizes.index if chrom in edges]
 
-def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
+#     ivals = []
+#     for chrom, breakpoints in edges.items():
+#         if labels is None:
+#             labels = [f'{chrom}_{i}' for i in range(len(breakpoints) - 1)]
+
+#         for i, (lo, hi) in enumerate(zip(breakpoints[:-1], breakpoints[1:])):
+#             label = labels[i]
+#             if binsize is not None:
+#                 if i == len(breakpoints) - 1:
+#                     lo = int(round(lo / binsize)) * binsize
+#                 else:
+#                     hi = int(round(hi / binsize)) * binsize
+#             ivals.append([chrom, lo, hi, label])
+
+#     return pd.DataFrame(ivals, columns=['chrom', 'start', 'end', 'name'])
+
+
+def make_chromarms(chromsizes, mids, binsize=None, suffixes=('p', 'q')):
     """
     Split chromosomes into chromosome arms
 
     Parameters
     ----------
     chromsizes : pandas.Series
-        Series mapping chromosomes to lengths in bp
-    split_pos : pandas.Series
-        Series mapping chromosomes to split locations
+        Series mapping chromosomes to lengths in bp.
+    mids : dict-like
+        Mapping of chromosomes to midpoint locations.
+    binsize : int, optional
+        Round midpoints to nearest bin edge for compatibility with a given
+        bin grid.
+    suffixes : tuple, optional
+        Suffixes to name chromosome arms. Defaults to p and q.
 
     Returns
     -------
-    4-column BED-like DataFrame (chrom, start, end, name)
-    Arm names are chromosome names + L/R suffix.
+    4-column BED-like DataFrame (chrom, start, end, name).
+    Arm names are chromosome names + suffix.
+    Any chromosome not included in ``mids`` will be omitted.
 
     """
-    index = chromsizes.index.intersection(split_pos.index)
-    left_arm = pd.DataFrame(index=index)
-    left_arm['chrom'] = left_arm.index
-    left_arm['start'] = 0
-    left_arm['end'] = split_pos
-    left_arm['name'] = left_arm.index + suffixes[0]
-    left_arm = left_arm.reset_index(drop=True)
+    chromosomes = [chrom for chrom in chromsizes.index if chrom in mids]
 
-    right_arm = pd.DataFrame(index=index)
-    right_arm['chrom'] = right_arm.index
-    right_arm['start'] = split_pos
-    right_arm['end'] = chromsizes
-    right_arm['name'] = right_arm.index + suffixes[1]
-    right_arm = right_arm.reset_index(drop=True)
+    p_arms = [
+        [chrom, 0, mids[chrom], chrom + suffixes[0]]
+        for chrom in chromosomes
+    ]
+    if binsize is not None:
+        for x in p_arms:
+            x[2] = int(round(x[2] / binsize)) * binsize
 
-    arms = pd.concat([left_arm, right_arm], axis=0)
-    idx = np.lexsort([arms.name, arms.index])
-    arms = arms.iloc[idx].reset_index(drop=True)
-    return arms
+    q_arms = [
+        [chrom, mids[chrom], chromsizes[chrom], chrom + suffixes[1]]
+        for chrom in chromosomes
+    ]
+    if binsize is not None:
+        for x in q_arms:
+            x[1] = int(round(x[1] / binsize)) * binsize
+
+    interleaved = [*sum(zip(p_arms, q_arms), ())]
+
+    return pd.DataFrame(
+        interleaved,
+        columns=['chrom', 'start', 'end', 'name']
+    )
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
@@ -76,8 +106,11 @@ def binnify(chromsizes, binsize, rel_ids=False):
                 'end': binedges[1:],
             }, columns=['chrom', 'start', 'end'])
 
-    bintable = pd.concat(map(_each, chromsizes.keys()),
-                               axis=0, ignore_index=True)
+    bintable = pd.concat(
+        map(_each, chromsizes.keys()),
+        axis=0,
+        ignore_index=True
+    )
 
     if rel_ids:
         bintable['rel_id'] = bintable.groupby('chrom').cumcount()
@@ -165,19 +198,100 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 def frac_gene_coverage(bintable, db):
     mrna = fetch_ucsc_mrna(db)
-    mrna = mrna[['tName','tStart','tEnd']]
-    mrna.columns=['chrom','start','end']
-    mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
+    mrna = mrna[['tName', 'tStart', 'tEnd']]
+    mrna.columns = ['chrom', 'start', 'end']
+    mrna = mrna.sort_values(['chrom', 'start', 'end']).reset_index(drop=True)
 
     with tsv(bintable) as a, tsv(mrna) as b:
         cov = bedtools.coverage(a=a.name, b=b.name)
 
     bintable = bintable.copy()
-    bintable['gene_count'] = cov.iloc[:,-4]
-    bintable['gene_coverage'] = cov.iloc[:,-1]
+    bintable['gene_count'] = cov.iloc[:, -4]
+    bintable['gene_coverage'] = cov.iloc[:, -1]
 
     return bintable
 
+
+def chromsorted(df, by=None, ignore_index=True, chromosomes=None, **kwargs):
+    """
+    Sort bed-like dataframe by chromosome label in "natural" alphanumeric
+    order, followed by any columns specified in ``by``.
+
+    """
+    chrom_col = df['chrom']
+    is_categorical = pd.api.types.is_categorical(chrom_col)
+
+    if chromosomes is None:
+        if not (is_categorical and chrom_col.cat.ordered):
+            dtype = pd.CategoricalDtype(
+                natsorted(chrom_col.unique()), ordered=True
+            )
+            chrom_col = chrom_col.astype(dtype)
+    else:
+        dtype = pd.CategoricalDtype(chromosomes, ordered=True)
+        chrom_col = chrom_col.astype(dtype)
+        missing = df['chrom'].loc[chrom_col.isnull()].unique().tolist()
+        if len(missing):
+            raise ValueError("Unknown ordering for {}.".format(missing))
+
+    sort_cols = ['chrom']
+    if by is not None:
+        if not isinstance(by, list):
+            by = [by]
+        sort_cols.append(by)
+
+    out = (
+        df
+        .assign(chrom=chrom_col)
+        .sort_values(sort_cols, **kwargs)
+        .reset_index(drop=True)
+    )
+
+    if not is_categorical:
+        out['chrom'] = out['chrom'].astype(str)
+
+    return out
+
+
+def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwargs):
+    item_lists = attrs.str.split(item_sep)
+    item_lists = item_lists.apply(
+        lambda items: [item.strip().split(kv_sep) for item in items]
+    )
+    stripchars = quotechar + ' '
+    item_lists = item_lists.apply(
+        lambda items: [map(lambda x: x.strip(stripchars), item)
+                       for item in items if len(item) == 2]
+    )
+    kv_records = item_lists.apply(dict)
+    return pd.DataFrame.from_records(kv_records, **kwargs)
+
+
+# def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False,
+#     allow_partial=False, trim_partial=False):
+#     '''
+#     Extract all bins of `chrom` between `start` and `end`.
+
+# #     '''
+# #     pass
+
+# # def downsample():
+# #     '''
+# #     '''
+
+# # def upsample():
+# #     '''
+# #     '''
+
+# # def rle():
+# #     '''
+# #     run-length encode a bed chunk
+# #     '''
+
+# # def pile():
+# #     '''
+# #     make a pile up
+#     '''
 
 
 def bychrom(func, *tables, **kwargs):
@@ -220,7 +334,7 @@ def bychrom(func, *tables, **kwargs):
     chroms = kwargs.pop('chroms', None)
     parallel = kwargs.pop('parallel', False)
     ret_chrom = kwargs.pop('ret_chrom', False)
-    map_impl = kwargs.pop('map', six.moves.map)
+    map_impl = map
 
     first = tables[0]
     chrom_field = kwargs.pop('chrom_field', first.columns[0])
@@ -249,63 +363,6 @@ def bychrom(func, *tables, **kwargs):
     return map_impl(run_job, chroms, iter_partials())
 
 
-def chromsorted(df, sort_by=None, reset_index=True, **kw):
-    """
-    Sort bed-like dataframe by chromosome label in "natural" alphanumeric order,
-    followed by any columns specified in ``sort_by``.
-
-    """
-    if sort_by is None:
-        return pd.concat(
-            bychrom(lambda c,x:x, df),
-            axis=0,
-            ignore_index=reset_index)
-    else:
-        return pd.concat(
-            bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
-            axis=0,
-            ignore_index=reset_index)
-
-
-def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwargs):
-    item_lists = attrs.str.split(item_sep)
-    item_lists = item_lists.apply(
-        lambda items: [item.strip().split(kv_sep) for item in items]
-    )
-    stripchars = quotechar + ' '
-    item_lists = item_lists.apply(
-        lambda items: [map(lambda x: x.strip(stripchars), item)
-                        for item in items if len(item) == 2]
-    )
-    kv_records = item_lists.apply(dict)
-    return pd.DataFrame.from_records(kv_records, **kwargs)
-
-# def bedslice(df, chrom, start, end, is_sorted=True, has_overlaps=False,
-#     allow_partial=False, trim_partial=False):
-#     '''
-#     Extract all bins of `chrom` between `start` and `end`.
-
-# #     '''
-# #     pass
-
-# # def downsample():
-# #     '''
-# #     '''
-
-# # def upsample():
-# #     '''
-# #     '''
-
-# # def rle():
-# #     '''
-# #     run-length encode a bed chunk
-# #     '''
-
-# # def pile():
-# #     '''
-# #     make a pile up
-#     '''
-
 class IndexedBedLike(object):
     """BED intersection using pandas"""
     def __init__(self, bed):
@@ -316,7 +373,8 @@ class IndexedBedLike(object):
             ['chrom', 'start'], verify_integrity=True).sortlevel()
 
     def intersect(self, qchrom, qstart, qend):
-        # fetch all intervals that terminate inside the query window, no matter where they begin
+        # fetch all intervals that terminate inside the query window, no matter
+        # where they begin
         head = self.lookup_head[(qchrom, qstart):(qchrom, qend)].reset_index()
 
         # fetch all intervals that begin inside the query window...
@@ -325,7 +383,6 @@ class IndexedBedLike(object):
         tail = tail[tail['end'] > qend]
 
         return pd.concat((head, tail), axis=0)
-
 
 
 if cmd_exists("bedtools"):
@@ -374,7 +431,6 @@ if cmd_exists("bedtools"):
         wrapper.__name__ = str(name)
 
         return staticmethod(wrapper)
-
 
     class bedtools(object):
         intersect = _register('intersect')
@@ -447,7 +503,6 @@ def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, s
         else:
             bed2_extra_out = bed2_extra.iloc[out[7]].reset_index(drop=True)
         out_final = pd.concat([out, bed1_extra_out, bed2_extra_out], axis=1)
-
 
     outcols = [c + suffixes[0] for c in ['chrom', 'start', 'end', 'index']]
     if not v:
