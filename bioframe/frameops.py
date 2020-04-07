@@ -399,3 +399,512 @@ def frac_gene_coverage(bintable, mrna):
     bintable['gene_coverage'] = cov.iloc[:,-1]
 
     return bintable
+
+
+def _overlap_intidxs(
+    df1, df2,
+    **kwargs
+    ):
+    """
+    Find pairs of overlapping genomic intervals and return the integer 
+    indices of the overlapping intervals.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+        
+    cols1, cols2 : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    overlap_ids : numpy.ndarray
+        The indices of the overlapping genomic intervals in the original 
+        dataframes. The 1st column contains the indices of intervals 
+        from the 1st set, the 2nd column - the indicies from the 2nd set.
+    """
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
+    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+
+    # Switch to integer indices.
+    df1 = df1.reset_index(drop=True)
+    df2 = df2.reset_index(drop=True)
+    
+    # Find overlapping intervals per chromosome.
+    df1_gb = df1.groupby(ck1)
+    df2_gb = df2.groupby(ck2)
+    overlap_intidxs = []
+    for chrom in df1_gb.groups:
+        if chrom not in df2_gb.groups:
+            continue
+
+        df1_sub = df1_gb.get_group(chrom)
+        df2_sub = df2_gb.get_group(chrom)
+
+        overlap_idxs_loc = overlap_intervals(
+            df1_sub[sk1].values,
+            df1_sub[ek1].values,
+            df2_sub[sk2].values,
+            df2_sub[ek2].values,
+        )
+
+        # Convert local per-chromosome indices into the 
+        # indices of the original table.
+        overlap_intidxs_sub  = np.vstack([
+            df1_gb.groups[chrom][overlap_idxs_loc[:,0]].values,
+            df2_gb.groups[chrom][overlap_idxs_loc[:,1]].values,
+        ]).T
+        
+        overlap_intidxs.append(overlap_intidxs_sub)
+    
+    overlap_intidxs = np.vstack(overlap_intidxs)
+
+    return overlap_intidxs
+
+
+def overlap(
+    df1, df2,
+    out_cols = ['input', 'overlap_start', 'overlap_end'],
+    suffixes = ['_1','_2'],
+    **kwargs
+    ):
+    
+    """
+    Find pairs of overlapping genomic intervals and return a combined DataFrame.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+    
+    out_cols : list of str or dict
+        A list of requested outputs.
+        Can be provided as a dict of {output:column_name} 
+        Allowed values: ['input', 'index', 'overlap_start', 'overlap_end'].
+
+    suffixes : [str, str]
+        The suffixes for the columns of the two overlapped sets.
+    
+    cols1, cols2 : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+    
+    Returns
+    -------
+    df_overlap : pandas.DataFrame
+        
+    
+    """
+    
+    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
+    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+    
+    overlap_df_idxs = _overlap_intidxs(
+        df1, df2,
+        **kwargs
+        )
+    
+    
+    if not isinstance(out_cols, collections.abc.Mapping):
+        out_cols = {col:col for col in out_cols}
+    
+    out_df = {}
+    if 'index' in out_cols:
+        out_df[out_cols['index']+suffixes[0]] = df1.index[overlap_df_idxs[:,0]]
+        out_df[out_cols['index']+suffixes[1]] = df2.index[overlap_df_idxs[:,1]]
+    if 'overlap_start' in out_cols:
+        out_df[out_cols['overlap_start']] = np.amax(np.vstack([
+            df1[sk1].values[overlap_df_idxs[:,0]],
+            df2[sk2].values[overlap_df_idxs[:,1]]
+            ]), axis=0)
+    if 'overlap_end' in out_cols:
+        out_df[out_cols['overlap_end']] = np.amin(np.vstack([
+            df1[ek1].values[overlap_df_idxs[:,0]],
+            df2[ek2].values[overlap_df_idxs[:,1]]
+            ]), axis=0)
+    out_df = pd.DataFrame(out_df)
+
+    if 'input' in out_cols:
+        df_left = df1.iloc[overlap_df_idxs[:,0]].reset_index(drop=True)
+        df_left.columns = [c+suffixes[0] for c in df_left.columns]
+        df_right = df2.iloc[overlap_df_idxs[:,1]].reset_index(drop=True)
+        df_right.columns = [c+suffixes[1] for c in df_right.columns]
+
+        out_df = pd.concat([df_left, df_right, out_df], axis='columns')
+            
+    return out_df
+
+
+
+def merge(
+    df, 
+    min_dist=0,
+    out_cols=['input', 'cluster'],
+    **kwargs
+    ):
+    """
+    Merge overlapping intervals.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    
+    min_dist : float or None
+        If provided, merge intervals separated by this distance or less. 
+        If None, do not merge non-overlapping intervals. Using 
+        min_dist=0 and min_dist=None will bring different results. 
+        bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
+        do not overlap, but are separated by a distance of 0. Adjacent intervals 
+        are not merged when min_dist=None, but are merged when min_dist=0.
+    
+    cols : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+    
+        out_cols : list of str or dict
+        A list of requested outputs.
+        Can be provided as a dict of {output:column_name} 
+        Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
+        
+    Returns
+    -------
+    df : numpy.ndarray
+    
+    clusters : pandas.DataFrame
+        A pandas dataframe with coordinates of merged clusters.
+    """
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck, sk, ek = kwargs.get('cols', ['chrom','start','end'])
+    
+    
+    # Switch to integer indices.
+    df_index = df.index
+    df = df.reset_index(drop=True)
+
+    # Find overlapping intervals per chromosome.
+    df_gb = df.groupby(ck)
+
+    cluster_ids = np.full(df.shape[0], -1)
+    clusters = []
+    max_cluster_id = -1
+    
+    for chrom, df_chunk in df_gb:  
+        if df_chunk.empty:
+            continue
+            
+        cluster_ids_chunk, cluster_starts_chunk, cluster_ends_chunk = merge_intervals(
+            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist)
+        
+        interval_counts = np.bincount(cluster_ids_chunk)
+        
+        cluster_ids_chunk += max_cluster_id + 1
+        
+        n_clusters = cluster_starts_chunk.shape[0]
+        max_cluster_id += n_clusters
+        
+        cluster_ids[df_gb.groups[chrom].values] = cluster_ids_chunk
+ 
+        ## Storing chromosome names causes a 2x slowdown. :(
+        clusters_chunk = {
+            ck : pd.Series(data=np.full(n_clusters, chrom), 
+                           dtype=df[ck].dtype),
+            sk : cluster_starts_chunk,
+            ek : cluster_ends_chunk,
+            'count' : interval_counts
+        }
+        clusters_chunk = pd.DataFrame(clusters_chunk)
+        
+        clusters.append(clusters_chunk)
+        
+    assert (np.all(cluster_ids>=0))
+    clusters = pd.concat(clusters).reset_index(drop=True)
+    
+    if not isinstance(out_cols, collections.abc.Mapping):
+        out_cols = {col:col for col in out_cols}
+    
+    out_df = {}
+    if 'cluster' in out_cols:
+        out_df[out_cols['cluster']] = cluster_ids
+    if 'cluster_start' in out_cols:
+        out_df[out_cols['cluster_start']] = clusters[sk].values[cluster_ids]
+    if 'cluster_end' in out_cols:
+        out_df[out_cols['cluster_end']] = clusters[ek].values[cluster_ids]
+
+    out_df = pd.DataFrame(out_df)
+
+    if 'input' in out_cols:
+        out_df = pd.concat([df, out_df], axis='columns')
+            
+    out_df.set_index(df_index)
+            
+    return out_df, clusters
+
+
+def complement(
+    df, 
+    chromsizes={},
+    **kwargs
+    ):
+    """
+    Find genomic regions that are not covered by at least one of the provided intervals. 
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    
+    cols : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+    
+    Returns
+    -------
+    df : numpy.ndarray
+    
+    clusters : pandas.DataFrame
+        A pandas dataframe with coordinates of merged clusters.
+    """
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck, sk, ek = kwargs.get('cols', ['chrom','start','end'])    
+
+    # Find overlapping intervals per chromosome.
+    df_gb = df.groupby(ck)
+    
+    complements = []
+    
+    for chrom, df_chunk in df_gb:  
+        if df_chunk.empty:
+            continue
+            
+        if chrom in chromsizes:
+            chromsize = chromsizes[chrom]
+            complement_starts_chunk, complement_ends_chunk = complement_intervals(
+                df_chunk[sk].values, df_chunk[ek].values, bounds=(0,chromsize), 
+                )
+        else:
+            complement_starts_chunk, complement_ends_chunk = complement_intervals(
+                df_chunk[sk].values, df_chunk[ek].values) 
+        
+        ## Storing chromosome names causes a 2x slowdown. :(
+        complement_chunk = {
+            ck : pd.Series(data=np.full(complement_starts_chunk.shape[0], chrom), 
+                           dtype=df[ck].dtype),
+            sk : complement_starts_chunk,
+            ek : complement_ends_chunk,
+        }
+        complement_chunk = pd.DataFrame(complement_chunk)
+        
+        complements.append(complement_chunk)
+        
+    complements = pd.concat(complements).reset_index(drop=True)
+                
+    return complements
+
+
+def _closest_intidxs(
+    df1, 
+    df2, 
+    k=1,
+    ignore_overlaps=False,
+    ignore_upstream=False,
+    ignore_downstream=False,
+    tie_breaking_col=None,
+    **kwargs
+    ):
+    """
+    For every interval in set 1 find k closest genomic intervals in set2 and
+    return their integer indices.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+        
+    k_closest : int
+        The number of closest intervals to report.
+        
+    cols1, cols2 : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    closest_ids : numpy.ndarray
+        The indices of the overlapping genomic intervals in the original 
+        dataframes. The 1st column contains the indices of intervals 
+        from the 1st set, the 2nd column - the indicies from the 2nd set.
+    """
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
+    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+
+    # Switch to integer indices.
+    df1 = df1.reset_index(drop=True)
+    df2 = df2.reset_index(drop=True)
+    
+    # Find overlapping intervals per chromosome.
+    df1_gb = df1.groupby(ck1)
+    df2_gb = df2.groupby(ck2)
+    closest_intidxs = []
+    for chrom in df1_gb.groups:
+        if chrom not in df2_gb.groups:
+            continue
+
+        df1_chunk = df1_gb.get_group(chrom)
+        df2_chunk = df2_gb.get_group(chrom)
+        
+        tie_arr = None
+        if isinstance(tie_breaking_col, str):
+            tie_arr = df2_chunk[tie_breaking_col].values
+        elif callable(tie_breaking_col):
+            tie_arr = tie_breaking_col(df2_chunk).values
+        else:
+            ValueError('tie_breaking_col must be either a column label or f(DataFrame) -> Series')
+
+        closest_idxs_chunk = closest_intervals(
+            df1_chunk[sk1].values,
+            df1_chunk[ek1].values,
+            df2_chunk[sk2].values,
+            df2_chunk[ek2].values, 
+            k=k,
+            tie_arr=tie_arr,
+            ignore_overlaps=ignore_overlaps,
+            ignore_upstream=ignore_upstream,
+            ignore_downstream=ignore_downstream)
+        
+        # Convert local per-chromosome indices into the 
+        # indices of the original table.
+        closest_idxs_chunk = np.vstack([
+            df1_gb.groups[chrom][closest_idxs_chunk[:,0]].values,
+            df2_gb.groups[chrom][closest_idxs_chunk[:,1]].values,
+        ]).T
+    
+        closest_intidxs.append(closest_idxs_chunk)
+    
+    closest_intidxs = np.vstack(closest_intidxs)
+        
+    return closest_intidxs
+
+
+def closest(
+    df1, 
+    df2, 
+    k=1,
+    ignore_overlaps=False,
+    ignore_upstream=False,
+    ignore_downstream=False,
+    tie_breaking_col=None,
+    out_cols = ['input', 'distance'],
+    suffixes = ['_1','_2'],
+    **kwargs
+    ):
+    
+    """
+    For every interval in set 1 find k closest genomic intervals in set2 and
+    return a combined DataFrame.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+        
+    k : int
+        The number of closest intervals to report.
+    
+    out_cols : list of str or dict
+        A list of requested outputs.
+        Can be provided as a dict of {output:column_name} 
+        Allowed values: ['input', 'index', 'distance', 'have_overlap', 'overlap_start', 'overlap_end'].
+
+    suffixes : [str, str]
+        The suffixes for the columns of the two sets.
+    
+    cols1, cols2 : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+    
+    Returns
+    -------
+    df_closest : pandas.DataFrame
+    
+    """
+    
+    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
+    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+    
+    closest_df_idxs = _closest_intidxs(
+        df1, 
+        df2,
+        k=k,
+        ignore_overlaps=ignore_overlaps,
+        ignore_upstream=ignore_upstream,
+        ignore_downstream=ignore_downstream,
+        tie_breaking_col=tie_breaking_col,
+        **kwargs
+        )
+    
+    # Make an output DataFrame.
+    if not isinstance(out_cols, collections.abc.Mapping):
+        out_cols = {col:col for col in out_cols}
+    
+    out_df = {}
+    if 'index' in out_cols:
+        out_df[out_cols['index']+suffixes[0]] = df1.index[closest_df_idxs[:,0]]
+        out_df[out_cols['index']+suffixes[1]] = df2.index[closest_df_idxs[:,1]]
+        
+    if any([k in out_cols for k in ['have_overlap', 'overlap_start', 'overlap_end']]):
+        overlap_start = np.amax(np.vstack([
+            df1[sk1].values[closest_df_idxs[:,0]],
+            df2[sk2].values[closest_df_idxs[:,1]]
+            ]), axis=0)
+        overlap_end = np.amin(np.vstack([
+            df1[ek1].values[closest_df_idxs[:,0]],
+            df2[ek2].values[closest_df_idxs[:,1]]
+            ]), axis=0)
+        have_overlap = overlap_start < overlap_end
+        
+        if 'have_overlap' in out_cols:
+            out_df[out_cols['overlap_start']] = have_overlap
+        if 'overlap_start' in out_cols:
+            out_df[out_cols['overlap_start']] = np.where(
+                have_overlap, overlap_start, -1) 
+        if 'overlap_end' in out_cols:
+            out_df[out_cols['overlap_end']] = np.where(
+                have_overlap, overlap_end, -1)
+    
+    if 'distance' in out_cols:
+        distance_left = np.maximum(0, 
+            df1[sk1].values[closest_df_idxs[:,0]]
+            - df2[ek2].values[closest_df_idxs[:,1]]
+            )
+        distance_right = np.maximum(0, 
+            df2[sk2].values[closest_df_idxs[:,1]]
+            - df1[ek1].values[closest_df_idxs[:,0]]
+            )
+        distance = np.amax(np.vstack([
+            distance_left, 
+            distance_right
+            ]), axis=0)
+        out_df[out_cols['distance']] = distance
+            
+    out_df = pd.DataFrame(out_df)
+
+    if 'input' in out_cols:
+        df_left = df1.iloc[closest_df_idxs[:,0]].reset_index(drop=True)
+        df_left.columns = [c+suffixes[0] for c in df_left.columns]
+        df_right = df2.iloc[closest_df_idxs[:,1]].reset_index(drop=True)
+        df_right.columns = [c+suffixes[1] for c in df_right.columns]
+
+        out_df = pd.concat([df_left, df_right, out_df], axis='columns')
+            
+    return out_df
