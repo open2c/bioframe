@@ -178,60 +178,94 @@ def bychrom(func, *tables, **kwargs):
     return map_impl(run_job, chroms, iter_partials())
 
 
-def chromsorted(df, sort_by=None, reset_index=True, **kw):
+def chromsorted(df, by=None, ignore_index=True, chromosomes=None, **kwargs):
     """
-    Sort bed-like dataframe by chromosome label in "natural" alphanumeric order,
-    followed by any columns specified in ``sort_by``.
+    Sort bed-like dataframe by chromosome label in "natural" alphanumeric
+    order, followed by any columns specified in ``by``.
 
     """
-    if sort_by is None:
-        return pd.concat(
-            bychrom(lambda c,x:x, df),
-            axis=0,
-            ignore_index=reset_index)
+    chrom_col = df['chrom']
+    is_categorical = pd.api.types.is_categorical(chrom_col)
+
+    if chromosomes is None:
+        if not (is_categorical and chrom_col.cat.ordered):
+            dtype = pd.CategoricalDtype(
+                natsorted(chrom_col.unique()), ordered=True
+            )
+            chrom_col = chrom_col.astype(dtype)
     else:
-        return pd.concat(
-            bychrom(lambda c,x:x, df.sort_values(sort_by, **kw)),
-            axis=0,
-            ignore_index=reset_index)
+        dtype = pd.CategoricalDtype(chromosomes, ordered=True)
+        chrom_col = chrom_col.astype(dtype)
+        missing = df['chrom'].loc[chrom_col.isnull()].unique().tolist()
+        if len(missing):
+            raise ValueError("Unknown ordering for {}.".format(missing))
+
+    sort_cols = ['chrom']
+    if by is not None:
+        if not isinstance(by, list):
+            by = [by]
+        sort_cols.append(by)
+
+    out = (
+        df
+        .assign(chrom=chrom_col)
+        .sort_values(sort_cols, **kwargs)
+        .reset_index(drop=True)
+    )
+
+    if not is_categorical:
+        out['chrom'] = out['chrom'].astype(str)
+
+    return out
 
 
-def split_chromosomes(chromsizes, split_pos, suffixes=('L', 'R')):
+def make_chromarms(chromsizes, mids, binsize=None, suffixes=('p', 'q')):
     """
     Split chromosomes into chromosome arms
 
     Parameters
     ----------
     chromsizes : pandas.Series
-        Series mapping chromosomes to lengths in bp
-    split_pos : pandas.Series
-        Series mapping chromosomes to split locations
+        Series mapping chromosomes to lengths in bp.
+    mids : dict-like
+        Mapping of chromosomes to midpoint locations.
+    binsize : int, optional
+        Round midpoints to nearest bin edge for compatibility with a given
+        bin grid.
+    suffixes : tuple, optional
+        Suffixes to name chromosome arms. Defaults to p and q.
 
     Returns
     -------
-    4-column BED-like DataFrame (chrom, start, end, name)
-    Arm names are chromosome names + L/R suffix.
+    4-column BED-like DataFrame (chrom, start, end, name).
+    Arm names are chromosome names + suffix.
+    Any chromosome not included in ``mids`` will be omitted.
 
     """
-    index = chromsizes.index.intersection(split_pos.index)
-    left_arm = pd.DataFrame(index=index)
-    left_arm['chrom'] = left_arm.index
-    left_arm['start'] = 0
-    left_arm['end'] = split_pos
-    left_arm['name'] = left_arm.index + suffixes[0]
-    left_arm = left_arm.reset_index(drop=True)
+    chromosomes = [chrom for chrom in chromsizes.index if chrom in mids]
 
-    right_arm = pd.DataFrame(index=index)
-    right_arm['chrom'] = right_arm.index
-    right_arm['start'] = split_pos
-    right_arm['end'] = chromsizes
-    right_arm['name'] = right_arm.index + suffixes[1]
-    right_arm = right_arm.reset_index(drop=True)
+    p_arms = [
+        [chrom, 0, mids[chrom], chrom + suffixes[0]]
+        for chrom in chromosomes
+    ]
+    if binsize is not None:
+        for x in p_arms:
+            x[2] = int(round(x[2] / binsize)) * binsize
 
-    arms = pd.concat([left_arm, right_arm], axis=0)
-    idx = np.lexsort([arms.name, arms.index])
-    arms = arms.iloc[idx].reset_index(drop=True)
-    return arms
+    q_arms = [
+        [chrom, mids[chrom], chromsizes[chrom], chrom + suffixes[1]]
+        for chrom in chromosomes
+    ]
+    if binsize is not None:
+        for x in q_arms:
+            x[1] = int(round(x[1] / binsize)) * binsize
+
+    interleaved = [*sum(zip(p_arms, q_arms), ())]
+
+    return pd.DataFrame(
+        interleaved,
+        columns=['chrom', 'start', 'end', 'name']
+    )
 
 
 def binnify(chromsizes, binsize, rel_ids=False):

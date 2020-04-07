@@ -52,7 +52,6 @@ if cmd_exists("bedtools"):
 
         return staticmethod(wrapper)
 
-
     class bedtools(object):
         intersect = _register('intersect')
         window = _register('window')
@@ -73,8 +72,8 @@ if cmd_exists("bedtools"):
         jaccard = _register('jaccard')
 
 
-def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False,
-              suffixes=('_x', '_y')):
+
+def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):
 
     # hacky, but we don't want to use suffixes when using -v mode
     if v:
@@ -125,7 +124,6 @@ def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False,
         else:
             bed2_extra_out = bed2_extra.iloc[out[7]].reset_index(drop=True)
         out_final = pd.concat([out, bed1_extra_out, bed2_extra_out], axis=1)
-
 
     outcols = [c + suffixes[0] for c in ['chrom', 'start', 'end', 'index']]
     if not v:
