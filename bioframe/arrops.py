@@ -4,6 +4,30 @@ import numpy as np
 import pandas as pd
 
 
+def natsort_key(s, _NS_REGEX=re.compile(r'(\d+)', re.U)):
+    return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
+
+
+def natsorted(iterable):
+    return sorted(iterable, key=natsort_key)
+
+
+def argnatsort(array):
+    array = np.asarray(array)
+    if not len(array): return np.array([], dtype=int)
+    cols = tuple(zip(*(natsort_key(x) for x in array)))
+    return np.lexsort(cols[::-1])  # numpy's lexsort is ass-backwards
+
+
+def _find_block_span(arr, val):
+    '''Find the first and the last occurence + 1 of the value in the array.
+    '''
+    # it can be done via bisection, but for now BRUTE FORCE
+    block_idxs = np.where(arr==val)[0]
+    lo, hi = block_idxs[0], block_idxs[-1]+1
+    return lo,hi
+
+
 def arange_multi(starts, stops=None, lengths=None):
     """
     Create concatenated ranges of integers for multiple start/length.

@@ -1,41 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
-import subprocess
-import re
-import os
 
 import numpy as np
 import pandas as pd
 
+from . import arrops
 from .region import parse_region
-
-
-def atoi(s):
-    return int(s.replace(',', ''))
-
-
-def natsort_key(s, _NS_REGEX=re.compile(r'(\d+)', re.U)):
-    return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
-
-
-def natsorted(iterable):
-    return sorted(iterable, key=natsort_key)
-
-
-def argnatsort(array):
-    array = np.asarray(array)
-    if not len(array): return np.array([], dtype=int)
-    cols = tuple(zip(*(natsort_key(x) for x in array)))
-    return np.lexsort(cols[::-1])  # numpy's lexsort is ass-backwards
-
-
-def _find_block_span(arr, val):
-    '''Find the first and the last occurence + 1 of the value in the array.
-    '''
-    # it can be done via bisection, but for now BRUTE FORCE
-    block_idxs = np.where(arr==val)[0]
-    lo, hi = block_idxs[0], block_idxs[-1]+1
-    return lo,hi
 
 
 def bedbisect(bedf, region):
@@ -47,11 +17,11 @@ def bedbisect(bedf, region):
     """
     chrom, start, end = parse_region(region)
 
-    lo, hi = _find_block_span(bedf.chrom.values, chrom)
+    lo, hi = arrops._find_block_span(bedf.chrom.values, chrom)
 
-    lo += bedf['end'].values[lo:hi].searchsorted(start, side='right')
+    lo += bedf["end"].values[lo:hi].searchsorted(start, side="right")
     if end is not None:
-        hi = lo + bedf['start'].values[lo:hi].searchsorted(end, side='left')
+        hi = lo + bedf["start"].values[lo:hi].searchsorted(end, side="left")
     else:
         hi = None
     return lo, hi
@@ -86,25 +56,26 @@ def bg2slice(bg2, region1, region2):
         end1 = np.inf
     if end2 is None:
         end2 = np.inf
-    out = bg2[(bg2['chrom1'] == chrom1) &
-              (bg2['start1'] >= start1) &
-              (bg2['end1'] < end1) &
-              (bg2['chrom2'] == chrom2) &
-              (bg2['start2'] >= start2) &
-              (bg2['end2'] < end2)]
+    out = bg2[
+        (bg2["chrom1"] == chrom1)
+        & (bg2["start1"] >= start1)
+        & (bg2["end1"] < end1)
+        & (bg2["chrom2"] == chrom2)
+        & (bg2["start2"] >= start2)
+        & (bg2["end2"] < end2)
+    ]
     return out
 
 
-def expand_regions(df, pad_bp, chromsizes, side='both', inplace=False):
+def expand_regions(df, pad_bp, chromsizes, side="both", inplace=False):
     if not inplace:
         df = df.copy()
 
-    if side == 'both' or side == 'left':
+    if side == "both" or side == "left":
         df.start = np.maximum(0, df.start.values - pad_bp)
 
-    if side == 'both' or side == 'right':
-        df.end = np.minimum(df.chrom.apply(chromsizes.__getitem__),
-                            df.end+pad_bp)
+    if side == "both" or side == "right":
+        df.end = np.minimum(df.chrom.apply(chromsizes.__getitem__), df.end + pad_bp)
 
     return df
 
@@ -146,15 +117,15 @@ def bychrom(func, *tables, **kwargs):
     each chromosome
 
     """
-    chroms = kwargs.pop('chroms', None)
-    parallel = kwargs.pop('parallel', False)
-    ret_chrom = kwargs.pop('ret_chrom', False)
-    map_impl = kwargs.pop('map', six.moves.map)
+    chroms = kwargs.pop("chroms", None)
+    parallel = kwargs.pop("parallel", False)
+    ret_chrom = kwargs.pop("ret_chrom", False)
+    map_impl = kwargs.pop("map", six.moves.map)
 
     first = tables[0]
-    chrom_field = kwargs.pop('chrom_field', first.columns[0])
+    chrom_field = kwargs.pop("chrom_field", first.columns[0])
     if chroms is None:
-        chroms = natsorted(first[chrom_field].unique())
+        chroms = arrops.natsorted(first[chrom_field].unique())
 
     grouped_tables = [table.groupby(chrom_field) for table in tables]
 
@@ -169,9 +140,12 @@ def bychrom(func, *tables, **kwargs):
             yield partials
 
     if ret_chrom:
+
         def run_job(chrom, partials):
             return chrom, func(chrom, *partials)
+
     else:
+
         def run_job(chrom, partials):
             return func(chrom, *partials)
 
@@ -184,42 +158,41 @@ def chromsorted(df, by=None, ignore_index=True, chromosomes=None, **kwargs):
     order, followed by any columns specified in ``by``.
 
     """
-    chrom_col = df['chrom']
+    chrom_col = df["chrom"]
     is_categorical = pd.api.types.is_categorical(chrom_col)
 
     if chromosomes is None:
         if not (is_categorical and chrom_col.cat.ordered):
             dtype = pd.CategoricalDtype(
-                natsorted(chrom_col.unique()), ordered=True
+                arrops.natsorted(chrom_col.unique()), ordered=True
             )
             chrom_col = chrom_col.astype(dtype)
     else:
         dtype = pd.CategoricalDtype(chromosomes, ordered=True)
         chrom_col = chrom_col.astype(dtype)
-        missing = df['chrom'].loc[chrom_col.isnull()].unique().tolist()
+        missing = df["chrom"].loc[chrom_col.isnull()].unique().tolist()
         if len(missing):
             raise ValueError("Unknown ordering for {}.".format(missing))
 
-    sort_cols = ['chrom']
+    sort_cols = ["chrom"]
     if by is not None:
         if not isinstance(by, list):
             by = [by]
         sort_cols.append(by)
 
     out = (
-        df
-        .assign(chrom=chrom_col)
+        df.assign(chrom=chrom_col)
         .sort_values(sort_cols, **kwargs)
         .reset_index(drop=True)
     )
 
     if not is_categorical:
-        out['chrom'] = out['chrom'].astype(str)
+        out["chrom"] = out["chrom"].astype(str)
 
     return out
 
 
-def make_chromarms(chromsizes, mids, binsize=None, suffixes=('p', 'q')):
+def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
     """
     Split chromosomes into chromosome arms
 
@@ -244,10 +217,7 @@ def make_chromarms(chromsizes, mids, binsize=None, suffixes=('p', 'q')):
     """
     chromosomes = [chrom for chrom in chromsizes.index if chrom in mids]
 
-    p_arms = [
-        [chrom, 0, mids[chrom], chrom + suffixes[0]]
-        for chrom in chromosomes
-    ]
+    p_arms = [[chrom, 0, mids[chrom], chrom + suffixes[0]] for chrom in chromosomes]
     if binsize is not None:
         for x in p_arms:
             x[2] = int(round(x[2] / binsize)) * binsize
@@ -262,10 +232,7 @@ def make_chromarms(chromsizes, mids, binsize=None, suffixes=('p', 'q')):
 
     interleaved = [*sum(zip(p_arms, q_arms), ())]
 
-    return pd.DataFrame(
-        interleaved,
-        columns=['chrom', 'start', 'end', 'name']
-    )
+    return pd.DataFrame(interleaved, columns=["chrom", "start", "end", "name"])
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
@@ -284,22 +251,21 @@ def binnify(chromsizes, binsize, rel_ids=False):
     Data frame with columns: 'chrom', 'start', 'end'.
 
     """
+
     def _each(chrom):
         clen = chromsizes[chrom]
         n_bins = int(np.ceil(clen / binsize))
-        binedges = np.arange(0, (n_bins+1)) * binsize
+        binedges = np.arange(0, (n_bins + 1)) * binsize
         binedges[-1] = clen
-        return pd.DataFrame({
-                'chrom': [chrom]*n_bins,
-                'start': binedges[:-1],
-                'end': binedges[1:],
-            }, columns=['chrom', 'start', 'end'])
+        return pd.DataFrame(
+            {"chrom": [chrom] * n_bins, "start": binedges[:-1], "end": binedges[1:],},
+            columns=["chrom", "start", "end"],
+        )
 
-    bintable = pd.concat(map(_each, chromsizes.keys()),
-                               axis=0, ignore_index=True)
+    bintable = pd.concat(map(_each, chromsizes.keys()), axis=0, ignore_index=True)
 
     if rel_ids:
-        bintable['rel_id'] = bintable.groupby('chrom').cumcount()
+        bintable["rel_id"] = bintable.groupby("chrom").cumcount()
 
     # if as_cat:
     #     bintable['chrom'] = pd.Categorical(
@@ -328,23 +294,23 @@ def digest(fasta_records, enzyme):
     """
     import Bio.Restriction as biorst
     import Bio.Seq as bioseq
+
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
     except AttributeError:
-        raise ValueError('Unknown enzyme name: {}'.format(enzyme))
+        raise ValueError("Unknown enzyme name: {}".format(enzyme))
 
     def _each(chrom):
         seq = bioseq.Seq(str(fasta_records[chrom]))
         cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
         n_frags = len(cuts) - 1
 
-        frags = pd.DataFrame({
-            'chrom': [chrom] * n_frags,
-            'start': cuts[:-1],
-            'end': cuts[1:]},
-            columns=['chrom', 'start', 'end'])
+        frags = pd.DataFrame(
+            {"chrom": [chrom] * n_frags, "start": cuts[:-1], "end": cuts[1:]},
+            columns=["chrom", "start", "end"],
+        )
         return frags
 
     return pd.concat(map(_each, chroms), axis=0, ignore_index=True)
@@ -352,11 +318,12 @@ def digest(fasta_records, enzyme):
 
 def frac_mapped(bintable, fasta_records):
     def _each(bin):
-        s = str(fasta_records[bin.chrom][bin.start:bin.end])
+        s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
-        n = s.count('N')
-        n += s.count('n')
+        n = s.count("N")
+        n += s.count("n")
         return (nbases - n) / nbases
+
     return bintable.apply(_each, axis=1)
 
 
@@ -366,19 +333,20 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
         seq = fasta_records[chrom]
         gc = []
         for _, bin in chrom_group.iterrows():
-            s = str(seq[bin.start:bin.end])
-            g = s.count('G')
-            g += s.count('g')
-            c = s.count('C')
-            c += s.count('c')
+            s = str(seq[bin.start : bin.end])
+            g = s.count("G")
+            g += s.count("g")
+            c = s.count("C")
+            c += s.count("c")
             nbases = len(s)
             if mapped_only:
-                n = s.count('N')
-                n += s.count('n')
+                n = s.count("N")
+                n += s.count("n")
                 nbases -= n
             gc.append((g + c) / nbases if nbases > 0 else np.nan)
         return gc
-    out = bintable.groupby('chrom', sort=False).apply(_each)
+
+    out = bintable.groupby("chrom", sort=False).apply(_each)
     return pd.Series(data=np.concatenate(out), index=bintable.index)
 
 
@@ -386,25 +354,24 @@ def frac_gene_coverage(bintable, mrna):
 
     if isinstance(mrna, six.string_types):
         from .resources import fetch_ucsc_mrna
+
         mrna = fetch_ucsc_mrna(mrna).rename(
-            columns={'tName': 'chrom', 'tStart': 'start', 'tEnd': 'end'})
+            columns={"tName": "chrom", "tStart": "start", "tEnd": "end"}
+        )
 
-    mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
+    mrna = mrna.sort_values(["chrom", "start", "end"]).reset_index(drop=True)
 
-    with tsv(bintable) as a, tsv(mrna[['chrom','start','end']]) as b:
+    with tsv(bintable) as a, tsv(mrna[["chrom", "start", "end"]]) as b:
         cov = bedtools.coverage(a=a.name, b=b.name)
 
     bintable = bintable.copy()
-    bintable['gene_count'] = cov.iloc[:,-4]
-    bintable['gene_coverage'] = cov.iloc[:,-1]
+    bintable["gene_count"] = cov.iloc[:, -4]
+    bintable["gene_coverage"] = cov.iloc[:, -1]
 
     return bintable
 
 
-def _overlap_intidxs(
-    df1, df2,
-    **kwargs
-    ):
+def _overlap_intidxs(df1, df2, **kwargs):
     """
     Find pairs of overlapping genomic intervals and return the integer 
     indices of the overlapping intervals.
@@ -428,13 +395,13 @@ def _overlap_intidxs(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
-    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
+    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
-    
+
     # Find overlapping intervals per chromosome.
     df1_gb = df1.groupby(ck1)
     df2_gb = df2.groupby(ck2)
@@ -446,34 +413,37 @@ def _overlap_intidxs(
         df1_sub = df1_gb.get_group(chrom)
         df2_sub = df2_gb.get_group(chrom)
 
-        overlap_idxs_loc = overlap_intervals(
+        overlap_idxs_loc = arrops.overlap_intervals(
             df1_sub[sk1].values,
             df1_sub[ek1].values,
             df2_sub[sk2].values,
             df2_sub[ek2].values,
         )
 
-        # Convert local per-chromosome indices into the 
+        # Convert local per-chromosome indices into the
         # indices of the original table.
-        overlap_intidxs_sub  = np.vstack([
-            df1_gb.groups[chrom][overlap_idxs_loc[:,0]].values,
-            df2_gb.groups[chrom][overlap_idxs_loc[:,1]].values,
-        ]).T
-        
+        overlap_intidxs_sub = np.vstack(
+            [
+                df1_gb.groups[chrom][overlap_idxs_loc[:, 0]].values,
+                df2_gb.groups[chrom][overlap_idxs_loc[:, 1]].values,
+            ]
+        ).T
+
         overlap_intidxs.append(overlap_intidxs_sub)
-    
+
     overlap_intidxs = np.vstack(overlap_intidxs)
 
     return overlap_intidxs
 
 
 def overlap(
-    df1, df2,
-    out_cols = ['input', 'overlap_start', 'overlap_end'],
-    suffixes = ['_1','_2'],
+    df1,
+    df2,
+    out_cols=["input", "overlap_start", "overlap_end"],
+    suffixes=["_1", "_2"],
     **kwargs
-    ):
-    
+):
+
     """
     Find pairs of overlapping genomic intervals and return a combined DataFrame.
     
@@ -501,53 +471,53 @@ def overlap(
         
     
     """
-    
-    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
-    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
-    
-    overlap_df_idxs = _overlap_intidxs(
-        df1, df2,
-        **kwargs
-        )
-    
-    
+
+    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
+    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+
+    overlap_df_idxs = _overlap_intidxs(df1, df2, **kwargs)
+
     if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col:col for col in out_cols}
-    
+        out_cols = {col: col for col in out_cols}
+
     out_df = {}
-    if 'index' in out_cols:
-        out_df[out_cols['index']+suffixes[0]] = df1.index[overlap_df_idxs[:,0]]
-        out_df[out_cols['index']+suffixes[1]] = df2.index[overlap_df_idxs[:,1]]
-    if 'overlap_start' in out_cols:
-        out_df[out_cols['overlap_start']] = np.amax(np.vstack([
-            df1[sk1].values[overlap_df_idxs[:,0]],
-            df2[sk2].values[overlap_df_idxs[:,1]]
-            ]), axis=0)
-    if 'overlap_end' in out_cols:
-        out_df[out_cols['overlap_end']] = np.amin(np.vstack([
-            df1[ek1].values[overlap_df_idxs[:,0]],
-            df2[ek2].values[overlap_df_idxs[:,1]]
-            ]), axis=0)
+    if "index" in out_cols:
+        out_df[out_cols["index"] + suffixes[0]] = df1.index[overlap_df_idxs[:, 0]]
+        out_df[out_cols["index"] + suffixes[1]] = df2.index[overlap_df_idxs[:, 1]]
+    if "overlap_start" in out_cols:
+        out_df[out_cols["overlap_start"]] = np.amax(
+            np.vstack(
+                [
+                    df1[sk1].values[overlap_df_idxs[:, 0]],
+                    df2[sk2].values[overlap_df_idxs[:, 1]],
+                ]
+            ),
+            axis=0,
+        )
+    if "overlap_end" in out_cols:
+        out_df[out_cols["overlap_end"]] = np.amin(
+            np.vstack(
+                [
+                    df1[ek1].values[overlap_df_idxs[:, 0]],
+                    df2[ek2].values[overlap_df_idxs[:, 1]],
+                ]
+            ),
+            axis=0,
+        )
     out_df = pd.DataFrame(out_df)
 
-    if 'input' in out_cols:
-        df_left = df1.iloc[overlap_df_idxs[:,0]].reset_index(drop=True)
-        df_left.columns = [c+suffixes[0] for c in df_left.columns]
-        df_right = df2.iloc[overlap_df_idxs[:,1]].reset_index(drop=True)
-        df_right.columns = [c+suffixes[1] for c in df_right.columns]
+    if "input" in out_cols:
+        df_left = df1.iloc[overlap_df_idxs[:, 0]].reset_index(drop=True)
+        df_left.columns = [c + suffixes[0] for c in df_left.columns]
+        df_right = df2.iloc[overlap_df_idxs[:, 1]].reset_index(drop=True)
+        df_right.columns = [c + suffixes[1] for c in df_right.columns]
 
-        out_df = pd.concat([df_left, df_right, out_df], axis='columns')
-            
+        out_df = pd.concat([df_left, df_right, out_df], axis="columns")
+
     return out_df
 
 
-
-def merge(
-    df, 
-    min_dist=0,
-    out_cols=['input', 'cluster'],
-    **kwargs
-    ):
+def merge(df, min_dist=0, out_cols=["input", "cluster"], **kwargs):
     """
     Merge overlapping intervals.
 
@@ -581,9 +551,8 @@ def merge(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = kwargs.get('cols', ['chrom','start','end'])
-    
-    
+    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+
     # Switch to integer indices.
     df_index = df.index
     df = df.reset_index(drop=True)
@@ -594,64 +563,64 @@ def merge(
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
     max_cluster_id = -1
-    
-    for chrom, df_chunk in df_gb:  
+
+    for chrom, df_chunk in df_gb:
         if df_chunk.empty:
             continue
-            
-        cluster_ids_chunk, cluster_starts_chunk, cluster_ends_chunk = merge_intervals(
-            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist)
-        
+
+        (
+            cluster_ids_chunk,
+            cluster_starts_chunk,
+            cluster_ends_chunk,
+        ) = arrops.merge_intervals(
+            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist
+        )
+
         interval_counts = np.bincount(cluster_ids_chunk)
-        
+
         cluster_ids_chunk += max_cluster_id + 1
-        
+
         n_clusters = cluster_starts_chunk.shape[0]
         max_cluster_id += n_clusters
-        
+
         cluster_ids[df_gb.groups[chrom].values] = cluster_ids_chunk
- 
+
         ## Storing chromosome names causes a 2x slowdown. :(
         clusters_chunk = {
-            ck : pd.Series(data=np.full(n_clusters, chrom), 
-                           dtype=df[ck].dtype),
-            sk : cluster_starts_chunk,
-            ek : cluster_ends_chunk,
-            'count' : interval_counts
+            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
+            sk: cluster_starts_chunk,
+            ek: cluster_ends_chunk,
+            "count": interval_counts,
         }
         clusters_chunk = pd.DataFrame(clusters_chunk)
-        
+
         clusters.append(clusters_chunk)
-        
-    assert (np.all(cluster_ids>=0))
+
+    assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
-    
+
     if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col:col for col in out_cols}
-    
+        out_cols = {col: col for col in out_cols}
+
     out_df = {}
-    if 'cluster' in out_cols:
-        out_df[out_cols['cluster']] = cluster_ids
-    if 'cluster_start' in out_cols:
-        out_df[out_cols['cluster_start']] = clusters[sk].values[cluster_ids]
-    if 'cluster_end' in out_cols:
-        out_df[out_cols['cluster_end']] = clusters[ek].values[cluster_ids]
+    if "cluster" in out_cols:
+        out_df[out_cols["cluster"]] = cluster_ids
+    if "cluster_start" in out_cols:
+        out_df[out_cols["cluster_start"]] = clusters[sk].values[cluster_ids]
+    if "cluster_end" in out_cols:
+        out_df[out_cols["cluster_end"]] = clusters[ek].values[cluster_ids]
 
     out_df = pd.DataFrame(out_df)
 
-    if 'input' in out_cols:
-        out_df = pd.concat([df, out_df], axis='columns')
-            
+    if "input" in out_cols:
+        out_df = pd.concat([df, out_df], axis="columns")
+
     out_df.set_index(df_index)
-            
+
     return out_df, clusters
 
 
-def complement(
-    df, 
-    chromsizes={},
-    **kwargs
-    ):
+def complement(df, chromsizes={}, **kwargs):
     """
     Find genomic regions that are not covered by at least one of the provided intervals. 
 
@@ -672,52 +641,59 @@ def complement(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = kwargs.get('cols', ['chrom','start','end'])    
+    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
 
     # Find overlapping intervals per chromosome.
     df_gb = df.groupby(ck)
-    
+
     complements = []
-    
-    for chrom, df_chunk in df_gb:  
+
+    for chrom, df_chunk in df_gb:
         if df_chunk.empty:
             continue
-            
+
         if chrom in chromsizes:
             chromsize = chromsizes[chrom]
-            complement_starts_chunk, complement_ends_chunk = complement_intervals(
-                df_chunk[sk].values, df_chunk[ek].values, bounds=(0,chromsize), 
-                )
+            (
+                complement_starts_chunk,
+                complement_ends_chunk,
+            ) = arrops.complement_intervals(
+                df_chunk[sk].values, df_chunk[ek].values, bounds=(0, chromsize),
+            )
         else:
-            complement_starts_chunk, complement_ends_chunk = complement_intervals(
-                df_chunk[sk].values, df_chunk[ek].values) 
-        
+            (
+                complement_starts_chunk,
+                complement_ends_chunk,
+            ) = arrops.complement_intervals(df_chunk[sk].values, df_chunk[ek].values)
+
         ## Storing chromosome names causes a 2x slowdown. :(
         complement_chunk = {
-            ck : pd.Series(data=np.full(complement_starts_chunk.shape[0], chrom), 
-                           dtype=df[ck].dtype),
-            sk : complement_starts_chunk,
-            ek : complement_ends_chunk,
+            ck: pd.Series(
+                data=np.full(complement_starts_chunk.shape[0], chrom),
+                dtype=df[ck].dtype,
+            ),
+            sk: complement_starts_chunk,
+            ek: complement_ends_chunk,
         }
         complement_chunk = pd.DataFrame(complement_chunk)
-        
+
         complements.append(complement_chunk)
-        
+
     complements = pd.concat(complements).reset_index(drop=True)
-                
+
     return complements
 
 
 def _closest_intidxs(
-    df1, 
-    df2, 
+    df1,
+    df2,
     k=1,
     ignore_overlaps=False,
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
     **kwargs
-    ):
+):
     """
     For every interval in set 1 find k closest genomic intervals in set2 and
     return their integer indices.
@@ -744,13 +720,13 @@ def _closest_intidxs(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
-    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
+    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
+    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
-    
+
     # Find overlapping intervals per chromosome.
     df1_gb = df1.groupby(ck1)
     df2_gb = df2.groupby(ck2)
@@ -761,53 +737,58 @@ def _closest_intidxs(
 
         df1_chunk = df1_gb.get_group(chrom)
         df2_chunk = df2_gb.get_group(chrom)
-        
+
         tie_arr = None
         if isinstance(tie_breaking_col, str):
             tie_arr = df2_chunk[tie_breaking_col].values
         elif callable(tie_breaking_col):
             tie_arr = tie_breaking_col(df2_chunk).values
         else:
-            ValueError('tie_breaking_col must be either a column label or f(DataFrame) -> Series')
+            ValueError(
+                "tie_breaking_col must be either a column label or f(DataFrame) -> Series"
+            )
 
-        closest_idxs_chunk = closest_intervals(
+        closest_idxs_chunk = arrops.closest_intervals(
             df1_chunk[sk1].values,
             df1_chunk[ek1].values,
             df2_chunk[sk2].values,
-            df2_chunk[ek2].values, 
+            df2_chunk[ek2].values,
             k=k,
             tie_arr=tie_arr,
             ignore_overlaps=ignore_overlaps,
             ignore_upstream=ignore_upstream,
-            ignore_downstream=ignore_downstream)
-        
-        # Convert local per-chromosome indices into the 
+            ignore_downstream=ignore_downstream,
+        )
+
+        # Convert local per-chromosome indices into the
         # indices of the original table.
-        closest_idxs_chunk = np.vstack([
-            df1_gb.groups[chrom][closest_idxs_chunk[:,0]].values,
-            df2_gb.groups[chrom][closest_idxs_chunk[:,1]].values,
-        ]).T
-    
+        closest_idxs_chunk = np.vstack(
+            [
+                df1_gb.groups[chrom][closest_idxs_chunk[:, 0]].values,
+                df2_gb.groups[chrom][closest_idxs_chunk[:, 1]].values,
+            ]
+        ).T
+
         closest_intidxs.append(closest_idxs_chunk)
-    
+
     closest_intidxs = np.vstack(closest_intidxs)
-        
+
     return closest_intidxs
 
 
 def closest(
-    df1, 
-    df2, 
+    df1,
+    df2,
     k=1,
     ignore_overlaps=False,
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
-    out_cols = ['input', 'distance'],
-    suffixes = ['_1','_2'],
+    out_cols=["input", "distance"],
+    suffixes=["_1", "_2"],
     **kwargs
-    ):
-    
+):
+
     """
     For every interval in set 1 find k closest genomic intervals in set2 and
     return a combined DataFrame.
@@ -838,12 +819,12 @@ def closest(
     df_closest : pandas.DataFrame
     
     """
-    
-    ck1, sk1, ek1 = kwargs.get('cols1', ['chrom','start','end'])
-    ck2, sk2, ek2 = kwargs.get('cols2', ['chrom','start','end'])
-    
+
+    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
+    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+
     closest_df_idxs = _closest_intidxs(
-        df1, 
+        df1,
         df2,
         k=k,
         ignore_overlaps=ignore_overlaps,
@@ -851,60 +832,69 @@ def closest(
         ignore_downstream=ignore_downstream,
         tie_breaking_col=tie_breaking_col,
         **kwargs
-        )
-    
+    )
+
     # Make an output DataFrame.
     if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col:col for col in out_cols}
-    
+        out_cols = {col: col for col in out_cols}
+
     out_df = {}
-    if 'index' in out_cols:
-        out_df[out_cols['index']+suffixes[0]] = df1.index[closest_df_idxs[:,0]]
-        out_df[out_cols['index']+suffixes[1]] = df2.index[closest_df_idxs[:,1]]
-        
-    if any([k in out_cols for k in ['have_overlap', 'overlap_start', 'overlap_end']]):
-        overlap_start = np.amax(np.vstack([
-            df1[sk1].values[closest_df_idxs[:,0]],
-            df2[sk2].values[closest_df_idxs[:,1]]
-            ]), axis=0)
-        overlap_end = np.amin(np.vstack([
-            df1[ek1].values[closest_df_idxs[:,0]],
-            df2[ek2].values[closest_df_idxs[:,1]]
-            ]), axis=0)
+    if "index" in out_cols:
+        out_df[out_cols["index"] + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
+        out_df[out_cols["index"] + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+
+    if any([k in out_cols for k in ["have_overlap", "overlap_start", "overlap_end"]]):
+        overlap_start = np.amax(
+            np.vstack(
+                [
+                    df1[sk1].values[closest_df_idxs[:, 0]],
+                    df2[sk2].values[closest_df_idxs[:, 1]],
+                ]
+            ),
+            axis=0,
+        )
+        overlap_end = np.amin(
+            np.vstack(
+                [
+                    df1[ek1].values[closest_df_idxs[:, 0]],
+                    df2[ek2].values[closest_df_idxs[:, 1]],
+                ]
+            ),
+            axis=0,
+        )
         have_overlap = overlap_start < overlap_end
-        
-        if 'have_overlap' in out_cols:
-            out_df[out_cols['overlap_start']] = have_overlap
-        if 'overlap_start' in out_cols:
-            out_df[out_cols['overlap_start']] = np.where(
-                have_overlap, overlap_start, -1) 
-        if 'overlap_end' in out_cols:
-            out_df[out_cols['overlap_end']] = np.where(
-                have_overlap, overlap_end, -1)
-    
-    if 'distance' in out_cols:
-        distance_left = np.maximum(0, 
-            df1[sk1].values[closest_df_idxs[:,0]]
-            - df2[ek2].values[closest_df_idxs[:,1]]
+
+        if "have_overlap" in out_cols:
+            out_df[out_cols["overlap_start"]] = have_overlap
+        if "overlap_start" in out_cols:
+            out_df[out_cols["overlap_start"]] = np.where(
+                have_overlap, overlap_start, -1
             )
-        distance_right = np.maximum(0, 
-            df2[sk2].values[closest_df_idxs[:,1]]
-            - df1[ek1].values[closest_df_idxs[:,0]]
-            )
-        distance = np.amax(np.vstack([
-            distance_left, 
-            distance_right
-            ]), axis=0)
-        out_df[out_cols['distance']] = distance
-            
+        if "overlap_end" in out_cols:
+            out_df[out_cols["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
+
+    if "distance" in out_cols:
+        distance_left = np.maximum(
+            0,
+            df1[sk1].values[closest_df_idxs[:, 0]]
+            - df2[ek2].values[closest_df_idxs[:, 1]],
+        )
+        distance_right = np.maximum(
+            0,
+            df2[sk2].values[closest_df_idxs[:, 1]]
+            - df1[ek1].values[closest_df_idxs[:, 0]],
+        )
+        distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
+        out_df[out_cols["distance"]] = distance
+
     out_df = pd.DataFrame(out_df)
 
-    if 'input' in out_cols:
-        df_left = df1.iloc[closest_df_idxs[:,0]].reset_index(drop=True)
-        df_left.columns = [c+suffixes[0] for c in df_left.columns]
-        df_right = df2.iloc[closest_df_idxs[:,1]].reset_index(drop=True)
-        df_right.columns = [c+suffixes[1] for c in df_right.columns]
+    if "input" in out_cols:
+        df_left = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
+        df_left.columns = [c + suffixes[0] for c in df_left.columns]
+        df_right = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
+        df_right.columns = [c + suffixes[1] for c in df_right.columns]
 
-        out_df = pd.concat([df_left, df_right, out_df], axis='columns')
-            
+        out_df = pd.concat([df_left, df_right, out_df], axis="columns")
+
     return out_df

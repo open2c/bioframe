@@ -6,6 +6,10 @@ import numpy as np
 import pandas as pd
 
 
+def atoi(s):
+    return int(s.replace(',', ''))
+
+
 def parse_humanized(s):
     _NUMERIC_RE = re.compile('([0-9,.]+)')
     _, value, unit = _NUMERIC_RE.split(s.replace(',', ''))
