@@ -686,6 +686,85 @@ def complement(df, chromsizes={}, **kwargs):
     return complements
 
 
+def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
+    """
+    For every interval in set 1 find the number of overlapping intervals from set 2 and 
+    the number of base pairs covered by at least one genomic interval.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+            
+    out_cols : list of str or dict
+        A list of requested outputs.
+        Can be provided as a dict of {output:column_name} 
+        Allowed values: ['input', 'index', 'coverage', 'count'].
+
+    cols1, cols2 : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+    
+    Returns
+    -------
+    df_coverage : pandas.DataFrame
+    
+    """
+
+    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
+    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+
+    df2_merged = merge(df2, **kwargs)
+
+    overlap_idxs = overlap(
+        df1,
+        df2_merged,
+        out_cols=["index", "overlap_start", "overlap_end"],
+        cols=[ck2, sk2, ek2],
+    )
+
+    overlap_idxs["overlap"] = (
+        overlap_idxs["overlap_end"] - overlap_idxs["overlap_start"]
+    )
+
+    coverage_sparse_df = (
+        overlap_idxs.groupby("index_1")
+        .agg({"overlap": "sum", "index_2": "count"})
+        .rename(columns={"index_2": "count"})
+    )
+
+    # Make an output DataFrame.
+    if not isinstance(out_cols, collections.abc.Mapping):
+        out_cols = {col: col for col in out_cols}
+
+    out_df = {}
+
+    if "index" in out_cols:
+        out_df[out_cols["index"]] = df1.index
+
+    if "coverage" in out_cols:
+        out_df[out_cols["coverage"]] = (
+            pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
+            .add(coverage_sparse_df["overlap"], fill_value=0)
+            .astype(df1[sk1].dtype)
+        )
+
+    if "count" in out_cols:
+        out_df[out_cols["count"]] = (
+            pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
+            .add(coverage_sparse_df["count"], fill_value=0)
+            .astype(np.int64)
+        )
+
+    out_df = pd.DataFrame(out_df)
+
+    if "input" in out_cols:
+        out_df = pd.concat([df1, out_df], axis="columns")
+
+    return out_df
+
+
 def _closest_intidxs(
     df1,
     df2,
