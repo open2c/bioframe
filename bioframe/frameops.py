@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
+import collections
+
 import numpy as np
 import pandas as pd
 
@@ -118,9 +120,9 @@ def bychrom(func, *tables, **kwargs):
 
     """
     chroms = kwargs.pop("chroms", None)
-    parallel = kwargs.pop("parallel", False)
+    # parallel = kwargs.pop("parallel", False)
     ret_chrom = kwargs.pop("ret_chrom", False)
-    map_impl = kwargs.pop("map", six.moves.map)
+    map_impl = kwargs.pop("map", map)
 
     first = tables[0]
     chrom_field = kwargs.pop("chrom_field", first.columns[0])
@@ -258,7 +260,7 @@ def binnify(chromsizes, binsize, rel_ids=False):
         binedges = np.arange(0, (n_bins + 1)) * binsize
         binedges[-1] = clen
         return pd.DataFrame(
-            {"chrom": [chrom] * n_bins, "start": binedges[:-1], "end": binedges[1:],},
+            {"chrom": [chrom] * n_bins, "start": binedges[:-1], "end": binedges[1:]},
             columns=["chrom", "start", "end"],
         )
 
@@ -352,7 +354,7 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 def frac_gene_coverage(bintable, mrna):
 
-    if isinstance(mrna, six.string_types):
+    if isinstance(mrna, str):
         from .resources import fetch_ucsc_mrna
 
         mrna = fetch_ucsc_mrna(mrna).rename(
@@ -745,7 +747,8 @@ def _closest_intidxs(
             tie_arr = tie_breaking_col(df2_chunk).values
         else:
             ValueError(
-                "tie_breaking_col must be either a column label or f(DataFrame) -> Series"
+                "tie_breaking_col must be either a column label or "
+                "f(DataFrame) -> Series"
             )
 
         closest_idxs_chunk = arrops.closest_intervals(
@@ -804,14 +807,15 @@ def closest(
     out_cols : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'distance', 'have_overlap', 'overlap_start', 'overlap_end'].
+        Allowed values: ['input', 'index', 'distance', 'have_overlap', 
+        'overlap_start', 'overlap_end'].
 
     suffixes : [str, str]
         The suffixes for the columns of the two sets.
     
     cols1, cols2 : [str, str, str]
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default 
+        genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
     
     Returns
