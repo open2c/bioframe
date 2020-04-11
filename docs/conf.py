@@ -31,6 +31,10 @@ MOCK_MODULES = [
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
+print(os.listdir('.'))
+print(os.listdir('..'))
+print(os.listdir('../bioframe'))
+print(sys.path)
 # -- Project information -----------------------------------------------------
 
 project = 'bioframe'
