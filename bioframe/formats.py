@@ -1,11 +1,8 @@
 from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from contextlib import closing
-import subprocess
 import tempfile
 import json
-import six
-import os
 import io
 
 import cytoolz as toolz
@@ -14,20 +11,20 @@ import pandas as pd
 
 from ._process import run
 from .region import parse_region
-from .frameops import argnatsort
+from .arrops import argnatsort
 from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
     kwargs.setdefault('sep', '\t')
     kwargs.setdefault('header', None)
-    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
+    if isinstance(filepath_or, str) and filepath_or.endswith('.gz'):
         kwargs.setdefault('compression', 'gzip')
     if schema is not None:
         try:
             kwargs.setdefault('names', SCHEMAS[schema])
         except (KeyError, TypeError):
-            if isinstance(schema, six.string_types):
+            if isinstance(schema, str):
                 raise ValueError("TSV schema not found: '{}'".format(schema))
             kwargs.setdefault('names', schema)
     return pd.read_csv(filepath_or, **kwargs)
@@ -83,7 +80,7 @@ def read_chromsizes(filepath_or,
     * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions>
 
     """
-    if isinstance(filepath_or, six.string_types) and filepath_or.endswith('.gz'):
+    if isinstance(filepath_or, str) and filepath_or.endswith('.gz'):
         kwargs.setdefault('compression', 'gzip')
 
     chromtable = pd.read_csv(
@@ -354,7 +351,7 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
     * pyfaidx can handle uncompressed and bgzf compressed files.
 
     """
-    is_multifile = not isinstance(filepath_or, six.string_types)
+    is_multifile = not isinstance(filepath_or, str)
     records = OrderedDict()
 
     if engine == 'pysam':

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, division, print_function
-import six
 import re
 
 
@@ -110,7 +109,7 @@ def parse_region(reg, chromsizes=None):
     A well-formed genomic region triple (str, int, int)
 
     """
-    if isinstance(reg, six.string_types):
+    if isinstance(reg, str):
         chrom, start, end = parse_region_string(reg)
     else:
         chrom, start, end = reg

@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 from functools import partial
-from six.moves.urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode
 import urllib
 import posixpath as pp
 import os.path as op
