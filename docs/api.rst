@@ -10,11 +10,15 @@ API Reference
 Quick reference
 ---------------
 
-Bioframe operations
+Interval operations
 ~~~~~~~~~~~~~~~~~~~
 .. autosummary:: 
     bioframe.overlap
     bioframe.merge
+    bioframe.complement
+    bioframe.closest
+    bioframe.coverage
+    bioframe.expand
 
 Array operations
 ~~~~~~~~~~~~~~~~

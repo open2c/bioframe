@@ -31,12 +31,6 @@ MOCK_MODULES = [
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
-print(os.listdir('.'))
-print(os.listdir('..'))
-print(os.listdir('../bioframe'))
-print(sys.path)
-import bioframe
-print(dir(bioframe))
 # -- Project information -----------------------------------------------------
 
 project = 'bioframe'
@@ -51,6 +45,7 @@ def _read(*parts, **kwargs):
     with io.open(filepath, encoding=encoding) as fh:
         text = fh.read()
     return text
+
 
 def get_version():
     import re
