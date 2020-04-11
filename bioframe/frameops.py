@@ -353,7 +353,6 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 
 def frac_gene_coverage(bintable, mrna):
-
     if isinstance(mrna, str):
         from .resources import fetch_ucsc_mrna
 
@@ -361,15 +360,12 @@ def frac_gene_coverage(bintable, mrna):
             columns={"tName": "chrom", "tStart": "start", "tEnd": "end"}
         )
 
-    mrna = mrna.sort_values(["chrom", "start", "end"]).reset_index(drop=True)
-
-    with tsv(bintable) as a, tsv(mrna[["chrom", "start", "end"]]) as b:
-        cov = bedtools.coverage(a=a.name, b=b.name)
-
-    bintable = bintable.copy()
-    bintable["gene_count"] = cov.iloc[:, -4]
-    bintable["gene_coverage"] = cov.iloc[:, -1]
-
+    bintable = coverage(
+        bintable, 
+        mrna, 
+        out = {'input':'input', 'count':'gene_count', 'coverage':'gene_coverage'})
+    bintable['gene_coverage'] = bintable['gene_coverage'] / (bintable['end'] - bintable['start'])
+    
     return bintable
 
 
@@ -441,7 +437,7 @@ def _overlap_intidxs(df1, df2, **kwargs):
 def overlap(
     df1,
     df2,
-    out_cols=["input", "overlap_start", "overlap_end"],
+    out=["input", "overlap_start", "overlap_end"],
     suffixes=["_1", "_2"],
     **kwargs
 ):
@@ -454,7 +450,7 @@ def overlap(
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
     
-    out_cols : list of str or dict
+    out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'index', 'overlap_start', 'overlap_end'].
@@ -479,15 +475,15 @@ def overlap(
 
     overlap_df_idxs = _overlap_intidxs(df1, df2, **kwargs)
 
-    if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col: col for col in out_cols}
+    if not isinstance(out, collections.abc.Mapping):
+        out = {col: col for col in out}
 
     out_df = {}
-    if "index" in out_cols:
-        out_df[out_cols["index"] + suffixes[0]] = df1.index[overlap_df_idxs[:, 0]]
-        out_df[out_cols["index"] + suffixes[1]] = df2.index[overlap_df_idxs[:, 1]]
-    if "overlap_start" in out_cols:
-        out_df[out_cols["overlap_start"]] = np.amax(
+    if "index" in out:
+        out_df[out["index"] + suffixes[0]] = df1.index[overlap_df_idxs[:, 0]]
+        out_df[out["index"] + suffixes[1]] = df2.index[overlap_df_idxs[:, 1]]
+    if "overlap_start" in out:
+        out_df[out["overlap_start"]] = np.amax(
             np.vstack(
                 [
                     df1[sk1].values[overlap_df_idxs[:, 0]],
@@ -496,8 +492,8 @@ def overlap(
             ),
             axis=0,
         )
-    if "overlap_end" in out_cols:
-        out_df[out_cols["overlap_end"]] = np.amin(
+    if "overlap_end" in out:
+        out_df[out["overlap_end"]] = np.amin(
             np.vstack(
                 [
                     df1[ek1].values[overlap_df_idxs[:, 0]],
@@ -508,7 +504,7 @@ def overlap(
         )
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out_cols:
+    if "input" in out:
         df_left = df1.iloc[overlap_df_idxs[:, 0]].reset_index(drop=True)
         df_left.columns = [c + suffixes[0] for c in df_left.columns]
         df_right = df2.iloc[overlap_df_idxs[:, 1]].reset_index(drop=True)
@@ -519,7 +515,7 @@ def overlap(
     return out_df
 
 
-def merge(df, min_dist=0, out_cols=["input", "cluster"], **kwargs):
+def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
     """
     Merge overlapping intervals.
 
@@ -539,7 +535,7 @@ def merge(df, min_dist=0, out_cols=["input", "cluster"], **kwargs):
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
-        out_cols : list of str or dict
+        out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
@@ -601,20 +597,20 @@ def merge(df, min_dist=0, out_cols=["input", "cluster"], **kwargs):
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
 
-    if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col: col for col in out_cols}
+    if not isinstance(out, collections.abc.Mapping):
+        out = {col: col for col in out}
 
     out_df = {}
-    if "cluster" in out_cols:
-        out_df[out_cols["cluster"]] = cluster_ids
-    if "cluster_start" in out_cols:
-        out_df[out_cols["cluster_start"]] = clusters[sk].values[cluster_ids]
-    if "cluster_end" in out_cols:
-        out_df[out_cols["cluster_end"]] = clusters[ek].values[cluster_ids]
+    if "cluster" in out:
+        out_df[out["cluster"]] = cluster_ids
+    if "cluster_start" in out:
+        out_df[out["cluster_start"]] = clusters[sk].values[cluster_ids]
+    if "cluster_end" in out:
+        out_df[out["cluster_end"]] = clusters[ek].values[cluster_ids]
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out_cols:
+    if "input" in out:
         out_df = pd.concat([df, out_df], axis="columns")
 
     out_df.set_index(df_index)
@@ -686,7 +682,7 @@ def complement(df, chromsizes={}, **kwargs):
     return complements
 
 
-def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
+def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
     """
     For every interval in set 1 find the number of overlapping intervals from set 2 and 
     the number of base pairs covered by at least one genomic interval.
@@ -696,7 +692,7 @@ def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
             
-    out_cols : list of str or dict
+    out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'index', 'coverage', 'count'].
@@ -720,7 +716,7 @@ def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
     overlap_idxs = overlap(
         df1,
         df2_merged,
-        out_cols=["index", "overlap_start", "overlap_end"],
+        out=["index", "overlap_start", "overlap_end"],
         cols=[ck2, sk2, ek2],
     )
 
@@ -735,23 +731,23 @@ def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
     )
 
     # Make an output DataFrame.
-    if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col: col for col in out_cols}
+    if not isinstance(out, collections.abc.Mapping):
+        out = {col: col for col in out}
 
     out_df = {}
 
-    if "index" in out_cols:
-        out_df[out_cols["index"]] = df1.index
+    if "index" in out:
+        out_df[out["index"]] = df1.index
 
-    if "coverage" in out_cols:
-        out_df[out_cols["coverage"]] = (
+    if "coverage" in out:
+        out_df[out["coverage"]] = (
             pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
             .add(coverage_sparse_df["overlap"], fill_value=0)
             .astype(df1[sk1].dtype)
         )
 
-    if "count" in out_cols:
-        out_df[out_cols["count"]] = (
+    if "count" in out:
+        out_df[out["count"]] = (
             pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
             .add(coverage_sparse_df["count"], fill_value=0)
             .astype(np.int64)
@@ -759,7 +755,7 @@ def coverage(df1, df2, out_cols=["input", "coverage", "count"], **kwargs):
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out_cols:
+    if "input" in out:
         out_df = pd.concat([df1, out_df], axis="columns")
 
     return out_df
@@ -866,7 +862,7 @@ def closest(
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
-    out_cols=["input", "distance"],
+    out=["input", "distance"],
     suffixes=["_1", "_2"],
     **kwargs
 ):
@@ -883,7 +879,7 @@ def closest(
     k : int
         The number of closest intervals to report.
     
-    out_cols : list of str or dict
+    out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'index', 'distance', 'have_overlap', 
@@ -918,15 +914,15 @@ def closest(
     )
 
     # Make an output DataFrame.
-    if not isinstance(out_cols, collections.abc.Mapping):
-        out_cols = {col: col for col in out_cols}
+    if not isinstance(out, collections.abc.Mapping):
+        out = {col: col for col in out}
 
     out_df = {}
-    if "index" in out_cols:
-        out_df[out_cols["index"] + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
-        out_df[out_cols["index"] + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+    if "index" in out:
+        out_df[out["index"] + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
+        out_df[out["index"] + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
 
-    if any([k in out_cols for k in ["have_overlap", "overlap_start", "overlap_end"]]):
+    if any([k in out for k in ["have_overlap", "overlap_start", "overlap_end"]]):
         overlap_start = np.amax(
             np.vstack(
                 [
@@ -947,16 +943,16 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        if "have_overlap" in out_cols:
-            out_df[out_cols["overlap_start"]] = have_overlap
-        if "overlap_start" in out_cols:
-            out_df[out_cols["overlap_start"]] = np.where(
+        if "have_overlap" in out:
+            out_df[out["overlap_start"]] = have_overlap
+        if "overlap_start" in out:
+            out_df[out["overlap_start"]] = np.where(
                 have_overlap, overlap_start, -1
             )
-        if "overlap_end" in out_cols:
-            out_df[out_cols["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
+        if "overlap_end" in out:
+            out_df[out["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
 
-    if "distance" in out_cols:
+    if "distance" in out:
         distance_left = np.maximum(
             0,
             df1[sk1].values[closest_df_idxs[:, 0]]
@@ -968,11 +964,11 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        out_df[out_cols["distance"]] = distance
+        out_df[out["distance"]] = distance
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out_cols:
+    if "input" in out:
         df_left = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
         df_left.columns = [c + suffixes[0] for c in df_left.columns]
         df_right = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
