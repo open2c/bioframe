@@ -35,6 +35,8 @@ print(os.listdir('.'))
 print(os.listdir('..'))
 print(os.listdir('../bioframe'))
 print(sys.path)
+import bioframe
+print(dir(bioframe))
 # -- Project information -----------------------------------------------------
 
 project = 'bioframe'
