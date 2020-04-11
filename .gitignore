@@ -9,6 +9,8 @@ __pycache__
 
 # setup and build
 docs/_*
+docs/Makefile
+docs/make.bat
 *.egg-info/
 dist/
 build/
