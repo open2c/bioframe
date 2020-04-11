@@ -5,7 +5,6 @@ import tempfile
 import json
 import io
 
-import cytoolz as toolz
 import numpy as np
 import pandas as pd
 
@@ -230,6 +229,8 @@ def read_tabix(fp, chrom=None, start=None, end=None):
 def read_pairix(fp, region1, region2=None, chromsizes=None,
                 columns=None, usecols=None, dtypes=None, **kwargs):
     import pypairix
+    import cytoolz as toolz
+
     if dtypes is None:
         dtypes = {}
     f = pypairix.open(fp, 'r')
