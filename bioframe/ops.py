@@ -30,7 +30,7 @@ def bedbisect(bedf, region):
 
 
 def bedslice(bedf, region):
-    """eeturn a block of rows corresponding to the genomic region.
+    """Return a block of rows corresponding to the genomic region.
     Rows must be sorted by `start` and `end`;
     `chrom` must be grouped, but does not have to be sorted.
     """
@@ -69,15 +69,21 @@ def bg2slice(bg2, region1, region2):
     return out
 
 
-def expand_regions(df, pad_bp, chromsizes, side="both", inplace=False):
+def expand(df, pad_bp, chromsizes={}, side="both", inplace=False, cols=None):
+    ck, sk, ek = ['chrom', 'start', 'end'] if cols is None else cols
     if not inplace:
         df = df.copy()
 
     if side == "both" or side == "left":
-        df.start = np.maximum(0, df.start.values - pad_bp)
+        df[sk] = np.maximum(0, df[sk].values - pad_bp)
 
     if side == "both" or side == "right":
-        df.end = np.minimum(df.chrom.apply(chromsizes.__getitem__), df.end + pad_bp)
+        if chromsizes:
+            df[ek] = np.minimum(
+                df[ck].apply(chromsizes.__getitem__, np.iinfo(np.int64).max),
+                df[ek] + pad_bp)
+        else:
+            df[ek] = df[ek] + pad_bp
 
     return df
 
