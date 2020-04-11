@@ -13,8 +13,8 @@ Quick reference
 Bioframe operations
 ~~~~~~~~~~~~~~~~~~~
 .. autosummary:: 
-    bioframe.ops.overlap
-    bioframe.ops.merge
+    bioframe.overlap
+    bioframe.merge
 
 Array operations
 ~~~~~~~~~~~~~~~~

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from . import arrops
-from .region import parse_region
+from ._region import parse_region
 
 
 def bedbisect(bedf, region):
