@@ -1,5 +1,6 @@
 numpy>=1.10
 pandas>=1.0
 click>=6.6
+mock
 git+https://github.com/golobor/sphinx-click
 sphinx_rtd_theme
