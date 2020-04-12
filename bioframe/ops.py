@@ -70,7 +70,7 @@ def bg2slice(bg2, region1, region2):
 
 
 def expand(df, pad_bp, chromsizes={}, side="both", inplace=False, cols=None):
-    ck, sk, ek = ['chrom', 'start', 'end'] if cols is None else cols
+    ck, sk, ek = ["chrom", "start", "end"] if cols is None else cols
     if not inplace:
         df = df.copy()
 
@@ -81,7 +81,8 @@ def expand(df, pad_bp, chromsizes={}, side="both", inplace=False, cols=None):
         if chromsizes:
             df[ek] = np.minimum(
                 df[ck].apply(chromsizes.__getitem__, np.iinfo(np.int64).max),
-                df[ek] + pad_bp)
+                df[ek] + pad_bp,
+            )
         else:
             df[ek] = df[ek] + pad_bp
 
@@ -367,11 +368,14 @@ def frac_gene_coverage(bintable, mrna):
         )
 
     bintable = coverage(
-        bintable, 
-        mrna, 
-        out = {'input':'input', 'count':'gene_count', 'coverage':'gene_coverage'})
-    bintable['gene_coverage'] = bintable['gene_coverage'] / (bintable['end'] - bintable['start'])
-    
+        bintable,
+        mrna,
+        out={"input": "input", "count": "gene_count", "coverage": "gene_coverage"},
+    )
+    bintable["gene_coverage"] = bintable["gene_coverage"] / (
+        bintable["end"] - bintable["start"]
+    )
+
     return bintable
 
 
@@ -771,7 +775,7 @@ def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
 
 def _closest_intidxs(
     df1,
-    df2,
+    df2=None,
     k=1,
     ignore_overlaps=False,
     ignore_upstream=False,
@@ -787,7 +791,8 @@ def _closest_intidxs(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        
+        If df2 is None or same object as df1, find closest intervals within the same set.
+
     k_closest : int
         The number of closest intervals to report.
         
@@ -807,6 +812,11 @@ def _closest_intidxs(
     # Allow users to specify the names of columns containing the interval coordinates.
     ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
     ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+
+    self_closest = False
+    if (df2 is None) or (df2 is df1):
+        df2 = df1
+        self_closest = True
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
@@ -837,8 +847,8 @@ def _closest_intidxs(
         closest_idxs_chunk = arrops.closest_intervals(
             df1_chunk[sk1].values,
             df1_chunk[ek1].values,
-            df2_chunk[sk2].values,
-            df2_chunk[ek2].values,
+            None if self_closest else df2_chunk[sk2].values,
+            None if self_closest else df2_chunk[ek2].values,
             k=k,
             tie_arr=tie_arr,
             ignore_overlaps=ignore_overlaps,
@@ -864,7 +874,7 @@ def _closest_intidxs(
 
 def closest(
     df1,
-    df2,
+    df2=None,
     k=1,
     ignore_overlaps=False,
     ignore_upstream=False,
@@ -882,6 +892,7 @@ def closest(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
+        If df2 is None or same object as df1, find closest intervals within the same set.
         
     k : int
         The number of closest intervals to report.
@@ -920,6 +931,12 @@ def closest(
         **kwargs
     )
 
+    # If finding closest within the same set, df2 now has to be set
+    # to df1, so that the rest of the logic works.
+    if df2 is None:
+        df2 = df1
+
+
     # Make an output DataFrame.
     if not isinstance(out, collections.abc.Mapping):
         out = {col: col for col in out}
@@ -953,9 +970,7 @@ def closest(
         if "have_overlap" in out:
             out_df[out["overlap_start"]] = have_overlap
         if "overlap_start" in out:
-            out_df[out["overlap_start"]] = np.where(
-                have_overlap, overlap_start, -1
-            )
+            out_df[out["overlap_start"]] = np.where(have_overlap, overlap_start, -1)
         if "overlap_end" in out:
             out_df[out["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
 

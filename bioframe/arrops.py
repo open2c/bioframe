@@ -357,7 +357,7 @@ def _closest_intervals_nooverlap(
                 int1_ids,
                 ids2_startsorted[int2_sorted_ids],
                 #  starts2_sorted[int2_sorted_ids] - ends1[int1_ids],
-                #  arange_multi(1, downstream_closest_endidx - 
+                #  arange_multi(1, downstream_closest_endidx -
                 #                  downstream_closest_startidx + 1)
             ]
         ).T
@@ -368,8 +368,8 @@ def _closest_intervals_nooverlap(
 def closest_intervals(
     starts1,
     ends1,
-    starts2,
-    ends2,
+    starts2=None,
+    ends2=None,
     k=1,
     tie_arr=None,
     ignore_overlaps=False,
@@ -383,7 +383,8 @@ def closest_intervals(
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
-        will be ignored.
+        will be ignored. If start2 and ends2 are None, find closest intervals 
+        within the same set.
         
     k : int
         The number of neighbors to report.
@@ -392,7 +393,7 @@ def closest_intervals(
         Extra data describing intervals in set 2 to break ties when multiple intervals 
         are located at the same distance. Intervals with *lower* tie_arr values will 
         be given priority.
-        
+
     ignore_overlaps : bool
         If True, ignore set 2 intervals that overlap with set 1 intervals.
         
@@ -408,6 +409,15 @@ def closest_intervals(
     
     """
 
+    if ignore_overlaps:
+        overlap_ids = np.zeros((0, 2), dtype=int)
+    elif (starts2 is None) and (ends2 is None):
+        starts2, ends2 = starts1, ends1
+        overlap_ids = overlap_intervals(starts1, ends1, starts2, ends2)
+        overlap_ids = overlap_ids[overlap_ids[:, 0] != overlap_ids[:, 1]]
+    else:
+        overlap_ids = overlap_intervals(starts1, ends1, starts2, ends2)
+
     upstream_ids, downstream_ids = _closest_intervals_nooverlap(
         starts1,
         ends1,
@@ -422,11 +432,6 @@ def closest_intervals(
     # and non-overlapping set 2 intervals.
     upstream_dists = starts1[upstream_ids[:, 0]] - ends2[upstream_ids[:, 1]] + 1
     downstream_dists = starts2[downstream_ids[:, 1]] - ends1[downstream_ids[:, 0]] + 1
-
-    if ignore_overlaps:
-        overlap_ids = np.zeros((0, 2), dtype=int)
-    else:
-        overlap_ids = overlap_intervals(starts1, ends1, starts2, ends2)
 
     closest_ids = np.vstack([upstream_ids, downstream_ids, overlap_ids])
     closest_dists = np.concatenate(
