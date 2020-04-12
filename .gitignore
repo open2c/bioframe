@@ -24,3 +24,4 @@ ehthumbs.db
 Thumbs.db
 
 tmp/
+docs/notebooks/.ipynb_checkpoints
