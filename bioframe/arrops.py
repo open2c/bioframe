@@ -286,7 +286,8 @@ def _closest_intervals_nooverlap(
     for vec in [starts1, ends1, starts2, ends2]:
         if issubclass(type(vec), pd.core.series.Series):
             warnings.warn(
-                "One of the inputs is provided as pandas.Series and its index will be ignored.",
+                "One of the inputs is provided as pandas.Series "
+                "and its index will be ignored.",
                 SyntaxWarning,
             )
 
@@ -326,8 +327,8 @@ def _closest_intervals_nooverlap(
             [
                 int1_ids,
                 ids2_endsorted[int2_sorted_ids],
-                #             ends2_sorted[int2_sorted_ids] - starts1[int1_ids],
-                #             arange_multi(upstream_closest_startidx - upstream_closest_endidx, 0)
+                # ends2_sorted[int2_sorted_ids] - starts1[int1_ids],
+                # arange_multi(upstream_closest_startidx - upstream_closest_endidx, 0)
             ]
         ).T
 
@@ -355,8 +356,9 @@ def _closest_intervals_nooverlap(
             [
                 int1_ids,
                 ids2_startsorted[int2_sorted_ids],
-                #             starts2_sorted[int2_sorted_ids] - ends1[int1_ids],
-                #             arange_multi(1, downstream_closest_endidx - downstream_closest_startidx + 1)
+                #  starts2_sorted[int2_sorted_ids] - ends1[int1_ids],
+                #  arange_multi(1, downstream_closest_endidx - 
+                #                  downstream_closest_startidx + 1)
             ]
         ).T
 
