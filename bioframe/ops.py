@@ -545,7 +545,7 @@ def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
-        out : list of str or dict
+    out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
@@ -598,7 +598,7 @@ def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
             ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
             sk: cluster_starts_chunk,
             ek: cluster_ends_chunk,
-            "count": interval_counts,
+            "n_intervals": interval_counts,
         }
         clusters_chunk = pd.DataFrame(clusters_chunk)
 
@@ -692,7 +692,7 @@ def complement(df, chromsizes={}, **kwargs):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
+def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], **kwargs):
     """
     Quantify the coverage of intervals from set 1 by intervals from set2.
 
@@ -707,7 +707,7 @@ def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
     out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'coverage', 'count'].
+        Allowed values: ['input', 'index', 'coverage', 'n_overlaps'].
 
     cols1, cols2 : [str, str, str]
         The names of columns containing the chromosome, start and end of the
@@ -723,7 +723,7 @@ def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
     ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
     ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
 
-    df2_merged = merge(df2, **kwargs)
+    _, df2_merged = merge(df2, **kwargs)
 
     overlap_idxs = overlap(
         df1,
@@ -739,7 +739,7 @@ def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
     coverage_sparse_df = (
         overlap_idxs.groupby("index_1")
         .agg({"overlap": "sum", "index_2": "count"})
-        .rename(columns={"index_2": "count"})
+        .rename(columns={"index_2": "n_overlaps"})
     )
 
     # Make an output DataFrame.
@@ -758,10 +758,10 @@ def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
             .astype(df1[sk1].dtype)
         )
 
-    if "count" in out:
-        out_df[out["count"]] = (
+    if "n_overlaps" in out:
+        out_df[out["n_overlaps"]] = (
             pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
-            .add(coverage_sparse_df["count"], fill_value=0)
+            .add(coverage_sparse_df["n_overlaps"], fill_value=0)
             .astype(np.int64)
         )
 
