@@ -377,7 +377,7 @@ def frac_gene_coverage(bintable, mrna):
 
 def _overlap_intidxs(df1, df2, **kwargs):
     """
-    Find pairs of overlapping genomic intervals and return the integer 
+    Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
     
     Parameters
@@ -387,14 +387,14 @@ def _overlap_intidxs(df1, df2, **kwargs):
         
     cols1, cols2 : [str, str, str]
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default 
+        genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
     Returns
     -------
     overlap_ids : numpy.ndarray
-        The indices of the overlapping genomic intervals in the original 
-        dataframes. The 1st column contains the indices of intervals 
+        The indices of the overlapping genomic intervals in the original
+        dataframes. The 1st column contains the indices of intervals
         from the 1st set, the 2nd column - the indicies from the 2nd set.
     """
 
@@ -449,7 +449,7 @@ def overlap(
 ):
 
     """
-    Find pairs of overlapping genomic intervals and return a combined DataFrame.
+    Find pairs of overlapping genomic intervals.
     
     Parameters
     ----------
@@ -626,7 +626,7 @@ def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
 
 def complement(df, chromsizes={}, **kwargs):
     """
-    Find genomic regions that are not covered by at least one of the provided intervals. 
+    Find genomic regions that are not covered by any interval.
 
     Parameters
     ----------
@@ -690,7 +690,9 @@ def complement(df, chromsizes={}, **kwargs):
 
 def coverage(df1, df2, out=["input", "coverage", "count"], **kwargs):
     """
-    For every interval in set 1 find the number of overlapping intervals from set 2 and 
+    Quantify the coverage of intervals from set 1 by intervals from set2.
+
+    For every interval in set 1 find the number of overlapping intervals from set 2 and
     the number of base pairs covered by at least one genomic interval.
     
     Parameters
@@ -874,8 +876,7 @@ def closest(
 ):
 
     """
-    For every interval in set 1 find k closest genomic intervals in set2 and
-    return a combined DataFrame.
+    For every interval in set 1 find k closest genomic intervals in set2.
     
     Parameters
     ----------
