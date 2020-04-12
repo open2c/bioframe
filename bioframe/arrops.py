@@ -455,3 +455,47 @@ def closest_intervals(
     ]
 
     return closest_ids
+
+
+def coverage_intervals_rle(starts, ends, weights=None):
+    n = starts.shape[0]
+
+    if weights is None:
+        weights = np.ones(n, dtype=np.int64)
+
+    borders = np.r_[starts, ends]
+    coverage_change = np.r_[weights, -1 * weights]
+
+    borders_order = np.argsort(borders)
+    borders = borders[borders_order]
+    coverage = np.cumsum(coverage_change[borders_order])
+
+    return borders, coverage
+
+
+def stack_intervals(starts, ends):
+    n = starts.shape[0]
+
+    borders = np.r_[starts, ends]
+    lens = np.r_[ends - starts, ends - starts]
+    border_types = np.r_[np.ones_like(starts), -1 * np.ones_like(ends)]
+    border_ids = np.r_[np.arange(1, n + 1), -1 * np.arange(1, n + 1)]
+
+    border_order = np.lexsort([-lens, border_types, borders])
+
+    borders, border_ids = borders[border_order], border_ids[border_order]
+
+    occupancy = np.zeros(2, dtype=bool)
+    levels = -1 * np.ones(n, dtype=np.int64)
+    for border, border_id in zip(borders, border_ids):
+        interval_id = np.abs(border_id) - 1
+        if border_id > 0:
+            if occupancy.sum() == occupancy.shape[0]:
+                occupancy = np.r_[occupancy, np.zeros_like(occupancy)]
+            new_level = np.where(occupancy == False)[0][0]
+            levels[interval_id] = new_level
+            occupancy[new_level] = True
+        if border_id < 0:
+            occupancy[levels[interval_id]] = False
+
+    return levels
