@@ -164,6 +164,40 @@ def overlap_intervals(starts1, ends1, starts2, ends2):
     return overlap_ids
 
 
+def overlap_intervals_outer(starts1, ends1, starts2, ends2):
+    """
+    Take two sets of intervals and return the indices of pairs of overlapping intervals,
+    as well as the indices of the intervals that do not overlap any other interval.
+    
+    Parameters
+    ----------
+    starts1, ends1, starts2, ends2 : numpy.ndarray
+        Interval coordinates. Warning: if provided as pandas.Series, indices
+        will be ignored.
+        
+    Returns
+    -------
+    overlap_ids : numpy.ndarray
+        An Nx2 array containing the indices of pairs of overlapping intervals.
+        The 1st column contains ids from the 1st set, the 2nd column has ids 
+        from the 2nd set.
+    
+    no_overlap_ids1, no_overlap_ids2 : numpy.ndarray
+        Two 1D arrays containing the indices of intervals in sets 1 and 2
+        respectively that do not overlap with any interval in the other set.
+
+    """
+
+    ovids = overlap_intervals(starts1, ends1, starts2, ends2)
+    no_overlap_ids1 = np.where(
+        np.bincount(ovids[:, 0], minlength=starts1.shape[0]) == 0
+    )[0]
+    no_overlap_ids2 = np.where(
+        np.bincount(ovids[:, 1], minlength=starts2.shape[0]) == 0
+    )[0]
+    return ovids, no_overlap_ids1, no_overlap_ids2
+
+
 def merge_intervals(starts, ends, min_dist=0):
     """
     Merge overlapping intervals.
