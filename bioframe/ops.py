@@ -804,7 +804,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    df2_merged = merge(df2, cols1=cols1, cols2=cols2)
+    df2_merged = merge(df2, cols=cols2)
 
     overlap_idxs = overlap(
         df1,
