@@ -525,21 +525,23 @@ def overlap(
     return out_df
 
 
-def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
+def cluster(df, min_dist=0, out=["input", "cluster"],
+            return_cluster_df=False,
+             **kwargs):
     """
-    Merge overlapping intervals.
+    Cluster overlapping intervals.
 
     Parameters
     ----------
     df : pandas.DataFrame
     
     min_dist : float or None
-        If provided, merge intervals separated by this distance or less. 
-        If None, do not merge non-overlapping intervals. Using 
+        If provided, cluster intervals separated by this distance or less. 
+        If None, do not cluster non-overlapping intervals. Using 
         min_dist=0 and min_dist=None will bring different results. 
         bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
         do not overlap, but are separated by a distance of 0. Adjacent intervals 
-        are not merged when min_dist=None, but are merged when min_dist=0.
+        are not clustered when min_dist=None, but are clustered when min_dist=0.
     
     cols : [str, str, str]
         The names of columns containing the chromosome, start and end of the
@@ -550,12 +552,16 @@ def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
         
+    return_cluster_df : bool
+        If True, return
+
     Returns
     -------
-    df : numpy.ndarray
-    
-    clusters : pandas.DataFrame
+    df_clustered : pd.DataFrame
+
+    df_clusters : pd.DataFrame, optional
         A pandas dataframe with coordinates of merged clusters.
+
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
@@ -625,10 +631,78 @@ def merge(df, min_dist=0, out=["input", "cluster"], **kwargs):
 
     out_df.set_index(df_index)
 
-    return out_df, clusters
+    if return_cluster_df:
+        return out_df, clusters
+    else:
+        return out_df
 
 
-def complement(df, chromsizes={}, **kwargs):
+def merge(df, min_dist=0, **kwargs):
+    """
+    Merge overlapping intervals.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    
+    min_dist : float or None
+        If provided, merge intervals separated by this distance or less. 
+        If None, do not merge non-overlapping intervals. Using 
+        min_dist=0 and min_dist=None will bring different results. 
+        bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
+        do not overlap, but are separated by a distance of 0. Adjacent intervals 
+        are not merged when min_dist=None, but are merged when min_dist=0.
+    
+    cols : [str, str, str]
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+            
+    Returns
+    -------
+    df_merged : pandas.DataFrame
+        A pandas dataframe with coordinates of merged clusters.
+    """
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+
+    # Find overlapping intervals per chromosome.
+    df_gb = df.groupby(ck)
+
+    clusters = []
+  
+    for chrom, df_chunk in df_gb:
+        if df_chunk.empty:
+            continue
+
+        (
+            cluster_ids_chunk,
+            cluster_starts_chunk,
+            cluster_ends_chunk,
+        ) = arrops.merge_intervals(
+            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist
+        )
+
+        interval_counts = np.bincount(cluster_ids_chunk)
+        n_clusters = cluster_starts_chunk.shape[0]
+
+        ## Storing chromosome names causes a 2x slowdown. :(
+        clusters_chunk = {
+            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
+            sk: cluster_starts_chunk,
+            ek: cluster_ends_chunk,
+            "n_intervals": interval_counts,
+        }
+        clusters_chunk = pd.DataFrame(clusters_chunk)
+
+        clusters.append(clusters_chunk)
+
+    clusters = pd.concat(clusters).reset_index(drop=True)
+
+    return clusters
+
+
+def complement(df, chromsizes=None, **kwargs):
     """
     Find genomic regions that are not covered by any interval.
 
@@ -636,20 +710,22 @@ def complement(df, chromsizes={}, **kwargs):
     ----------
     df : pandas.DataFrame
     
+    chromsizes : dict
+
     cols : [str, str, str]
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
     Returns
     -------
-    df : numpy.ndarray
+    df_complement : numpy.ndarray
     
-    clusters : pandas.DataFrame
-        A pandas dataframe with coordinates of merged clusters.
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+
+    chromsizes = {} if chromsizes is None else chromsizes
 
     # Find overlapping intervals per chromosome.
     df_gb = df.groupby(ck)
@@ -723,7 +799,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], **kwargs):
     ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
     ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
 
-    _, df2_merged = merge(df2, **kwargs)
+    df2_merged = merge(df2, **kwargs)
 
     overlap_idxs = overlap(
         df1,
