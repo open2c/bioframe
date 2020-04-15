@@ -525,9 +525,9 @@ def overlap(
     return out_df
 
 
-def cluster(df, min_dist=0, out=["input", "cluster"],
-            return_cluster_df=False,
-             **kwargs):
+def cluster(
+    df, min_dist=0, out=["input", "cluster"], return_cluster_df=False, **kwargs
+):
     """
     Cluster overlapping intervals.
 
@@ -670,7 +670,7 @@ def merge(df, min_dist=0, **kwargs):
     df_gb = df.groupby(ck)
 
     clusters = []
-  
+
     for chrom, df_chunk in df_gb:
         if df_chunk.empty:
             continue
@@ -1011,7 +1011,6 @@ def closest(
     # to df1, so that the rest of the logic works.
     if df2 is None:
         df2 = df1
-
 
     # Make an output DataFrame.
     if not isinstance(out, collections.abc.Mapping):
