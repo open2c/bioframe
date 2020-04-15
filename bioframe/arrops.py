@@ -186,7 +186,8 @@ def merge_intervals(starts, ends, min_dist=0):
     -------
     cluster_ids : numpy.ndarray
         The indices of interval clusters that each interval belongs to.
-    cluster_spans : numpy.ndarray
+    cluster_starts : numpy.ndarray
+    cluster_ends : numpy.ndarray
         The spans of the merged intervals.
     
     Notes
@@ -226,7 +227,7 @@ def merge_intervals(starts, ends, min_dist=0):
     cluster_starts = starts[:][cluster_borders[:-1]]
     cluster_ends = ends[:][cluster_borders[1:]]
 
-    return cluster_ids_sorted, cluster_starts, cluster_ends
+    return cluster_ids, cluster_starts, cluster_ends
 
 
 def complement_intervals(
