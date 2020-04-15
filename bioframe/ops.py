@@ -415,29 +415,31 @@ def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
     df2 = df2.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
-    df1_gb = df1.groupby(ck1)
-    df2_gb = df2.groupby(ck2)
-    overlap_intidxs = []
-    for chrom in df1_gb.groups:
-        if chrom not in df2_gb.groups:
-            continue
+    df1_groups = df1.groupby(ck1).groups
+    df2_groups = df2.groupby(ck2).groups
 
-        df1_sub = df1_gb.get_group(chrom)
-        df2_sub = df2_gb.get_group(chrom)
+    overlap_intidxs = []
+    for group_keys, df1_group_idxs in df1_groups.items():
+        if group_keys not in df2_groups:
+            continue
+        df2_group_idxs = df2_groups[group_keys]
+
+        df1_group = df1.loc[df1_group_idxs]
+        df2_group = df2.loc[df2_group_idxs]
 
         overlap_idxs_loc = arrops.overlap_intervals(
-            df1_sub[sk1].values,
-            df1_sub[ek1].values,
-            df2_sub[sk2].values,
-            df2_sub[ek2].values,
+            df1_group[sk1].values,
+            df1_group[ek1].values,
+            df2_group[sk2].values,
+            df2_group[ek2].values,
         )
 
         # Convert local per-chromosome indices into the
         # indices of the original table.
         overlap_intidxs_sub = np.vstack(
             [
-                df1_gb.groups[chrom][overlap_idxs_loc[:, 0]].values,
-                df2_gb.groups[chrom][overlap_idxs_loc[:, 1]].values,
+                df1_group_idxs[overlap_idxs_loc[:, 0]].values,
+                df2_group_idxs[overlap_idxs_loc[:, 1]].values,
             ]
         ).T
 
@@ -577,43 +579,45 @@ def cluster(
     df = df.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
-    df_gb = df.groupby(ck)
+    df_groups = df.groupby(ck).groups
 
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
     max_cluster_id = -1
 
-    for chrom, df_chunk in df_gb:
-        if df_chunk.empty:
+    for group_keys, df_group_idxs in df_groups.items():
+        if df_group_idxs.empty:
             continue
+        df_group = df.loc[df_group_idxs]
 
         (
-            cluster_ids_chunk,
-            cluster_starts_chunk,
-            cluster_ends_chunk,
+            cluster_ids_group,
+            cluster_starts_group,
+            cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist
+            df_group[sk].values, df_group[ek].values, min_dist=min_dist
         )
 
-        interval_counts = np.bincount(cluster_ids_chunk)
+        interval_counts = np.bincount(cluster_ids_group)
 
-        cluster_ids_chunk += max_cluster_id + 1
+        cluster_ids_group += max_cluster_id + 1
 
-        n_clusters = cluster_starts_chunk.shape[0]
+        n_clusters = cluster_starts_group.shape[0]
         max_cluster_id += n_clusters
 
-        cluster_ids[df_gb.groups[chrom].values] = cluster_ids_chunk
+        cluster_ids[df_group_idxs.values] = cluster_ids_group
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        clusters_chunk = {
+        chrom = group_keys
+        clusters_group = {
             ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_chunk,
-            ek: cluster_ends_chunk,
+            sk: cluster_starts_group,
+            ek: cluster_ends_group,
             "n_intervals": interval_counts,
         }
-        clusters_chunk = pd.DataFrame(clusters_chunk)
+        clusters_group = pd.DataFrame(clusters_group)
 
-        clusters.append(clusters_chunk)
+        clusters.append(clusters_group)
 
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
@@ -672,35 +676,37 @@ def merge(df, min_dist=0, cols=None):
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Find overlapping intervals per chromosome.
-    df_gb = df.groupby(ck)
+    df_groups = df.groupby(ck).groups
 
     clusters = []
 
-    for chrom, df_chunk in df_gb:
-        if df_chunk.empty:
+    for group_keys, df_group_idxs in df_groups.items():
+        if df_group_idxs.empty:
             continue
+        df_group = df.loc[df_group_idxs]
 
         (
-            cluster_ids_chunk,
-            cluster_starts_chunk,
-            cluster_ends_chunk,
+            cluster_ids_group,
+            cluster_starts_group,
+            cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_chunk[sk].values, df_chunk[ek].values, min_dist=min_dist
+            df_group[sk].values, df_group[ek].values, min_dist=min_dist
         )
 
-        interval_counts = np.bincount(cluster_ids_chunk)
-        n_clusters = cluster_starts_chunk.shape[0]
+        interval_counts = np.bincount(cluster_ids_group)
+        n_clusters = cluster_starts_group.shape[0]
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        clusters_chunk = {
+        chrom = group_keys
+        clusters_group = {
             ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_chunk,
-            ek: cluster_ends_chunk,
+            sk: cluster_starts_group,
+            ek: cluster_ends_group,
             "n_intervals": interval_counts,
         }
-        clusters_chunk = pd.DataFrame(clusters_chunk)
+        clusters_group = pd.DataFrame(clusters_group)
 
-        clusters.append(clusters_chunk)
+        clusters.append(clusters_group)
 
     clusters = pd.concat(clusters).reset_index(drop=True)
 
@@ -733,40 +739,43 @@ def complement(df, chromsizes=None, cols=None):
     chromsizes = {} if chromsizes is None else chromsizes
 
     # Find overlapping intervals per chromosome.
-    df_gb = df.groupby(ck)
+    df_groups = df.groupby(ck).groups
 
     complements = []
 
-    for chrom, df_chunk in df_gb:
-        if df_chunk.empty:
+    for group_keys, df_group_idxs in df_groups.items():
+        if df_group_idxs.empty:
             continue
+        df_group = df.loc[df_group_idxs]
 
+        chrom = group_keys
         if chrom in chromsizes:
             chromsize = chromsizes[chrom]
             (
-                complement_starts_chunk,
-                complement_ends_chunk,
+                complement_starts_group,
+                complement_ends_group,
             ) = arrops.complement_intervals(
-                df_chunk[sk].values, df_chunk[ek].values, bounds=(0, chromsize),
+                df_group[sk].values, df_group[ek].values, bounds=(0, chromsize),
             )
         else:
             (
-                complement_starts_chunk,
-                complement_ends_chunk,
-            ) = arrops.complement_intervals(df_chunk[sk].values, df_chunk[ek].values)
+                complement_starts_group,
+                complement_ends_group,
+            ) = arrops.complement_intervals(df_group[sk].values, df_group[ek].values)
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        complement_chunk = {
+        chrom = group_keys
+        complement_group = {
             ck: pd.Series(
-                data=np.full(complement_starts_chunk.shape[0], chrom),
+                data=np.full(complement_starts_group.shape[0], chrom),
                 dtype=df[ck].dtype,
             ),
-            sk: complement_starts_chunk,
-            ek: complement_ends_chunk,
+            sk: complement_starts_group,
+            ek: complement_ends_group,
         }
-        complement_chunk = pd.DataFrame(complement_chunk)
+        complement_group = pd.DataFrame(complement_group)
 
-        complements.append(complement_chunk)
+        complements.append(complement_group)
 
     complements = pd.concat(complements).reset_index(drop=True)
 
@@ -810,7 +819,8 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
         df1,
         df2_merged,
         out=["index", "overlap_start", "overlap_end"],
-        cols=[ck2, sk2, ek2],
+        cols1=cols1,
+        cols2=cols2,
     )
 
     overlap_idxs["overlap"] = (
@@ -905,32 +915,34 @@ def _closest_intidxs(
     df2 = df2.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
-    df1_gb = df1.groupby(ck1)
-    df2_gb = df2.groupby(ck2)
+    df1_groups = df1.groupby(ck1).groups
+    df2_groups = df2.groupby(ck2).groups
     closest_intidxs = []
-    for chrom in df1_gb.groups:
-        if chrom not in df2_gb.groups:
+    for group_keys, df1_group_idxs in df1_groups.items():
+        if group_keys not in df2_groups:
             continue
 
-        df1_chunk = df1_gb.get_group(chrom)
-        df2_chunk = df2_gb.get_group(chrom)
+        df2_group_idxs = df2_groups[group_keys]
+
+        df1_group = df1.loc[df1_group_idxs]
+        df2_group = df2.loc[df2_group_idxs]
 
         tie_arr = None
         if isinstance(tie_breaking_col, str):
-            tie_arr = df2_chunk[tie_breaking_col].values
+            tie_arr = df2_group[tie_breaking_col].values
         elif callable(tie_breaking_col):
-            tie_arr = tie_breaking_col(df2_chunk).values
+            tie_arr = tie_breaking_col(df2_group).values
         else:
             ValueError(
                 "tie_breaking_col must be either a column label or "
                 "f(DataFrame) -> Series"
             )
 
-        closest_idxs_chunk = arrops.closest_intervals(
-            df1_chunk[sk1].values,
-            df1_chunk[ek1].values,
-            None if self_closest else df2_chunk[sk2].values,
-            None if self_closest else df2_chunk[ek2].values,
+        closest_idxs_group = arrops.closest_intervals(
+            df1_group[sk1].values,
+            df1_group[ek1].values,
+            None if self_closest else df2_group[sk2].values,
+            None if self_closest else df2_group[ek2].values,
             k=k,
             tie_arr=tie_arr,
             ignore_overlaps=ignore_overlaps,
@@ -940,14 +952,14 @@ def _closest_intidxs(
 
         # Convert local per-chromosome indices into the
         # indices of the original table.
-        closest_idxs_chunk = np.vstack(
+        closest_idxs_group = np.vstack(
             [
-                df1_gb.groups[chrom][closest_idxs_chunk[:, 0]].values,
-                df2_gb.groups[chrom][closest_idxs_chunk[:, 1]].values,
+                df1_group_idxs.values[closest_idxs_group[:, 0]],
+                df2_group_idxs.values[closest_idxs_group[:, 1]],
             ]
         ).T
 
-        closest_intidxs.append(closest_idxs_chunk)
+        closest_intidxs.append(closest_idxs_group)
 
     closest_intidxs = np.vstack(closest_intidxs)
 
