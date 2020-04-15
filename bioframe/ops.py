@@ -10,6 +10,10 @@ from . import arrops
 from ._region import parse_region
 
 
+def _get_default_colnames():
+    return "chrom", "start", "end"
+
+
 def bedbisect(bedf, region):
     """Return the span of a block of rows corresponding to
     the genomic region.
@@ -379,7 +383,7 @@ def frac_gene_coverage(bintable, mrna):
     return bintable
 
 
-def _overlap_intidxs(df1, df2, **kwargs):
+def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
     """
     Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
@@ -389,7 +393,7 @@ def _overlap_intidxs(df1, df2, **kwargs):
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
         
-    cols1, cols2 : [str, str, str]
+    cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
@@ -403,8 +407,8 @@ def _overlap_intidxs(df1, df2, **kwargs):
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
-    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
@@ -449,7 +453,8 @@ def overlap(
     df2,
     out=["input", "overlap_start", "overlap_end"],
     suffixes=["_1", "_2"],
-    **kwargs
+    cols1=None,
+    cols2=None,
 ):
 
     """
@@ -465,10 +470,10 @@ def overlap(
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'index', 'overlap_start', 'overlap_end'].
 
-    suffixes : [str, str]
+    suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
     
-    cols1, cols2 : [str, str, str]
+    cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default 
         values are 'chrom', 'start', 'end'.
@@ -480,10 +485,10 @@ def overlap(
     
     """
 
-    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
-    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    overlap_df_idxs = _overlap_intidxs(df1, df2, **kwargs)
+    overlap_df_idxs = _overlap_intidxs(df1, df2, cols1=cols1, cols2=cols2)
 
     if not isinstance(out, collections.abc.Mapping):
         out = {col: col for col in out}
@@ -526,7 +531,7 @@ def overlap(
 
 
 def cluster(
-    df, min_dist=0, out=["input", "cluster"], return_cluster_df=False, **kwargs
+    df, min_dist=0, out=["input", "cluster"], return_cluster_df=False, cols=None
 ):
     """
     Cluster overlapping intervals.
@@ -543,7 +548,7 @@ def cluster(
         do not overlap, but are separated by a distance of 0. Adjacent intervals 
         are not clustered when min_dist=None, but are clustered when min_dist=0.
     
-    cols : [str, str, str]
+    cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
@@ -565,7 +570,7 @@ def cluster(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Switch to integer indices.
     df_index = df.index
@@ -637,7 +642,7 @@ def cluster(
         return out_df
 
 
-def merge(df, min_dist=0, **kwargs):
+def merge(df, min_dist=0, cols=None):
     """
     Merge overlapping intervals.
 
@@ -653,7 +658,7 @@ def merge(df, min_dist=0, **kwargs):
         do not overlap, but are separated by a distance of 0. Adjacent intervals 
         are not merged when min_dist=None, but are merged when min_dist=0.
     
-    cols : [str, str, str]
+    cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
             
@@ -664,7 +669,7 @@ def merge(df, min_dist=0, **kwargs):
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Find overlapping intervals per chromosome.
     df_gb = df.groupby(ck)
@@ -702,7 +707,7 @@ def merge(df, min_dist=0, **kwargs):
     return clusters
 
 
-def complement(df, chromsizes=None, **kwargs):
+def complement(df, chromsizes=None, cols=None):
     """
     Find genomic regions that are not covered by any interval.
 
@@ -712,7 +717,7 @@ def complement(df, chromsizes=None, **kwargs):
     
     chromsizes : dict
 
-    cols : [str, str, str]
+    cols : (str, str, str)
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
@@ -723,7 +728,7 @@ def complement(df, chromsizes=None, **kwargs):
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = kwargs.get("cols", ["chrom", "start", "end"])
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     chromsizes = {} if chromsizes is None else chromsizes
 
@@ -768,7 +773,7 @@ def complement(df, chromsizes=None, **kwargs):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], **kwargs):
+def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from set 1 by intervals from set2.
 
@@ -785,7 +790,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], **kwargs):
         Can be provided as a dict of {output:column_name} 
         Allowed values: ['input', 'index', 'coverage', 'n_overlaps'].
 
-    cols1, cols2 : [str, str, str]
+    cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default 
         values are 'chrom', 'start', 'end'.
@@ -796,10 +801,10 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], **kwargs):
     
     """
 
-    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
-    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    df2_merged = merge(df2, **kwargs)
+    df2_merged = merge(df2, cols1=cols1, cols2=cols2)
 
     overlap_idxs = overlap(
         df1,
@@ -857,7 +862,8 @@ def _closest_intidxs(
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
-    **kwargs
+    cols1=None,
+    cols2=None,
 ):
     """
     For every interval in set 1 find k closest genomic intervals in set2 and
@@ -872,7 +878,7 @@ def _closest_intidxs(
     k_closest : int
         The number of closest intervals to report.
         
-    cols1, cols2 : [str, str, str]
+    cols1, cols2 : (str, str, str)
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default 
         values are 'chrom', 'start', 'end'.
@@ -886,8 +892,8 @@ def _closest_intidxs(
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
-    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     self_closest = False
     if (df2 is None) or (df2 is df1):
@@ -958,7 +964,8 @@ def closest(
     tie_breaking_col=None,
     out=["input", "distance"],
     suffixes=["_1", "_2"],
-    **kwargs
+    cols1=None,
+    cols2=None,
 ):
 
     """
@@ -979,10 +986,10 @@ def closest(
         Allowed values: ['input', 'index', 'distance', 'have_overlap', 
         'overlap_start', 'overlap_end'].
 
-    suffixes : [str, str]
+    suffixes : (str, str)
         The suffixes for the columns of the two sets.
     
-    cols1, cols2 : [str, str, str]
+    cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
@@ -993,8 +1000,8 @@ def closest(
     
     """
 
-    ck1, sk1, ek1 = kwargs.get("cols1", ["chrom", "start", "end"])
-    ck2, sk2, ek2 = kwargs.get("cols2", ["chrom", "start", "end"])
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     closest_df_idxs = _closest_intidxs(
         df1,
@@ -1004,7 +1011,8 @@ def closest(
         ignore_upstream=ignore_upstream,
         ignore_downstream=ignore_downstream,
         tie_breaking_col=tie_breaking_col,
-        **kwargs
+        cols1=cols1,
+        cols2=cols2,
     )
 
     # If finding closest within the same set, df2 now has to be set
