@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 from .region import parse_region
+from ._process import tsv
+from .tools import bedtools
 
 
 def atoi(s):
