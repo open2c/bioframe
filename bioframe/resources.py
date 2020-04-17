@@ -9,6 +9,9 @@ import requests
 import base64
 import glob
 
+import pkg_resources
+
+from .schemas import SCHEMAS
 from .formats import (
     read_table,
     read_chromsizes,
@@ -18,7 +21,24 @@ from .formats import (
 )
 
 
-def check_connectivity(reference='http://www.google.com'):
+LOCAL_CHROMSIZES = {
+    path[:-12]: lambda : read_chromsizes(
+        pkg_resources.resource_filename(__name__, 'data/'+path))
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.chrom.sizes')
+}
+
+
+LOCAL_CENTROMERES = {
+    path[:-12]: lambda : read_table(
+        pkg_resources.resource_filename(__name__, 'data/'+path),
+        SCHEMAS['bed3'])
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.centromeres')
+}
+
+
+def _check_connectivity(reference='http://www.google.com'):
     try:
         urllib.request.urlopen(reference, timeout=1)
         return True
@@ -26,22 +46,20 @@ def check_connectivity(reference='http://www.google.com'):
         return False
 
 
-def fetch_chromsizes(db, **kwargs):
+def fetch_ucsc_chromsizes(db, **kwargs):
     """
-    Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
-    chromosome label.
+    Download chromosome sizes from UCSC as a :class:`pandas.Series`, indexed
+    by chromosome label.
 
     Parameters
     ----------
     db : str
         The name of a UCSC genome assembly.
-    name_patterns : sequence, optional
-        Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-        Default is (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$').
-    all_names : bool, optional
-        Whether to return all contigs listed in the file. Default is
-        ``False``.
+
+    Other Parameters
+    ----------------
+    **kwargs :
+        Passed to :func:`read_chromsizes`.
 
     """
     return read_chromsizes(
@@ -55,13 +73,13 @@ def fetch_ucsc_mrna(db, **kwargs):
         **kwargs)
 
 
-def fetch_gaps(db, **kwargs):
+def fetch_ucsc_gaps(db, **kwargs):
     return read_gapfile(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db),
         **kwargs)
 
 
-def fetch_cytoband(db, ideo=True, **kwargs):
+def fetch_ucsc_cytoband(db, ideo=True, **kwargs):
     if ideo:
         return read_table(
             'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBandIdeo.txt.gz'.format(db),
@@ -74,14 +92,24 @@ def fetch_cytoband(db, ideo=True, **kwargs):
             **kwargs)
 
 
-def fetch_centxt(db,**kwargs):
+def fetch_ucsc_centromeres(db,**kwargs):
     return read_table(
         'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/centromeres.txt.gz'.format(db),
-        schema='centxt',
+        schema='centromeres',
         **kwargs)
 
 
-def fetch_centromeres(db, merge=True, verbose=False):
+def fetch_chromsizes(db, provider=None, **kwargs):
+    if provider == 'local' or db in LOCAL_CHROMSIZES:
+        pass
+
+    if provider == 'ucsc' or provider is None:
+        return fetch_ucsc_chromsizes(db, **kwargs)
+    else:
+        raise ValueError("Unknown provider '{}'".format(provider))
+
+
+def fetch_centromeres(db, provider=None, merge=True, verbose=False):
 
     # the priority goes as
     # - Local
@@ -93,17 +121,17 @@ def fetch_centromeres(db, merge=True, verbose=False):
     # if db in CENTROMERES:
     #     return CENTROMERES[db]
 
-    if not check_connectivity('http://www.google.com'):
+    if not _check_connectivity('http://www.google.com'):
         raise ConnectionError('No internet connection!')
 
-    if not check_connectivity('http://hgdownload.cse.ucsc.edu'):
+    if not _check_connectivity('http://hgdownload.cse.ucsc.edu'):
         raise ConnectionError('No connection to the genome database at hgdownload.cse.ucsc.edu!')
 
     fetchers = [
-        ('centxt', fetch_centxt),
-        ('cytoband', fetch_cytoband),
-        ('cytoband', partial(fetch_cytoband, ideo=True)),
-        ('gap', fetch_gaps)
+        ('centromeres', fetch_ucsc_centromeres),
+        ('cytoband', fetch_ucsc_cytoband),
+        ('cytoband', partial(fetch_ucsc_cytoband, ideo=True)),
+        ('gap', fetch_ucsc_gaps)
     ]
 
     for schema, fetcher in fetchers:
