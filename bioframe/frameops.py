@@ -42,7 +42,7 @@ def _find_block_span(arr, val):
 
 
 def bedbisect(bedf, region):
-    """Return the span of a block of rows corresponding to
+    """Returns the span of a block of rows corresponding to
     the genomic region.
     Rows must be sorted by `start` and `end`;
     `chrom` must be grouped, but does not have to be sorted.
@@ -55,13 +55,13 @@ def bedbisect(bedf, region):
     lo += bedf['end'].values[lo:hi].searchsorted(start, side='right')
     if end is not None:
         hi = lo + bedf['start'].values[lo:hi].searchsorted(end, side='left')
-    else:
-        hi = None
+#    else:
+#        hi = None This only works when bedf is a groupby object.
     return lo, hi
 
 
 def bedslice(bedf, region):
-    """eeturn a block of rows corresponding to the genomic region.
+    """Returns a block of rows corresponding to the genomic region.
     Rows must be sorted by `start` and `end`;
     `chrom` must be grouped, but does not have to be sorted.
     """
