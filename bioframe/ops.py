@@ -109,31 +109,36 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     limits_region_col = ck if limits_region_col is None else limits_region_col
 
-    lower_limits = {}
-    upper_limits = {}
-    for k, v in dict(limits).items():
-        if isinstance(v, (tuple, list, np.ndarray)):
-            lower_limits[k] = v[0]
-            upper_limits[k] = v[1]
-        elif np.isscalar(v):
-            upper_limits[k] = v
-        else:
-            raise ValueError(k'Unknown limit type: {type(v)}')
+    if limits:
+        lower_limits = {}
+        upper_limits = {}
+        for k, v in dict(limits).items():
+            if isinstance(v, (tuple, list, np.ndarray)):
+                lower_limits[k] = v[0]
+                upper_limits[k] = v[1]
+            elif np.isscalar(v):
+                upper_limits[k] = v
+                lower_limits[k] = 0
+            else:
+                raise ValueError('Unknown limit type: {type(v)}')
 
     if side == "both" or side == "left":
-        df[sk] = np.maximum(
-            df[limits_region_col].apply(lower_limits.__getitem__, 0),
-            df[sk].values - pad_bp
-        )
+        if limits:
+            df[sk] = np.maximum(
+                df[limits_region_col].apply(lower_limits.__getitem__, 0),
+                df[sk].values - pad
+            )
+        else:
+            df[sk] = df[sk].values-pad
 
     if side == "both" or side == "right":
         if limits:
             df[ek] = np.minimum(
                 df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
-                df[ek] + pad_bp,
+                df[ek] + pad,
             )
         else:
-            df[ek] = df[ek] + pad_bp
+            df[ek] = df[ek] + pad
 
     return df
 
