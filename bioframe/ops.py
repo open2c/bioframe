@@ -408,22 +408,22 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
         elif np.isscalar(v):
             upper_limits[k] = v
         else:
-            raise ValueError(k'Unknown limit type: {type(v)}')
+            raise ValueError(f'Unknown limit type: {type(v)}')
 
     if side == "both" or side == "left":
         df[sk] = np.maximum(
             df[limits_region_col].apply(lower_limits.__getitem__, 0),
-            df[sk].values - pad_bp
+            df[sk].values - pad
         )
 
     if side == "both" or side == "right":
         if limits:
             df[ek] = np.minimum(
                 df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
-                df[ek] + pad_bp,
+                df[ek] + pad,
             )
         else:
-            df[ek] = df[ek] + pad_bp
+            df[ek] = df[ek] + pad
 
     return df
 
