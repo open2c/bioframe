@@ -73,71 +73,6 @@ def bg2slice(bg2, region1, region2):
     return out
 
 
-def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
-    """
-    Expand each interval by a given amount.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-
-    pad : int
-        The amount by which the intervals are expanded *on each side*.
-
-    limits : {str: int} or {str: (int, int)}
-        The limits of interval expansion. If a single number X if provided,
-        the expanded intervals are trimmed to fit into (0, X); if a tuple 
-        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
-
-    side : str
-        Which side to expand, possible values are "left", "right" and "both".
-
-    region_col : str
-        The column to select the expansion limits for each interval.
-        If None, then use the chromosome column.
-
-    cols : (str, str, str) or None
-        The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
-
-    Returns
-    -------
-    df : pandas.DataFrame
-    """
-
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    limits_region_col = ck if limits_region_col is None else limits_region_col
-
-    lower_limits = {}
-    upper_limits = {}
-    for k, v in dict(limits).items():
-        if isinstance(v, (tuple, list, np.ndarray)):
-            lower_limits[k] = v[0]
-            upper_limits[k] = v[1]
-        elif np.isscalar(v):
-            upper_limits[k] = v
-        else:
-            raise ValueError(k'Unknown limit type: {type(v)}')
-
-    if side == "both" or side == "left":
-        df[sk] = np.maximum(
-            df[limits_region_col].apply(lower_limits.__getitem__, 0),
-            df[sk].values - pad_bp
-        )
-
-    if side == "both" or side == "right":
-        if limits:
-            df[ek] = np.minimum(
-                df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
-                df[ek] + pad_bp,
-            )
-        else:
-            df[ek] = df[ek] + pad_bp
-
-    return df
-
-
 def bychrom(func, *tables, **kwargs):
     """
     Split one or more bed-like dataframes by chromosome.
@@ -426,6 +361,71 @@ def frac_gene_coverage(bintable, mrna):
     )
 
     return bintable
+
+
+def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
+    """
+    Expand each interval by a given amount.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    pad : int
+        The amount by which the intervals are expanded *on each side*.
+
+    limits : {str: int} or {str: (int, int)}
+        The limits of interval expansion. If a single number X if provided,
+        the expanded intervals are trimmed to fit into (0, X); if a tuple 
+        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
+
+    side : str
+        Which side to expand, possible values are "left", "right" and "both".
+
+    region_col : str
+        The column to select the expansion limits for each interval.
+        If None, then use the chromosome column.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+    """
+
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    limits_region_col = ck if limits_region_col is None else limits_region_col
+
+    lower_limits = {}
+    upper_limits = {}
+    for k, v in dict(limits).items():
+        if isinstance(v, (tuple, list, np.ndarray)):
+            lower_limits[k] = v[0]
+            upper_limits[k] = v[1]
+        elif np.isscalar(v):
+            upper_limits[k] = v
+        else:
+            raise ValueError(k'Unknown limit type: {type(v)}')
+
+    if side == "both" or side == "left":
+        df[sk] = np.maximum(
+            df[limits_region_col].apply(lower_limits.__getitem__, 0),
+            df[sk].values - pad_bp
+        )
+
+    if side == "both" or side == "right":
+        if limits:
+            df[ek] = np.minimum(
+                df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
+                df[ek] + pad_bp,
+            )
+        else:
+            df[ek] = df[ek] + pad_bp
+
+    return df
 
 
 def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
