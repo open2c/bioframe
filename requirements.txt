@@ -1,0 +1,7 @@
+six
+numpy>=1.9
+pandas>=0.17
+pysam
+pyfaidx
+pypairix
+requests
