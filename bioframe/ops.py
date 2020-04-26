@@ -432,7 +432,6 @@ def frac_gene_coverage(bintable, mrna):
 
     return bintable
 
-
 def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
     """
     Find pairs of overlapping genomic intervals and return the integer
