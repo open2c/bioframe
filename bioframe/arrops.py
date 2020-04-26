@@ -219,7 +219,7 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False):
     return overlap_ids
 
 
-def overlap_intervals_outer(starts1, ends1, starts2, ends2):
+def overlap_intervals_outer(starts1, ends1, starts2, ends2, closed=False):
     """
     Take two sets of intervals and return the indices of pairs of overlapping intervals,
     as well as the indices of the intervals that do not overlap any other interval.
@@ -229,6 +229,9 @@ def overlap_intervals_outer(starts1, ends1, starts2, ends2):
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
+
+    closed : bool
+        If True, then treat intervals as closed and report single-point overlaps.
         
     Returns
     -------
@@ -243,7 +246,7 @@ def overlap_intervals_outer(starts1, ends1, starts2, ends2):
 
     """
 
-    ovids = overlap_intervals(starts1, ends1, starts2, ends2)
+    ovids = overlap_intervals(starts1, ends1, starts2, ends2, closed=closed)
     no_overlap_ids1 = np.where(
         np.bincount(ovids[:, 0], minlength=starts1.shape[0]) == 0
     )[0]
