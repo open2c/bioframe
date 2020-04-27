@@ -14,6 +14,16 @@ def bioframe_to_pyranges(df):
     return pr.PyRanges(pydf)
 
 
+def pyranges_to_bioframe(pydf):
+    df = pydf.df
+    df.rename(
+        {"Chromosome": "chrom", "Start": "start", "End": "end", "Count": "n_intervals"},
+        axis="columns",
+        inplace=True,
+    )
+    return df
+
+
 def pyranges_overlap_to_bioframe(pydf):
     ## convert the df output by pyranges join into a bioframe-compatible format
     df = pydf.df.copy()
@@ -117,6 +127,7 @@ def test_cluster():
         == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
     ).all()
 
+
 def test_merge():
     df1 = pd.DataFrame(
         [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14],],
@@ -153,16 +164,46 @@ def test_merge():
 
     # test consistency with pyranges
     pd.testing.assert_frame_equal(
-        pyranges_to_bioframe(bio_to_pyranges(df1).merge(count=True)),
+        pyranges_to_bioframe(bioframe_to_pyranges(df1).merge(count=True)),
         bioframe.merge(df1),
         check_dtype=False,
         check_exact=True,
     )
 
-### TODO ###
 
-# def test_complement():
+def test_complement():
+    df1 = pd.DataFrame(
+        [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14]],
+        columns=["chrom", "start", "end"],
+    )
+    df1_chromsizes = {"chr1": 100, "chrX": 100}
 
+    df1_complement = pd.DataFrame(
+        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100]],
+        columns=["chrom", "start", "end"],
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.complement(df1, chromsizes=df1_chromsizes), df1_complement
+    )
+
+    ### test complement with two chromosomes ###
+    df1.iloc[0, 0] = "chrX"
+    df1_complement = pd.DataFrame(
+        [
+            ["chr1", 0, 3],
+            ["chr1", 10, 12],
+            ["chr1", 14, 100],
+            ["chrX", 0, 1],
+            ["chrX", 5, 100],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    pd.testing.assert_frame_equal(
+        bioframe.complement(df1, chromsizes=df1_chromsizes), df1_complement
+    )
+
+############# TODO #############
 
 # def test_closest():
 
