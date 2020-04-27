@@ -3,33 +3,51 @@ import bioframe
 import pyranges as pr
 import numpy as np
 
+
 def bioframe_to_pyranges(df):
     pydf = df.copy()
-    pydf.rename({'chrom':'Chromosome','start':'Start','end':'End'},
-                  axis='columns', inplace=True)
+    pydf.rename(
+        {"chrom": "Chromosome", "start": "Start", "end": "End"},
+        axis="columns",
+        inplace=True,
+    )
     return pr.PyRanges(pydf)
+
 
 def pyranges_overlap_to_bioframe(pydf):
     ## convert the df output by pyranges join into a bioframe-compatible format
     df = pydf.df.copy()
-    df.rename({'Chromosome':'chrom_1','Start':'start_1','End':'end_1',
-               'Start_b':'start_2','End_b':'end_2'},
-                  axis='columns', inplace=True)
-    df['chrom_1'] = df['chrom_1'].values.astype('object') #to remove categories
-    df['chrom_2'] = df['chrom_1'].values    
+    df.rename(
+        {
+            "Chromosome": "chrom_1",
+            "Start": "start_1",
+            "End": "end_1",
+            "Start_b": "start_2",
+            "End_b": "end_2",
+        },
+        axis="columns",
+        inplace=True,
+    )
+    df["chrom_1"] = df["chrom_1"].values.astype("object")  # to remove categories
+    df["chrom_2"] = df["chrom_1"].values
     return df
 
-chroms = ['chr12','chrX']
-def mock_bioframe(num_entries =100):
-    pos = np.random.randint(1, 1e7, size=(num_entries,2))
+
+chroms = ["chr12", "chrX"]
+
+
+def mock_bioframe(num_entries=100):
+    pos = np.random.randint(1, 1e7, size=(num_entries, 2))
     df = pd.DataFrame()
-    df['chrom'] = np.random.choice(chroms,num_entries)
-    df['start'] = np.min(pos,axis=1)
-    df['end'] = np.max(pos,axis=1)
-    df.sort_values(['chrom','start'],inplace=True)
+    df["chrom"] = np.random.choice(chroms, num_entries)
+    df["start"] = np.min(pos, axis=1)
+    df["end"] = np.max(pos, axis=1)
+    df.sort_values(["chrom", "start"], inplace=True)
     return df
+
 
 ############# tests #####################
+
 
 def test_expand():
     fake_bioframe = pd.DataFrame(
@@ -53,16 +71,100 @@ def test_expand():
 
 def test_overlap():
     ### note does not test overlap_start or overlap_end columns of bioframe.overlap
-    df1 = mock_bioframe() 
-    df2 = mock_bioframe() 
-    assert (df1.equals(df2)==False)
+    df1 = mock_bioframe()
+    df2 = mock_bioframe()
+    assert df1.equals(df2) == False
     p1 = bioframe_to_pyranges(df1)
     p2 = bioframe_to_pyranges(df2)
-    pp = pyranges_overlap_to_bioframe(p1.join(p2))[['chrom_1','start_1','end_1','chrom_2','start_2','end_2']]
-    bb = bioframe.overlap(df1,df2)[['chrom_1','start_1','end_1','chrom_2','start_2','end_2']]
-    pd.testing.assert_frame_equal(bb,pp,check_dtype=False, check_exact=True)
-    print('overlap elements agree')
+    pp = pyranges_overlap_to_bioframe(p1.join(p2))[
+        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
+    ]
+    bb = bioframe.overlap(df1, df2)[
+        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
+    ]
+    pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
+    print("overlap elements agree")
 
 
+def test_cluster():
+    df1 = pd.DataFrame(
+        [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14],],
+        columns=["chrom", "start", "end"],
+    )
+    df_annotated = bioframe.cluster(df1)
+    assert (
+        df_annotated["cluster"].values == np.array([0, 0, 0, 1])
+    ).all()  # the last interval does not overlap the first three
+    df_annotated = bioframe.cluster(df1, min_dist=2)
+    assert (
+        df_annotated["cluster"].values == np.array([0, 0, 0, 0])
+    ).all()  # all intervals part of the same cluster
+
+    df_annotated = bioframe.cluster(df1, min_dist=None)
+    assert (
+        df_annotated["cluster"].values == np.array([0, 0, 1, 2])
+    ).all()  # adjacent intervals not clustered
+
+    df1.iloc[0, 0] = "chrX"
+    df_annotated = bioframe.cluster(df1)
+    assert (
+        df_annotated["cluster"].values == np.array([2, 0, 0, 1])
+    ).all()  # do not cluster intervals across chromosomes
+
+    # test consistency with pyranges (which automatically sorts df upon creation and uses 1-based indexing for clusters)
+    assert (
+        (bioframe_to_pyranges(df1).cluster(count=True).df["Cluster"].values - 1)
+        == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
+    ).all()
+
+def test_merge():
+    df1 = pd.DataFrame(
+        [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14],],
+        columns=["chrom", "start", "end"],
+    )
+
+    # the last interval does not overlap the first three with default min_dist=0
+    assert (bioframe.merge(df1)["n_intervals"].values == np.array([3, 1])).all()
+
+    # adjacent intervals are not clustered with min_dist=none
+    assert (
+        bioframe.merge(df1, min_dist=None)["n_intervals"].values == np.array([2, 1, 1])
+    ).all()
+
+    # all intervals part of one cluster
+    assert (
+        bioframe.merge(df1, min_dist=2)["n_intervals"].values == np.array([4])
+    ).all()
+
+    df1.iloc[0, 0] = "chrX"
+    assert (
+        bioframe.merge(df1, min_dist=None)["n_intervals"].values
+        == np.array([1, 1, 1, 1])
+    ).all()
+    assert (
+        bioframe.merge(df1, min_dist=0)["n_intervals"].values == np.array([2, 1, 1])
+    ).all()
+
+    # total number of intervals should equal length of original dataframe
+    mock_df = mock_bioframe()
+    assert np.sum(bioframe.merge(mock_df, min_dist=0)["n_intervals"].values) == len(
+        mock_df
+    )
+
+    # test consistency with pyranges
+    pd.testing.assert_frame_equal(
+        pyranges_to_bioframe(bio_to_pyranges(df1).merge(count=True)),
+        bioframe.merge(df1),
+        check_dtype=False,
+        check_exact=True,
+    )
+
+### TODO ###
+
+# def test_complement():
 
 
+# def test_closest():
+
+
+# def test_coverage():

@@ -1,6 +1,6 @@
-
 from bioframe._region import parse_region
 import pytest
+
 
 def test_parse_region():
     # UCSC-style names
@@ -14,11 +14,7 @@ def test_parse_region():
     assert parse_region("6:1,000-2,000") == ("6", 1000, 2000)
 
     # FASTA style names
-    assert parse_region("gb|accession|locus") == (
-        "gb|accession|locus",
-        0,
-        None,
-    )
+    assert parse_region("gb|accession|locus") == ("gb|accession|locus", 0, None,)
     assert parse_region("gb|accession|locus:1000-2000") == (
         "gb|accession|locus",
         1000,
@@ -31,11 +27,7 @@ def test_parse_region():
     )
 
     # Punctuation in names (aside from :)
-    assert parse_region("name-with-hyphens-") == (
-        "name-with-hyphens-",
-        0,
-        None,
-    )
+    assert parse_region("name-with-hyphens-") == ("name-with-hyphens-", 0, None,)
     assert parse_region("GL000207.1") == ("GL000207.1", 0, None)
     assert parse_region("GL000207.1:1000-2000") == ("GL000207.1", 1000, 2000)
 
