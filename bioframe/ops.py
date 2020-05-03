@@ -1009,7 +1009,8 @@ def _closest_intidxs(
         ).T
 
         closest_intidxs.append(closest_idxs_group)
-
+    
+    if len(closest_intidxs)==0: return []
     closest_intidxs = np.vstack(closest_intidxs)
 
     return closest_intidxs
@@ -1076,6 +1077,8 @@ def closest(
         cols2=cols2,
     )
 
+    if len(closest_df_idxs)==0: print('no overlaps'); return
+
     # If finding closest within the same set, df2 now has to be set
     # to df1, so that the rest of the logic works.
     if df2 is None:
@@ -1084,6 +1087,7 @@ def closest(
     # Make an output DataFrame.
     if not isinstance(out, collections.abc.Mapping):
         out = {col: col for col in out}
+
 
     out_df = {}
     if "index" in out:
