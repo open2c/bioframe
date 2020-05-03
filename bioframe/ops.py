@@ -1036,7 +1036,7 @@ def closest(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        If df2 is None or same object as df1, find closest intervals within the same set.
+        If df2 is None or same object as df1, find closest non-identical intervals within the same set.
         
     k : int
         The number of closest intervals to report.
@@ -1112,7 +1112,7 @@ def closest(
         have_overlap = overlap_start < overlap_end
 
         if "have_overlap" in out:
-            out_df[out["overlap_start"]] = have_overlap
+            out_df[out["have_overlap"]] = have_overlap
         if "overlap_start" in out:
             out_df[out["overlap_start"]] = np.where(have_overlap, overlap_start, -1)
         if "overlap_end" in out:
