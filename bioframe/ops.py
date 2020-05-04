@@ -1061,7 +1061,7 @@ def closest(
     df_closest : pandas.DataFrame
     
     """
-
+    if k<1: raise ValueError('k>=1 required')
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 

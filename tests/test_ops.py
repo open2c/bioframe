@@ -2,6 +2,7 @@ import pandas as pd
 import bioframe
 import pyranges as pr
 import numpy as np
+from io import StringIO
 
 
 def bioframe_to_pyranges(df):
@@ -205,7 +206,54 @@ def test_complement():
 
 ############# TODO #############
 
-# def test_closest():
+def test_closest():
+    df1 = pd.DataFrame([
+        ['chr1', 1, 5],
+        ],
+        columns=['chrom', 'start', 'end']
+    )
 
+    df2 = pd.DataFrame([
+        ['chr1', 4, 8],
+        ['chr1', 10, 11]],
+        columns=['chrom', 'start', 'end']
+    )
+
+    ### closest(df1,df2,k=1) ###
+    d =  '''chrom_1  start_1  end_1 chrom_2  start_2  end_2  distance
+        0    chr1        1      5    chr1        4      8         0'''
+    df = pd.read_csv(StringIO(d), sep=r'\s+')
+    pd.testing.assert_frame_equal(df,bioframe.closest(df1,df2,k=1))
+
+    ### closest(df1,df2, ignore_overlaps=True)) ###
+    d = '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+        0   chr1    1   5   chr1    10  11  5'''
+    df = pd.read_csv(StringIO(d), sep=r'\s+')
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1,df2, ignore_overlaps=True))
+
+    ### closest(df1,df2,k=2) ###
+    d =  '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+            0   chr1    1   5   chr1    4   8   0
+            1   chr1    1   5   chr1    10  11  5'''
+    df = pd.read_csv(StringIO(d), sep=r'\s+')
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1,df2,k=2))
+
+    ### closest(df2,df1) ###
+    d = '''chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
+            0   chr1    4   8   chr1    1   5   0
+            1   chr1    10  11  chr1    1   5   5 '''
+    df = pd.read_csv(StringIO(d), sep=r'\s+')
+    pd.testing.assert_frame_equal(df,bioframe.closest(df2,df1))
+
+    ### change first interval to new chrom ###
+    df2.iloc[0,0] = 'chrA'
+    d = '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+              0   chr1    1   5   chr1    10  11  5'''
+    df = pd.read_csv(StringIO(d), sep=r'\s+')
+    pd.testing.assert_frame_equal(df,bioframe.closest(df1,df2,k=1))
 
 # def test_coverage():
+
+
+
+
