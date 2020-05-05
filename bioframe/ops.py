@@ -1010,7 +1010,7 @@ def _closest_intidxs(
 
         closest_intidxs.append(closest_idxs_group)
     
-    if len(closest_intidxs)==0: return []
+    if len(closest_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     closest_intidxs = np.vstack(closest_intidxs)
 
     return closest_intidxs
@@ -1059,6 +1059,7 @@ def closest(
     Returns
     -------
     df_closest : pandas.DataFrame
+        If no intervals found, returns none.
     
     """
     if k<1: raise ValueError('k>=1 required')
@@ -1077,7 +1078,7 @@ def closest(
         cols2=cols2,
     )
 
-    if len(closest_df_idxs)==0: print('no overlaps'); return
+    if len(closest_df_idxs)==0: return
 
     # If finding closest within the same set, df2 now has to be set
     # to df1, so that the rest of the logic works.
