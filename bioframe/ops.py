@@ -494,6 +494,7 @@ def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
 
         overlap_intidxs.append(overlap_intidxs_sub)
 
+    if len(overlap_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     overlap_intidxs = np.vstack(overlap_intidxs)
 
     return overlap_intidxs
@@ -622,7 +623,7 @@ def cluster(
 
     if min_dist is not None:
         if min_dist<0: raise ValueError('min_dist>=0 currently required')
-        
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
