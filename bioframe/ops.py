@@ -620,6 +620,8 @@ def cluster(
 
     """
 
+    if min_dist<0: raise ValueError('min_dist>=0 currently required')
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -721,6 +723,8 @@ def merge(df, min_dist=0, cols=None):
         A pandas dataframe with coordinates of merged clusters.
     """
 
+    if min_dist<0: raise ValueError('min_dist>=0 currently required')
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -800,6 +804,9 @@ def complement(df, chromsizes=None, cols=None):
         chrom = group_keys
         if chrom in chromsizes:
             chromsize = chromsizes[chrom]
+
+            if (chromsize < np.max(df_group[ek].values)): 
+                raise ValueError('one or more intervals exceed provided chromsize')
             (
                 complement_starts_group,
                 complement_ends_group,
@@ -1037,7 +1044,7 @@ def closest(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        If df2 is None or same object as df1, find closest non-identical intervals within the same set.
+        If df2 is None, find closest non-identical intervals within the same set.
         
     k : int
         The number of closest intervals to report.
@@ -1063,6 +1070,13 @@ def closest(
     
     """
     if k<1: raise ValueError('k>=1 required')
+
+    if df2 is df1: raise ValueError('pass df2=None to find closest non-identical intervals within the same set.')
+    # If finding closest within the same set, df2 now has to be set
+    # to df1, so that the rest of the logic works.
+    if df2 is None:
+        df2 = df1
+
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
@@ -1078,12 +1092,7 @@ def closest(
         cols2=cols2,
     )
 
-    if len(closest_df_idxs)==0: return
-
-    # If finding closest within the same set, df2 now has to be set
-    # to df1, so that the rest of the logic works.
-    if df2 is None:
-        df2 = df1
+    if len(closest_df_idxs)==0: return #case of no closest intervals
 
     # Make an output DataFrame.
     if not isinstance(out, collections.abc.Mapping):
