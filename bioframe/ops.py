@@ -620,8 +620,9 @@ def cluster(
 
     """
 
-    if min_dist<0: raise ValueError('min_dist>=0 currently required')
-
+    if min_dist is not None:
+        if min_dist<0: raise ValueError('min_dist>=0 currently required')
+        
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -723,7 +724,8 @@ def merge(df, min_dist=0, cols=None):
         A pandas dataframe with coordinates of merged clusters.
     """
 
-    if min_dist<0: raise ValueError('min_dist>=0 currently required')
+    if min_dist is not None:
+        if min_dist<0: raise ValueError('min_dist>=0 currently required')
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
