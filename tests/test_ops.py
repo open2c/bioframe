@@ -204,56 +204,92 @@ def test_complement():
         bioframe.complement(df1, chromsizes=df1_chromsizes), df1_complement
     )
 
-############# TODO #############
 
 def test_closest():
-    df1 = pd.DataFrame([
-        ['chr1', 1, 5],
-        ],
-        columns=['chrom', 'start', 'end']
-    )
+    df1 = pd.DataFrame([["chr1", 1, 5],], columns=["chrom", "start", "end"])
 
-    df2 = pd.DataFrame([
-        ['chr1', 4, 8],
-        ['chr1', 10, 11]],
-        columns=['chrom', 'start', 'end']
+    df2 = pd.DataFrame(
+        [["chr1", 4, 8], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
     )
 
     ### closest(df1,df2,k=1) ###
-    d =  '''chrom_1  start_1  end_1 chrom_2  start_2  end_2  distance
-        0    chr1        1      5    chr1        4      8         0'''
-    df = pd.read_csv(StringIO(d), sep=r'\s+')
-    pd.testing.assert_frame_equal(df,bioframe.closest(df1,df2,k=1))
+    d = """chrom_1  start_1  end_1 chrom_2  start_2  end_2  distance
+        0    chr1        1      5    chr1        4      8         0"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### closest(df1,df2, ignore_overlaps=True)) ###
-    d = '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
-        0   chr1    1   5   chr1    10  11  5'''
-    df = pd.read_csv(StringIO(d), sep=r'\s+')
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1,df2, ignore_overlaps=True))
+    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+        0   chr1    1   5   chr1    10  11  5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, ignore_overlaps=True))
 
     ### closest(df1,df2,k=2) ###
-    d =  '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    1   5   chr1    4   8   0
-            1   chr1    1   5   chr1    10  11  5'''
-    df = pd.read_csv(StringIO(d), sep=r'\s+')
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1,df2,k=2))
+            1   chr1    1   5   chr1    10  11  5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=2))
 
     ### closest(df2,df1) ###
-    d = '''chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
+    d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    4   8   chr1    1   5   0
-            1   chr1    10  11  chr1    1   5   5 '''
-    df = pd.read_csv(StringIO(d), sep=r'\s+')
-    pd.testing.assert_frame_equal(df,bioframe.closest(df2,df1))
+            1   chr1    10  11  chr1    1   5   5 """
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1))
 
     ### change first interval to new chrom ###
-    df2.iloc[0,0] = 'chrA'
-    d = '''chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
-              0   chr1    1   5   chr1    10  11  5'''
-    df = pd.read_csv(StringIO(d), sep=r'\s+')
-    pd.testing.assert_frame_equal(df,bioframe.closest(df1,df2,k=1))
+    df2.iloc[0, 0] = "chrA"
+    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+              0   chr1    1   5   chr1    10  11  5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
-# def test_coverage():
 
+def test_coverage():
+
+
+    #### coverage does not exceed length of original interval
+    df1 = pd.DataFrame([
+        ['chr1', 3, 8]],
+        columns=['chrom', 'start', 'end']
+    )
+    df2 = pd.DataFrame([
+        ['chr1', 2, 10] ],
+        columns=['chrom', 'start', 'end']
+    )
+    d = """chrom    start   end coverage    n_overlaps
+         0  chr1    3   8   5   1"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+
+
+    ### coverage of interval on different chrom returns zero for coverage and n_overlaps 
+    df1 = pd.DataFrame([
+        ['chr1', 3, 8]],
+        columns=['chrom', 'start', 'end']
+    )
+    df2 = pd.DataFrame([
+        ['chrX', 3, 8] ],
+        columns=['chrom', 'start', 'end']
+    )
+    d = """chrom    start   end coverage    n_overlaps
+         0  chr1    3   8   0   0"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+
+
+    # ### currently does not pass, as n_overlaps not calculated correctly 
+    # ### when a second overlap starts within the first
+    # df1 = pd.DataFrame([["chr1", 3, 8]], columns=["chrom", "start", "end"])
+    # df2 = pd.DataFrame(
+    #     [["chr1", 3, 5], ["chr1", 5, 8]], columns=["chrom", "start", "end"]
+    # )
+
+    # d = """chrom    start   end coverage    n_overlaps
+    #      0  chr1    3   8   5   2"""
+    # df = pd.read_csv(StringIO(d), sep=r"\s+")
+    # pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
 
 
