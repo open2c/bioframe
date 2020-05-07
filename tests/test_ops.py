@@ -279,17 +279,17 @@ def test_coverage():
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
 
-    # ### currently does not pass, as n_overlaps not calculated correctly 
-    # ### when a second overlap starts within the first
-    # df1 = pd.DataFrame([["chr1", 3, 8]], columns=["chrom", "start", "end"])
-    # df2 = pd.DataFrame(
-    #     [["chr1", 3, 5], ["chr1", 5, 8]], columns=["chrom", "start", "end"]
-    # )
+    ### currently does not pass, as n_overlaps not calculated correctly 
+    ### when a second overlap starts within the first
+    df1 = pd.DataFrame([["chr1", 3, 8]], columns=["chrom", "start", "end"])
+    df2 = pd.DataFrame(
+        [["chr1", 3, 5], ["chr1", 5, 8]], columns=["chrom", "start", "end"]
+    )
 
-    # d = """chrom    start   end coverage    n_overlaps
-    #      0  chr1    3   8   5   2"""
-    # df = pd.read_csv(StringIO(d), sep=r"\s+")
-    # pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+    d = """chrom    start   end coverage    n_overlaps
+         0  chr1    3   8   5   2"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
 
 
