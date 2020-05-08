@@ -137,35 +137,6 @@ def parse_region(reg, chromsizes=None):
 
     return chrom, start, end
 
-def add_name(reg_df, cols=("chrom", "start", "end", "name")):
-    """
-    Checks that input dataframe has "name" column
-    If not, auto-creates a UCSC name
-    
-    cols are names of columns (unlikely to change)
-    """
-    if cols[3] in reg_df:
-        return reg_df[list(cols)]
-    df = reg_df.copy()
-    data = zip(df[cols[0]], df[cols[1]], df[cols[2]])
-    df[cols[3]] = ["{0}:{1}-{2}".format(*i) for i in data]
-    return df[list(cols)]
-
-
-def add_name(reg_df, cols=("chrom", "start", "end", "name")):
-    """
-    Checks that input dataframe has "name" column
-    If not, auto-creates a UCSC name
-    
-    cols are names of columns (unlikely to change)
-    """
-    if cols[3] in reg_df:
-        return reg_df[list(cols)]
-    df = reg_df.copy()
-    data = zip(df[cols[0]], df[cols[1]], df[cols[2]])
-    df[cols[3]] = ["{0}:{1}-{2}".format(*i) for i in data]
-    return df[list(cols)]
-
 
 def add_name(reg_df, cols=("chrom", "start", "end", "name")):
     """
