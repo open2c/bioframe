@@ -103,6 +103,7 @@ def parse_region(reg, chromsizes=None):
     reg : str or tuple
         UCSC-style genomic region string, or
         Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
+        Quadriple (chrom, start, end, name) (name is ignored). 
     chromsizes : mapping, optional
         Lookup table of scaffold lengths to check against ``chrom`` and the
         ``end`` coordinate. Required if ``end`` is not supplied.
@@ -115,7 +116,9 @@ def parse_region(reg, chromsizes=None):
     if isinstance(reg, six.string_types):
         chrom, start, end = parse_region_string(reg)
     else:
-        chrom, start, end = reg
+        if len(reg) not in [3,4]:
+            raise ValueError("length of a region should be 3 or 4")
+        chrom, start, end = reg[:3]
         start = int(start) if start is not None else start
         end = int(end) if end is not None else end
 
