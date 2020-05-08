@@ -161,14 +161,13 @@ def normalize_regions(
     chromsizes=None,
     replace_None=True,
     force_UCSC_names=False,
+    check_start_end=True,
     cols=("chrom", "start", "end", "name"),
 ):
     """
     Parse input and convert it to regions dataframe with name 
     See this gist for examples
     https://gist.github.com/mimakaev/9d2eb07dc746c6010304d795c99125ed
-    
-    TODO: split that gist into tests
     
     Paramters
     ---------
@@ -182,6 +181,9 @@ def normalize_regions(
         If True, will raise an error if chromsizes are needed but nt provided. 
     force_name: bool (optional)
         if True, will force the name to be UCSC style
+    check_start_end: bool, optional (default:True)
+        If True, check that start<=end 
+        Ignored if replace_None is False         
     cols : tuple (optional) 
         Names of the columns (unlikely to change)
     """
@@ -230,7 +232,7 @@ def normalize_regions(
                 starts.append(int(i))
             except:
                 if not i:
-                    starts.append(None)
+                    starts.append(0)
                 else:
                     raise ValueError(f"Wrong start {i}; False or None are accepted")
         new_regions[cols[1]] = starts
@@ -239,8 +241,7 @@ def normalize_regions(
         chroms = new_regions[cols[0]].values
         for i in range(len(new_regions)):
             try:
-                int(ends_orig[i])
-                ends.append(int(i))
+                ends.append(int(ends_orig[i]))
             except (TypeError, ValueError):
                 if ends_orig[i]:
                     raise ValueError(
@@ -260,4 +261,7 @@ def normalize_regions(
     if force_UCSC_names:
         new_regions.pop("name")
         new_regions = add_name(new_regions)
+    if check_start_end and replace_None:
+        if (new_regions[cols[2]] < new_regions[cols[1]]).any():
+            raise ValueError("Start > end detected")
     return new_regions
