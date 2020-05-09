@@ -23,8 +23,8 @@ Interval operations
 Array operations
 ~~~~~~~~~~~~~~~~
 .. autosummary:: 
-    bioframe.arrops.overlap_intervals
-
+   bioframe.arrops.overlap_intervals
 
 -------------
 .. automodule:: bioframe.ops
+   :members:
