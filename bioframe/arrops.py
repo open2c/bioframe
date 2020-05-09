@@ -85,7 +85,7 @@ def arange_multi(starts, stops=None, lengths=None):
     return cat_range
 
 
-def _test_overlap(starts1, ends1, starts2, ends2, closed=False):
+def _check_overlap(starts1, ends1, starts2, ends2, closed=False):
     """
     Take pairs of intervals and test if each pair has an overlap.
     

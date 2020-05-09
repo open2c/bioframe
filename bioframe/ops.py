@@ -73,6 +73,76 @@ def bg2slice(bg2, region1, region2):
     return out
 
 
+def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
+    """
+    Expand each interval by a given amount.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    pad : int
+        The amount by which the intervals are expanded *on each side*.
+
+    limits : {str: int} or {str: (int, int)}
+        The limits of interval expansion. If a single number X if provided,
+        the expanded intervals are trimmed to fit into (0, X); if a tuple 
+        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
+
+    side : str
+        Which side to expand, possible values are "left", "right" and "both".
+
+    region_col : str
+        The column to select the expansion limits for each interval.
+        If None, then use the chromosome column.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+    """
+
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    limits_region_col = ck if limits_region_col is None else limits_region_col
+
+    if limits:
+        lower_limits = {}
+        upper_limits = {}
+        for k, v in dict(limits).items():
+            if isinstance(v, (tuple, list, np.ndarray)):
+                lower_limits[k] = v[0]
+                upper_limits[k] = v[1]
+            elif np.isscalar(v):
+                upper_limits[k] = v
+                lower_limits[k] = 0
+            else:
+                raise ValueError('Unknown limit type: {type(v)}')
+
+    if side == "both" or side == "left":
+        if limits:
+            df[sk] = np.maximum(
+                df[limits_region_col].apply(lower_limits.__getitem__, 0),
+                df[sk].values - pad
+            )
+        else:
+            df[sk] = df[sk].values-pad
+
+    if side == "both" or side == "right":
+        if limits:
+            df[ek] = np.minimum(
+                df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
+                df[ek] + pad,
+            )
+        else:
+            df[ek] = df[ek] + pad
+
+    return df
+
+
 def bychrom(func, *tables, **kwargs):
     """
     Split one or more bed-like dataframes by chromosome.
@@ -362,72 +432,6 @@ def frac_gene_coverage(bintable, mrna):
 
     return bintable
 
-
-def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
-    """
-    Expand each interval by a given amount.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-
-    pad : int
-        The amount by which the intervals are expanded *on each side*.
-
-    limits : {str: int} or {str: (int, int)}
-        The limits of interval expansion. If a single number X if provided,
-        the expanded intervals are trimmed to fit into (0, X); if a tuple 
-        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
-
-    side : str
-        Which side to expand, possible values are "left", "right" and "both".
-
-    region_col : str
-        The column to select the expansion limits for each interval.
-        If None, then use the chromosome column.
-
-    cols : (str, str, str) or None
-        The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
-
-    Returns
-    -------
-    df : pandas.DataFrame
-    """
-
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    limits_region_col = ck if limits_region_col is None else limits_region_col
-
-    lower_limits = {}
-    upper_limits = {}
-    for k, v in dict(limits).items():
-        if isinstance(v, (tuple, list, np.ndarray)):
-            lower_limits[k] = v[0]
-            upper_limits[k] = v[1]
-        elif np.isscalar(v):
-            upper_limits[k] = v
-        else:
-            raise ValueError(f'Unknown limit type: {type(v)}')
-
-    if side == "both" or side == "left":
-        df[sk] = np.maximum(
-            df[limits_region_col].apply(lower_limits.__getitem__, 0),
-            df[sk].values - pad
-        )
-
-    if side == "both" or side == "right":
-        if limits:
-            df[ek] = np.minimum(
-                df[limits_region_col].apply(upper_limits.__getitem__, np.iinfo(np.int64).max),
-                df[ek] + pad,
-            )
-        else:
-            df[ek] = df[ek] + pad
-
-    return df
-
-
 def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
     """
     Find pairs of overlapping genomic intervals and return the integer
@@ -490,6 +494,7 @@ def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
 
         overlap_intidxs.append(overlap_intidxs_sub)
 
+    if len(overlap_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     overlap_intidxs = np.vstack(overlap_intidxs)
 
     return overlap_intidxs
@@ -616,6 +621,9 @@ def cluster(
 
     """
 
+    if min_dist is not None:
+        if min_dist<0: raise ValueError('min_dist>=0 currently required')
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -717,6 +725,9 @@ def merge(df, min_dist=0, cols=None):
         A pandas dataframe with coordinates of merged clusters.
     """
 
+    if min_dist is not None:
+        if min_dist<0: raise ValueError('min_dist>=0 currently required')
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -796,6 +807,9 @@ def complement(df, chromsizes=None, cols=None):
         chrom = group_keys
         if chrom in chromsizes:
             chromsize = chromsizes[chrom]
+
+            if (chromsize < np.max(df_group[ek].values)): 
+                raise ValueError('one or more intervals exceed provided chromsize')
             (
                 complement_starts_group,
                 complement_ends_group,
@@ -827,13 +841,11 @@ def complement(df, chromsizes=None, cols=None):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols2=None):
+def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     """
-    Quantify the coverage of intervals from set 1 by intervals from set2.
+    Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
+     in set 1 find the number of base pairs covered by intervals in set 2. 
 
-    For every interval in set 1 find the number of overlapping intervals from set 2 and
-    the number of base pairs covered by at least one genomic interval.
-    
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -842,7 +854,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
     out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'coverage', 'n_overlaps'].
+        Allowed values: ['input', 'index', 'coverage'].
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -874,8 +886,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
 
     coverage_sparse_df = (
         overlap_idxs.groupby("index_1")
-        .agg({"overlap": "sum", "index_2": "count"})
-        .rename(columns={"index_2": "n_overlaps"})
+        .agg({"overlap": "sum"})
     )
 
     # Make an output DataFrame.
@@ -892,13 +903,6 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
             pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
             .add(coverage_sparse_df["overlap"], fill_value=0)
             .astype(df1[sk1].dtype)
-        )
-
-    if "n_overlaps" in out:
-        out_df[out["n_overlaps"]] = (
-            pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
-            .add(coverage_sparse_df["n_overlaps"], fill_value=0)
-            .astype(np.int64)
         )
 
     out_df = pd.DataFrame(out_df)
@@ -1005,7 +1009,8 @@ def _closest_intidxs(
         ).T
 
         closest_intidxs.append(closest_idxs_group)
-
+    
+    if len(closest_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     closest_intidxs = np.vstack(closest_intidxs)
 
     return closest_intidxs
@@ -1032,7 +1037,7 @@ def closest(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        If df2 is None or same object as df1, find closest intervals within the same set.
+        If df2 is None, find closest non-identical intervals within the same set.
         
     k : int
         The number of closest intervals to report.
@@ -1054,8 +1059,16 @@ def closest(
     Returns
     -------
     df_closest : pandas.DataFrame
+        If no intervals found, returns none.
     
     """
+    if k<1: raise ValueError('k>=1 required')
+
+    if df2 is df1: raise ValueError('pass df2=None to find closest non-identical intervals within the same set.')
+    # If finding closest within the same set, df2 now has to be set
+    # to df1, so that the rest of the logic works.
+    if df2 is None:
+        df2 = df1
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
@@ -1072,14 +1085,12 @@ def closest(
         cols2=cols2,
     )
 
-    # If finding closest within the same set, df2 now has to be set
-    # to df1, so that the rest of the logic works.
-    if df2 is None:
-        df2 = df1
+    if len(closest_df_idxs)==0: return #case of no closest intervals
 
     # Make an output DataFrame.
     if not isinstance(out, collections.abc.Mapping):
         out = {col: col for col in out}
+
 
     out_df = {}
     if "index" in out:
@@ -1108,7 +1119,7 @@ def closest(
         have_overlap = overlap_start < overlap_end
 
         if "have_overlap" in out:
-            out_df[out["overlap_start"]] = have_overlap
+            out_df[out["have_overlap"]] = have_overlap
         if "overlap_start" in out:
             out_df[out["overlap_start"]] = np.where(have_overlap, overlap_start, -1)
         if "overlap_end" in out:
