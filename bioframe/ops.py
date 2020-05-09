@@ -841,13 +841,11 @@ def complement(df, chromsizes=None, cols=None):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols2=None):
+def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     """
-    Quantify the coverage of intervals from set 1 by intervals from set2.
+    Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
+     in set 1 find the number of base pairs covered by intervals in set 2. 
 
-    For every interval in set 1 find the number of overlapping intervals from set 2 and
-    the number of base pairs covered by at least one genomic interval.
-    
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -856,7 +854,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
     out : list of str or dict
         A list of requested outputs.
         Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'coverage', 'n_overlaps'].
+        Allowed values: ['input', 'index', 'coverage'].
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -888,8 +886,7 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
 
     coverage_sparse_df = (
         overlap_idxs.groupby("index_1")
-        .agg({"overlap": "sum", "index_2": "count"})
-        .rename(columns={"index_2": "n_overlaps"})
+        .agg({"overlap": "sum"})
     )
 
     # Make an output DataFrame.
@@ -906,13 +903,6 @@ def coverage(df1, df2, out=["input", "coverage", "n_overlaps"], cols1=None, cols
             pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
             .add(coverage_sparse_df["overlap"], fill_value=0)
             .astype(df1[sk1].dtype)
-        )
-
-    if "n_overlaps" in out:
-        out_df[out["n_overlaps"]] = (
-            pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
-            .add(coverage_sparse_df["n_overlaps"], fill_value=0)
-            .astype(np.int64)
         )
 
     out_df = pd.DataFrame(out_df)
