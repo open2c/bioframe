@@ -74,7 +74,7 @@ def bedslice_series(beds, region):
     Slice a series multi-indexed by ['chrom', 'start', 'end'].
     Assumes no proper nesting of intervals.
     """
-    chrom, start, end = region
+    chrom, start, end = region[:3]
     return beds.loc[chrom].loc[start:end]
 
 
@@ -83,8 +83,8 @@ def bg2slice(bg2, region1, region2):
     Slice a dataframe with columns ['chrom1', 'start1', 'end1', 'chrom2',
     'start2', 'end2']. Assumes no proper nesting of intervals.
     """
-    chrom1, start1, end1 = region1
-    chrom2, start2, end2 = region2
+    chrom1, start1, end1 = region1[:3]
+    chrom2, start2, end2 = region2[:3]
     if end1 is None:
         end1 = np.inf
     if end2 is None:
