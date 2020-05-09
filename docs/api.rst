@@ -27,6 +27,4 @@ Array operations
 
 
 -------------
-
-.. autofunction:: bioframe.overlap
-.. autofunction:: bioframe.merge
+.. automodule:: ops
