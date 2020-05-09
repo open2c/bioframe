@@ -25,3 +25,8 @@ Array operations
 .. autosummary:: 
     bioframe.arrops.overlap_intervals
 
+
+-------------
+
+.. autofunction:: bioframe.overlap
+.. autofunction:: bioframe.merge
