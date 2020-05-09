@@ -27,4 +27,4 @@ Array operations
 
 
 -------------
-.. automodule:: ops
+.. automodule:: bioframe.ops
