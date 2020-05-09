@@ -99,24 +99,26 @@ class UCSCClient:
 
     def __init__(self, db):
         self._db = db
-        self._db_url = urljoin(self.BASE_URL, 'goldenPath/{}/database/')
+        self._db_url = urljoin(
+            self.BASE_URL, 'goldenPath/{}/database/'.format(db)
+        )
 
-    def fetch_chromsizes(**kwargs):
+    def fetch_chromsizes(self, **kwargs):
         url = urljoin(self._db_url, 'chromInfo.txt.gz')
         return read_chromsizes(url, **kwargs)
 
-    def fetch_gaps(**kwargs):
+    def fetch_gaps(self, **kwargs):
         url = urljoin(self._db_url, 'gap.txt.gz')
         return read_gapfile(url, **kwargs)
 
-    def fetch_cytoband(ideo=False, **kwargs):
+    def fetch_cytoband(self, ideo=False, **kwargs):
         if ideo:
             url = urljoin(self._db_url, 'cytoBandIdeo.txt.gz')
         else:
             url = urljoin(self._db_url, 'cytoBand.txt.gz')
         return read_table(url, schema='cytoband')
 
-    def fetch_mrna(**kwargs):
+    def fetch_mrna(self, **kwargs):
         url = urljoin(self._db_url, 'all_mrna.txt.gz')
         return read_ucsc_mrnafile(url, **kwargs)
 
