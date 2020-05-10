@@ -26,5 +26,6 @@ Array operations
    bioframe.arrops.overlap_intervals
 
 -------------
+
 .. automodule:: bioframe.ops
    :members:
