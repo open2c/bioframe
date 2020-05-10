@@ -17,7 +17,6 @@ Genomic interval operations
 Array operations
 ---------------------------
 .. autosummary:: 
-   bioframe.arrops.overlap_intervals
    bioframe.arrops.arange_multi
    bioframe.arrops.closest_intervals
    bioframe.arrops.merge_intervals
