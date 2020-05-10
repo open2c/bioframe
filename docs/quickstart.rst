@@ -8,7 +8,7 @@ The following are required before installing bioframe:
 
 -  Python 3.4+
 
--  py:mod:`numpy`
+-  :py:mod:`numpy`
 
 -  :py:mod:`pandas`
 
