@@ -13,10 +13,10 @@ Quick reference
 Interval operations
 ~~~~~~~~~~~~~~~~~~~
 .. autosummary:: 
-    bioframe.overlap
+    bioframe.ops.overlap
     bioframe.merge
     bioframe.complement
-    bioframe.closest
+    bioframe.ops.closest
     bioframe.coverage
     bioframe.expand
 
