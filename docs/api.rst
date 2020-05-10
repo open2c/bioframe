@@ -1,30 +1,25 @@
 .. _api-reference:
 
-API Reference
-=============
+Quick Reference
+==========================
 
-.. toctree::
-   :maxdepth: 1
-
-
-Quick reference
----------------
-
-Interval operations
-~~~~~~~~~~~~~~~~~~~
+ 
+Genomic interval operations
+---------------------------
 .. autosummary:: 
-    bioframe.overlap
-    bioframe.merge
-    bioframe.complement
-    bioframe.closest
-    bioframe.coverage
-    bioframe.expand
+    bioframe.ops.overlap
+    bioframe.ops.merge
+    bioframe.ops.complement
+    bioframe.ops.closest
+    bioframe.ops.coverage
+    bioframe.ops.expand
 
 Array operations
-~~~~~~~~~~~~~~~~
+---------------------------
 .. autosummary:: 
    bioframe.arrops.overlap_intervals
-
--------------
-.. automodule:: bioframe.ops
-   :members:
+   bioframe.arrops.arange_multi
+   bioframe.arrops.closest_intervals
+   bioframe.arrops.merge_intervals
+   bioframe.arrops.overlap_intervals
+   bioframe.arrops.overlap_intervals_outer
