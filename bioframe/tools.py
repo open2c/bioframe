@@ -51,26 +51,35 @@ if cmd_exists("bedtools"):
         wrapper.__name__ = str(name)
 
         return staticmethod(wrapper)
+else:
 
-    class bedtools(object):
-        intersect = _register('intersect')
-        window = _register('window')
-        closest = _register('closest')
-        coverage = _register('coverage')
-        map = _register('map')
-        genomecov = _register('genomecov')
-        merge = _register('merge')
-        cluster = _register('cluster')
-        complement = _register('complement')
-        subtract = _register('subtract')
-        slop = _register('slop')
-        flank = _register('flank')
-        sort = _register('sort')
-        random = _register('random')
-        shuffle = _register('shuffle')
-        annotate = _register('annotate')
-        jaccard = _register('jaccard')
+    def _register(name):
+        def wrapper(**kwargs):
+            raise RuntimeError(
+                "`bedtools` command not found. To use the bedtools wrapper, "
+                "install the bedtools command suite and reload bioframe"
+            )
+        return staticmethod(wrapper)
 
+
+class bedtools(object):
+    intersect = _register('intersect')
+    window = _register('window')
+    closest = _register('closest')
+    coverage = _register('coverage')
+    map = _register('map')
+    genomecov = _register('genomecov')
+    merge = _register('merge')
+    cluster = _register('cluster')
+    complement = _register('complement')
+    subtract = _register('subtract')
+    slop = _register('slop')
+    flank = _register('flank')
+    sort = _register('sort')
+    random = _register('random')
+    shuffle = _register('shuffle')
+    annotate = _register('annotate')
+    jaccard = _register('jaccard')
 
 
 def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):

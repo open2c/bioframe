@@ -10,7 +10,6 @@ import pandas as pd
 
 from .region import parse_region
 from ._process import tsv
-from .tools import bedtools
 
 
 def atoi(s):
@@ -386,6 +385,8 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 
 def frac_gene_coverage(bintable, mrna):
+
+    from .tools import bedtools
 
     if isinstance(mrna, six.string_types):
         from .resources import fetch_ucsc_mrna
