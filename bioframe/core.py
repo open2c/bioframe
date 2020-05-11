@@ -206,8 +206,8 @@ def bisect_bedframe(bedf, region):
     lo += bedf['end'].values[lo:hi].searchsorted(start, side='right')
     if end is not None:
         hi = lo + bedf['start'].values[lo:hi].searchsorted(end, side='left')
-    else:
-        hi = None
+#    else:
+#        hi = None
     return lo, hi
 
 
