@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from contextlib import closing
 
@@ -33,51 +33,51 @@ LEVEL[4] = bin2start(np.arange(4681,37449))
 @numba.jit("int32(int32, int32)")
 def reg2bin(beg, end):
     end -= 1
-    if beg >> 14 == end >> 14: 
+    if beg >> 14 == end >> 14:
         return ((1 << 15)-1) // 7 + (beg >> 14)
-    if beg >> 17 == end >> 17: 
+    if beg >> 17 == end >> 17:
         return ((1 << 12)-1) // 7 + (beg >> 17)
-    if beg >> 20 == end >> 20: 
+    if beg >> 20 == end >> 20:
         return ((1 << 9)-1) // 7 + (beg >> 20)
-    if beg >> 23 == end >> 23: 
+    if beg >> 23 == end >> 23:
         return ((1 << 6)-1) // 7 + (beg >> 23)
-    if beg >> 26 == end >> 26: 
+    if beg >> 26 == end >> 26:
         return ((1 << 3)-1) // 7 + (beg >> 26)
     return 0
 
 
 @numba.jit("int32(int32, int32)")
 def reg2bins(rbeg, rend):
-    
+
     MAX_BIN = ((1 << 18) - 1) // 7
     lst = []
 
-    rend -= 1    
+    rend -= 1
     k = 1 + (rbeg >> 26)
     while k <= (1 + (rend >> 26)):
         k += 1
         lst.append(k)
-    
+
     k = 9 + (rbeg >> 23)
     while k <= (9 + (rend >> 23)):
         k += 1
         lst.append(k)
-        
+
     k = 73 + (rbeg >> 20)
     while k <= (73 + (rend >> 20)):
         k += 1
         lst.append(k)
-    
+
     k = 585 + (rbeg >> 17)
     while k <= (585 + (rend >> 17)):
         k += 1
         lst.append(k)
-    
+
     k = 4681 + (rbeg >> 14)
     while k <= (4681 + (rend >> 14)):
         k += 1
         lst.append(k)
-    
+
     return lst
 
 
@@ -86,7 +86,7 @@ def range_partition(start, stop, step):
                 for i in range(start, stop, step))
 
 
-def _fetch_region(filepath, chromsizes, slc, block, columns=None, 
+def _fetch_region(filepath, chromsizes, slc, block, columns=None,
                   usecols=None, meta=None):
     chrom1, chrom2 = block
     if chrom2 is None:
@@ -111,14 +111,14 @@ def _fetch_region(filepath, chromsizes, slc, block, columns=None,
     # elif usecols is not None:
     #     usecols = set(usecols)
     #     df = df[[col for col in meta.columns if col in usecols]]
-    
+
     for col, dt in meta.dtypes.items():
         df.loc[:, col] = df.loc[:, col].astype(dt)
 
     return df
 
 
-def read_pairix_block(filepath, block, names=None, dtypes=None, 
+def read_pairix_block(filepath, block, names=None, dtypes=None,
                       usecols=None, chromsizes=None, chunk_level=0):
     if chromsizes is None:
         f = pypairix.open(filepath)
@@ -131,11 +131,11 @@ def read_pairix_block(filepath, block, names=None, dtypes=None,
 
     chrom1, chrom2 = block
     nrows = chromsizes[chrom1]
-    
+
     meta = pd.read_csv(
-        filepath, 
-        sep='\t', 
-        comment='#', 
+        filepath,
+        sep='\t',
+        comment='#',
         header=None,
         names=names,
         dtype=dtypes,
@@ -143,7 +143,7 @@ def read_pairix_block(filepath, block, names=None, dtypes=None,
         iterator=True).read(1024).iloc[0:0]
 
     # Make a unique task name
-    token = tokenize(filepath, chromsizes, block, 
+    token = tokenize(filepath, chromsizes, block,
                      names, dtypes, usecols, chunk_level)
     task_name = 'read-pairix-block-' + token
 
@@ -160,10 +160,10 @@ def read_pairix_block(filepath, block, names=None, dtypes=None,
             divisions.append(lo)
         divisions.append(hi-1)
         slc = slice(lo, hi)
-        dsk[task_name, i] = (_fetch_region, 
-                             filepath, chromsizes, slc, 
+        dsk[task_name, i] = (_fetch_region,
+                             filepath, chromsizes, slc,
                              block, names, usecols, meta)
-        
+
     # Generate ddf from dask graph
     return dd.DataFrame(dsk, task_name, meta, tuple(divisions))
 
@@ -184,7 +184,7 @@ def read_pairix(filepath, names, blocks=None, chromsizes=None, **kwargs):
         If a list of single chromosome names is given, then all pair
         permutations are loaded.
     chromsizes : dict or Series, optional
-        Chromosome lengths to use if chromsizes headers are 
+        Chromosome lengths to use if chromsizes headers are
         not available.
     chunk_level : {0, 1, 2, 3, 4}
         Increase for a finer partition.
@@ -212,6 +212,6 @@ def read_pairix(filepath, names, blocks=None, chromsizes=None, **kwargs):
     for chrom1, chrom2 in blocks:
         if chrom1 in chromsizes and chrom2 in chromsizes:
             dct[chrom1, chrom2] = read_pairix_block(
-                filepath, (chrom1, chrom2), names, 
+                filepath, (chrom1, chrom2), names,
                 chromsizes=chromsizes, **kwargs)
     return dct

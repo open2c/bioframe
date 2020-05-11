@@ -6,8 +6,12 @@ import posixpath as pp
 import os.path as op
 import pandas as pd
 import requests
+import base64
 import glob
 
+import pkg_resources
+
+from .schemas import SCHEMAS
 from .formats import (
     read_table,
     read_chromsizes,
@@ -17,7 +21,24 @@ from .formats import (
 )
 
 
-def check_connectivity(reference='http://www.google.com'):
+LOCAL_CHROMSIZES = {
+    path[:-12]: lambda : read_chromsizes(
+        pkg_resources.resource_filename(__name__, 'data/'+path))
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.chrom.sizes')
+}
+
+
+LOCAL_CENTROMERES = {
+    path[:-12]: lambda : read_table(
+        pkg_resources.resource_filename(__name__, 'data/'+path),
+        SCHEMAS['bed3'])
+    for path in pkg_resources.resource_listdir(__name__, 'data/')
+    if path.endswith('.centromeres')
+}
+
+
+def _check_connectivity(reference='http://www.google.com'):
     try:
         urllib.request.urlopen(reference, timeout=1)
         return True
@@ -25,62 +46,17 @@ def check_connectivity(reference='http://www.google.com'):
         return False
 
 
-def fetch_chromsizes(db, **kwargs):
-    """
-    Download chromosome sizes from UCSC as a ``pandas.Series``, indexed by
-    chromosome label.
+def fetch_chromsizes(db, provider=None, **kwargs):
+    if provider == 'local' or db in LOCAL_CHROMSIZES:
+        pass
 
-    Parameters
-    ----------
-    db : str
-        The name of a UCSC genome assembly.
-    name_patterns : sequence, optional
-        Sequence of regular expressions to capture desired sequence names.
-        Each corresponding set of records will be sorted in natural order.
-        Default is (r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$').
-    all_names : bool, optional
-        Whether to return all contigs listed in the file. Default is
-        ``False``.
-
-    """
-    return read_chromsizes(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/chromInfo.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_ucsc_mrna(db, **kwargs):
-    return read_ucsc_mrnafile(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/all_mrna.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_gaps(db, **kwargs):
-    return read_gapfile(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_cytoband(db, ideo=True, **kwargs):
-    if ideo:
-        return read_table(
-            'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBandIdeo.txt.gz'.format(db),
-            schema='cytoband',
-            **kwargs)
+    if provider == 'ucsc' or provider is None:
+        return UCSCClient(db).fetch_chromsizes(**kwargs)
     else:
-        return read_table(
-            'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBand.txt.gz'.format(db),
-            schema='cytoband',
-            **kwargs)
+        raise ValueError("Unknown provider '{}'".format(provider))
 
 
-def fetch_centxt(db,**kwargs):
-    return read_table(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/centromeres.txt.gz'.format(db),
-        schema='centxt',
-        **kwargs)
-
-
-def fetch_centromeres(db, merge=True, verbose=False):
+def fetch_centromeres(db, provider=None, merge=True, verbose=False):
 
     # the priority goes as
     # - Local
@@ -92,22 +68,23 @@ def fetch_centromeres(db, merge=True, verbose=False):
     # if db in CENTROMERES:
     #     return CENTROMERES[db]
 
-    if not check_connectivity('http://www.google.com'):
+    if not _check_connectivity('http://www.google.com'):
         raise ConnectionError('No internet connection!')
 
-    if not check_connectivity('http://hgdownload.cse.ucsc.edu'):
+    if not _check_connectivity('http://hgdownload.cse.ucsc.edu'):
         raise ConnectionError('No connection to the genome database at hgdownload.cse.ucsc.edu!')
 
+    client = UCSCClient(db)
     fetchers = [
-        ('centxt', fetch_centxt),
-        ('cytoband', fetch_cytoband),
-        ('cytoband', partial(fetch_cytoband, ideo=True)),
-        ('gap', fetch_gaps)
+        ('centromeres', client.fetch_centromeres),
+        ('cytoband', client.fetch_cytoband),
+        ('cytoband', partial(client.fetch_cytoband, ideo=True)),
+        ('gap', client.fetch_gaps)
     ]
 
     for schema, fetcher in fetchers:
         try:
-            df = fetcher(db)
+            df = fetcher()
             break
         except urllib.error.HTTPError:
             pass
@@ -115,6 +92,35 @@ def fetch_centromeres(db, merge=True, verbose=False):
         raise ValueError('No source for centromere data found.')
 
     return extract_centromeres(df, schema=schema, merge=merge)
+
+
+class UCSCClient:
+    BASE_URL = 'http://hgdownload.cse.ucsc.edu/'
+
+    def __init__(self, db):
+        self._db = db
+        self._db_url = urljoin(
+            self.BASE_URL, 'goldenPath/{}/database/'.format(db)
+        )
+
+    def fetch_chromsizes(self, **kwargs):
+        url = urljoin(self._db_url, 'chromInfo.txt.gz')
+        return read_chromsizes(url, **kwargs)
+
+    def fetch_gaps(self, **kwargs):
+        url = urljoin(self._db_url, 'gap.txt.gz')
+        return read_gapfile(url, **kwargs)
+
+    def fetch_cytoband(self, ideo=False, **kwargs):
+        if ideo:
+            url = urljoin(self._db_url, 'cytoBandIdeo.txt.gz')
+        else:
+            url = urljoin(self._db_url, 'cytoBand.txt.gz')
+        return read_table(url, schema='cytoband')
+
+    def fetch_mrna(self, **kwargs):
+        url = urljoin(self._db_url, 'all_mrna.txt.gz')
+        return read_ucsc_mrnafile(url, **kwargs)
 
 
 class EncodeClient:
@@ -182,7 +188,7 @@ class EncodeClient:
 class FDNClient:
     BASE_URL = 'https://data.4dnucleome.org/'
 
-    def __init__(self, cachedir, assembly, metadata=None):
+    def __init__(self, cachedir, assembly, metadata=None, key_id=None, key_secret=None):
         self.cachedir = op.join(cachedir, assembly)
         if not op.isdir(self.cachedir):
             raise OSError("Directory doesn't exist: '{}'".format(cachedir))
@@ -190,10 +196,16 @@ class FDNClient:
             metadata_paths = sorted(glob.glob(op.join(cachedir, 'metadata*.tsv')))
             metadata_path = metadata_paths[-1]
             self._meta = pd.read_table(metadata_path, low_memory=False, comment='#')
-            #self._meta = self._meta[self._meta['Assembly'] == assembly].copy()
+            if assembly == 'GRCh38':
+                self._meta = self._meta[self._meta['Organism'] == 'human'].copy()
             self._meta = self._meta.set_index('File Accession')
         else:
             self._meta = metadata
+        if key_id is not None:
+            credential = (key_id + ':' + key_secret).encode('utf-8')
+            self._token = base64.b64encode(credential)
+        else:
+            self._token = None
 
     @property
     def meta(self):
@@ -216,7 +228,13 @@ class FDNClient:
             # print('File "{}" available'.format(filename))
         else:
             print('Downloading "{}"'.format(filename))
-            r = requests.get(url)
+            if self._token:
+                headers = {
+                    'Authorization': b'Basic ' + self._token
+                }
+            else:
+                headers = None
+            r = requests.get(url, headers=headers)
             r.raise_for_status()
             with open(path, 'wb') as f:
                 f.write(r.content)
