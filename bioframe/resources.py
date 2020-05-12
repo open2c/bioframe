@@ -107,6 +107,10 @@ class UCSCClient:
         url = urljoin(self._db_url, 'chromInfo.txt.gz')
         return read_chromsizes(url, **kwargs)
 
+    def fetch_centromeres(self, **kwargs):
+        url = urljoin(self._db_url, 'centromeres.txt.gz')
+        return read_table(url, schema='centromeres')
+
     def fetch_gaps(self, **kwargs):
         url = urljoin(self._db_url, 'gap.txt.gz')
         return read_gapfile(url, **kwargs)
