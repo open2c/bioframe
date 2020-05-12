@@ -1,4 +1,4 @@
-from bioframe.region import parse_region
+from bioframe._region import parse_region
 import pytest
 
 
