@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function
-
 import collections
-
 import numpy as np
 import pandas as pd
 
 from . import arrops
-from ._region import parse_region
+from .region import parse_region
 
 
 def _get_default_colnames():
@@ -86,7 +82,7 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
 
     limits : {str: int} or {str: (int, int)}
         The limits of interval expansion. If a single number X if provided,
-        the expanded intervals are trimmed to fit into (0, X); if a tuple 
+        the expanded intervals are trimmed to fit into (0, X); if a tuple
         of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
 
     side : str
@@ -141,118 +137,6 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
             df[ek] = df[ek] + pad
 
     return df
-
-
-def bychrom(func, *tables, **kwargs):
-    """
-    Split one or more bed-like dataframes by chromosome.
-    Apply ``func(chrom, *slices)`` to each chromosome slice.
-    Yield results.
-
-    Parameters
-    ----------
-    func : function to apply to split dataframes.
-        The expected signature is ``func(chrom, df1[, df2[, ...])``,
-        where ``df1, df2, ...`` are subsets of the input dataframes.
-        The function can return anything.
-
-    tables : sequence of BED-like ``pd.DataFrame``s.
-        The first column of each dataframe must be chromosome labels,
-        unless specified by ``chrom_field``.
-
-    chroms : sequence of str, optional
-        Select which chromosome subsets of the data to apply the function to.
-        Defaults to all unique chromosome labels in the first dataframe input,
-        in natural sorted order.
-
-    chrom_field: str, optional
-        Name of column containing chromosome labels.
-
-    ret_chrom : bool, optional (default: False)
-        Yield "chromosome, value" pairs as output instead of only values.
-
-    map : callable, optional (default: ``itertools.imap`` or ``map`` in Python 3)
-        Map implementation to use.
-
-    Returns
-    -------
-    Iterator or future that yields the output of running `func` on
-    each chromosome
-
-    """
-    chroms = kwargs.pop("chroms", None)
-    # parallel = kwargs.pop("parallel", False)
-    ret_chrom = kwargs.pop("ret_chrom", False)
-    map_impl = kwargs.pop("map", map)
-
-    first = tables[0]
-    chrom_field = kwargs.pop("chrom_field", first.columns[0])
-    if chroms is None:
-        chroms = arrops.natsorted(first[chrom_field].unique())
-
-    grouped_tables = [table.groupby(chrom_field) for table in tables]
-
-    def iter_partials():
-        for chrom in chroms:
-            partials = []
-            for gby in grouped_tables:
-                try:
-                    partials.append(gby.get_group(chrom))
-                except KeyError:
-                    partials.append(gby.head()[0:0])
-            yield partials
-
-    if ret_chrom:
-
-        def run_job(chrom, partials):
-            return chrom, func(chrom, *partials)
-
-    else:
-
-        def run_job(chrom, partials):
-            return func(chrom, *partials)
-
-    return map_impl(run_job, chroms, iter_partials())
-
-
-def chromsorted(df, by=None, ignore_index=True, chromosomes=None, **kwargs):
-    """
-    Sort bed-like dataframe by chromosome label in "natural" alphanumeric
-    order, followed by any columns specified in ``by``.
-
-    """
-    chrom_col = df["chrom"]
-    is_categorical = pd.api.types.is_categorical(chrom_col)
-
-    if chromosomes is None:
-        if not (is_categorical and chrom_col.cat.ordered):
-            dtype = pd.CategoricalDtype(
-                arrops.natsorted(chrom_col.unique()), ordered=True
-            )
-            chrom_col = chrom_col.astype(dtype)
-    else:
-        dtype = pd.CategoricalDtype(chromosomes, ordered=True)
-        chrom_col = chrom_col.astype(dtype)
-        missing = df["chrom"].loc[chrom_col.isnull()].unique().tolist()
-        if len(missing):
-            raise ValueError("Unknown ordering for {}.".format(missing))
-
-    sort_cols = ["chrom"]
-    if by is not None:
-        if not isinstance(by, list):
-            by = [by]
-        sort_cols.append(by)
-
-    out = (
-        df.assign(chrom=chrom_col)
-        .sort_values(sort_cols, **kwargs)
-        .reset_index(drop=True)
-    )
-
-    if not is_categorical:
-        out["chrom"] = out["chrom"].astype(str)
-
-    return out
 
 
 def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
@@ -436,12 +320,12 @@ def _overlap_intidxs(df1, df2, cols1=None, cols2=None):
     """
     Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
-    
+
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        
+
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
@@ -511,30 +395,30 @@ def overlap(
 
     """
     Find pairs of overlapping genomic intervals.
-    
+
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-    
+
     out : list of str or dict
         A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
+        Can be provided as a dict of {output:column_name}
         Allowed values: ['input', 'index', 'overlap_start', 'overlap_end'].
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
-    
+
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default 
+        genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-    
+
     Returns
     -------
     df_overlap : pandas.DataFrame
-        
-    
+
+
     """
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
@@ -591,24 +475,24 @@ def cluster(
     Parameters
     ----------
     df : pandas.DataFrame
-    
+
     min_dist : float or None
-        If provided, cluster intervals separated by this distance or less. 
-        If None, do not cluster non-overlapping intervals. Using 
-        min_dist=0 and min_dist=None will bring different results. 
+        If provided, cluster intervals separated by this distance or less.
+        If None, do not cluster non-overlapping intervals. Using
+        min_dist=0 and min_dist=None will bring different results.
         bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
-        do not overlap, but are separated by a distance of 0. Adjacent intervals 
+        do not overlap, but are separated by a distance of 0. Adjacent intervals
         are not clustered when min_dist=None, but are clustered when min_dist=0.
-    
+
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
-    
+
     out : list of str or dict
         A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
+        Can be provided as a dict of {output:column_name}
         Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
-        
+
     return_cluster_df : bool
         If True, return
 
@@ -706,19 +590,19 @@ def merge(df, min_dist=0, cols=None):
     Parameters
     ----------
     df : pandas.DataFrame
-    
+
     min_dist : float or None
-        If provided, merge intervals separated by this distance or less. 
-        If None, do not merge non-overlapping intervals. Using 
-        min_dist=0 and min_dist=None will bring different results. 
+        If provided, merge intervals separated by this distance or less.
+        If None, do not merge non-overlapping intervals. Using
+        min_dist=0 and min_dist=None will bring different results.
         bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
-        do not overlap, but are separated by a distance of 0. Adjacent intervals 
+        do not overlap, but are separated by a distance of 0. Adjacent intervals
         are not merged when min_dist=None, but are merged when min_dist=0.
-    
+
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
-            
+
     Returns
     -------
     df_merged : pandas.DataFrame
@@ -776,17 +660,17 @@ def complement(df, chromsizes=None, cols=None):
     Parameters
     ----------
     df : pandas.DataFrame
-    
+
     chromsizes : dict
 
     cols : (str, str, str)
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
-    
+
     Returns
     -------
     df_complement : numpy.ndarray
-    
+
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
@@ -808,7 +692,7 @@ def complement(df, chromsizes=None, cols=None):
         if chrom in chromsizes:
             chromsize = chromsizes[chrom]
 
-            if (chromsize < np.max(df_group[ek].values)): 
+            if (chromsize < np.max(df_group[ek].values)):
                 raise ValueError('one or more intervals exceed provided chromsize')
             (
                 complement_starts_group,
@@ -844,27 +728,27 @@ def complement(df, chromsizes=None, cols=None):
 def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
-     in set 1 find the number of base pairs covered by intervals in set 2. 
+     in set 1 find the number of base pairs covered by intervals in set 2.
 
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-            
+
     out : list of str or dict
         A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
+        Can be provided as a dict of {output:column_name}
         Allowed values: ['input', 'index', 'coverage'].
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default 
+        genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-    
+
     Returns
     -------
     df_coverage : pandas.DataFrame
-    
+
     """
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
@@ -927,7 +811,7 @@ def _closest_intidxs(
     """
     For every interval in set 1 find k closest genomic intervals in set2 and
     return their integer indices.
-    
+
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -936,17 +820,17 @@ def _closest_intidxs(
 
     k_closest : int
         The number of closest intervals to report.
-        
+
     cols1, cols2 : (str, str, str)
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default 
+        genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
     Returns
     -------
     closest_ids : numpy.ndarray
-        The indices of the overlapping genomic intervals in the original 
-        dataframes. The 1st column contains the indices of intervals 
+        The indices of the overlapping genomic intervals in the original
+        dataframes. The 1st column contains the indices of intervals
         from the 1st set, the 2nd column - the indicies from the 2nd set.
     """
 
@@ -1009,7 +893,7 @@ def _closest_intidxs(
         ).T
 
         closest_intidxs.append(closest_idxs_group)
-    
+
     if len(closest_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     closest_intidxs = np.vstack(closest_intidxs)
 
@@ -1032,35 +916,35 @@ def closest(
 
     """
     For every interval in set 1 find k closest genomic intervals in set2.
-    
+
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
         If df2 is None, find closest non-identical intervals within the same set.
-        
+
     k : int
         The number of closest intervals to report.
-    
+
     out : list of str or dict
         A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'distance', 'have_overlap', 
+        Can be provided as a dict of {output:column_name}
+        Allowed values: ['input', 'index', 'distance', 'have_overlap',
         'overlap_start', 'overlap_end'].
 
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
-    
+
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-    
+
     Returns
     -------
     df_closest : pandas.DataFrame
         If no intervals found, returns none.
-    
+
     """
     if k<1: raise ValueError('k>=1 required')
 

@@ -10,6 +10,8 @@ from . import arrops
 DEFAULT_FACECOLOR = "skyblue"
 DEFAULT_EDGECOLOR = "dimgray"
 
+__all__ = ['plot_intervals']
+
 
 def _plot_interval(
     start, end, level, facecolor=None, edgecolor=None, height=0.6, ax=None
@@ -43,7 +45,7 @@ def plot_intervals_arr(
         A collection of intervals.
 
     levels : iterable or None
-        The level of each interval, i.e. the y-coordinate at which the interval 
+        The level of each interval, i.e. the y-coordinate at which the interval
         must be plotted. If None, it will be determined automatically.
 
     labels : str or iterable or None
@@ -51,7 +53,7 @@ def plot_intervals_arr(
 
     colors : str or iterable or None.
         The color of each interval.
-    
+
     xlim : (float, float) or None
         The x-span of the plot.
 
@@ -125,7 +127,7 @@ def plot_intervals(
         A collection of intervals.
 
     levels : iterable or None
-        The level of each interval, i.e. the y-coordinate at which the interval 
+        The level of each interval, i.e. the y-coordinate at which the interval
         must be plotted. If None, it will be determined automatically.
 
     labels : str or iterable or None
@@ -133,7 +135,7 @@ def plot_intervals(
 
     colors : str or iterable or None.
         The color of each interval.
-    
+
     xlim : (float, float) or None
         The x-span of the plot.
 
