@@ -3,15 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to bioframe's documentation!
-====================================
+bioframe
+==================
+
+
+Bioframe is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of 
+`pandas <https://pandas.pydata.org/>`_ enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization and iteration of genomic analyses.
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart
    api
-
+   ops
+   arrops
+   notebooks
 
 
 Indices and tables

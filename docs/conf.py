@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../'))
 
 import mock
 MOCK_MODULES = [
@@ -67,11 +67,14 @@ release = version
 extensions = [
     'sphinx.ext.autodoc',
     # 'sphinx.ext.doctest',
-    # 'sphinx.ext.todo',                                                                                                      'sphinx.ext.coverage',
+    # 'sphinx.ext.todo',                                                                                                      
+    #'sphinx.ext.coverage',
     # 'sphinx.ext.mathjax',
     # 'sphinx.ext.ifconfig',
+    'autodocsumm',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',                                                                                               'sphinx.ext.napoleon',  # 'numpydoc'
+    'sphinx.ext.autosummary',                                                                                              
+    'sphinx.ext.napoleon',  # 'numpydoc'
 ]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -95,3 +98,5 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 master_doc = 'index'
+
+autosummary_generate = True 
