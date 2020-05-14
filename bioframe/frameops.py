@@ -389,8 +389,8 @@ def frac_gene_coverage(bintable, mrna):
     from .tools import bedtools
 
     if isinstance(mrna, six.string_types):
-        from .resources import fetch_ucsc_mrna
-        mrna = fetch_ucsc_mrna(mrna).rename(
+        from .resources import UCSCClient
+        mrna=UCSCClient(mrna).fetch_mrna().rename(
             columns={'tName': 'chrom', 'tStart': 'start', 'tEnd': 'end'})
 
     mrna = mrna.sort_values(['chrom','start','end']).reset_index(drop=True)
