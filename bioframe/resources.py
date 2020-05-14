@@ -46,65 +46,12 @@ def _check_connectivity(reference='http://www.google.com'):
         return False
 
 
-def fetch_ucsc_chromsizes(db, **kwargs):
-    """
-    Download chromosome sizes from UCSC as a :class:`pandas.Series`, indexed
-    by chromosome label.
-
-    Parameters
-    ----------
-    db : str
-        The name of a UCSC genome assembly.
-
-    Other Parameters
-    ----------------
-    **kwargs :
-        Passed to :func:`read_chromsizes`.
-
-    """
-    return read_chromsizes(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/chromInfo.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_ucsc_mrna(db, **kwargs):
-    return read_ucsc_mrnafile(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/all_mrna.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_ucsc_gaps(db, **kwargs):
-    return read_gapfile(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/gap.txt.gz'.format(db),
-        **kwargs)
-
-
-def fetch_ucsc_cytoband(db, ideo=True, **kwargs):
-    if ideo:
-        return read_table(
-            'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBandIdeo.txt.gz'.format(db),
-            schema='cytoband',
-            **kwargs)
-    else:
-        return read_table(
-            'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/cytoBand.txt.gz'.format(db),
-            schema='cytoband',
-            **kwargs)
-
-
-def fetch_ucsc_centromeres(db,**kwargs):
-    return read_table(
-        'http://hgdownload.cse.ucsc.edu/goldenPath/{}/database/centromeres.txt.gz'.format(db),
-        schema='centromeres',
-        **kwargs)
-
-
 def fetch_chromsizes(db, provider=None, **kwargs):
     if provider == 'local' or db in LOCAL_CHROMSIZES:
         pass
 
     if provider == 'ucsc' or provider is None:
-        return fetch_ucsc_chromsizes(db, **kwargs)
+        return UCSCClient(db).fetch_chromsizes(**kwargs)
     else:
         raise ValueError("Unknown provider '{}'".format(provider))
 
@@ -127,16 +74,17 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     if not _check_connectivity('http://hgdownload.cse.ucsc.edu'):
         raise ConnectionError('No connection to the genome database at hgdownload.cse.ucsc.edu!')
 
+    client = UCSCClient(db)
     fetchers = [
-        ('centromeres', fetch_ucsc_centromeres),
-        ('cytoband', fetch_ucsc_cytoband),
-        ('cytoband', partial(fetch_ucsc_cytoband, ideo=True)),
-        ('gap', fetch_ucsc_gaps)
+        ('centromeres', client.fetch_centromeres),
+        ('cytoband', client.fetch_cytoband),
+        ('cytoband', partial(client.fetch_cytoband, ideo=True)),
+        ('gap', client.fetch_gaps)
     ]
 
     for schema, fetcher in fetchers:
         try:
-            df = fetcher(db)
+            df = fetcher()
             break
         except urllib.error.HTTPError:
             pass
@@ -144,6 +92,39 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
         raise ValueError('No source for centromere data found.')
 
     return extract_centromeres(df, schema=schema, merge=merge)
+
+
+class UCSCClient:
+    BASE_URL = 'http://hgdownload.cse.ucsc.edu/'
+
+    def __init__(self, db):
+        self._db = db
+        self._db_url = urljoin(
+            self.BASE_URL, 'goldenPath/{}/database/'.format(db)
+        )
+
+    def fetch_chromsizes(self, **kwargs):
+        url = urljoin(self._db_url, 'chromInfo.txt.gz')
+        return read_chromsizes(url, **kwargs)
+
+    def fetch_centromeres(self, **kwargs):
+        url = urljoin(self._db_url, 'centromeres.txt.gz')
+        return read_table(url, schema='centromeres')
+
+    def fetch_gaps(self, **kwargs):
+        url = urljoin(self._db_url, 'gap.txt.gz')
+        return read_gapfile(url, **kwargs)
+
+    def fetch_cytoband(self, ideo=False, **kwargs):
+        if ideo:
+            url = urljoin(self._db_url, 'cytoBandIdeo.txt.gz')
+        else:
+            url = urljoin(self._db_url, 'cytoBand.txt.gz')
+        return read_table(url, schema='cytoband')
+
+    def fetch_mrna(self, **kwargs):
+        url = urljoin(self._db_url, 'all_mrna.txt.gz')
+        return read_ucsc_mrnafile(url, **kwargs)
 
 
 class EncodeClient:
