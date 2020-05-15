@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 
 from . import arrops
+from . import ops
 from ._region import parse_region
+
+import six
 
 
 def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
@@ -63,9 +66,12 @@ def binnify(chromsizes, binsize, rel_ids=False):
 
     Returns
     -------
-    Data frame with columns: 'chrom', 'start', 'end'.
+    bintable : pandas.DataFrame with columns: 'chrom', 'start', 'end'.
 
     """
+
+    if type(binsize) is not int: raise ValueError('binsize must be int')
+
 
     def _each(chrom):
         clen = chromsizes[chrom]
@@ -166,20 +172,34 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
 
 
 def frac_gene_coverage(bintable, mrna):
-    if isinstance(mrna, str):
-        from .resources import fetch_ucsc_mrna
+    """
+    Calculate number and fraction of overlaps by genes for a set of intervals.
 
-        mrna = fetch_ucsc_mrna(mrna).rename(
-            columns={"tName": "chrom", "tStart": "start", "tEnd": "end"}
-        )
+    Parameters
+    ----------
+    bintable : set of intervals
+    mrna: str
+        Name of genome.
 
-    bintable = coverage(
+    Returns
+    -------
+    XXXX
+
+    """    
+    
+    raise ValueError('implementation currently broken!')
+
+    if isinstance(mrna, six.string_types):
+        from .resources import UCSCClient
+        mrna=UCSCClient(mrna).fetch_mrna().rename(
+        columns={'tName': 'chrom', 'tStart': 'start', 'tEnd': 'end'})
+
+
+    #### currently broken ####
+    bintable = ops.coverage(
         bintable,
         mrna,
         out={"input": "input", "count": "gene_count", "coverage": "gene_coverage"},
-    )
-    bintable["gene_coverage"] = bintable["gene_coverage"] / (
-        bintable["end"] - bintable["start"]
     )
 
     return bintable
