@@ -6,3 +6,4 @@ from ._region import *
 from .ops import *
 from .formats import *
 from .resources import *
+from .genomeops import *
