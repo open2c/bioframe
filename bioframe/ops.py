@@ -48,29 +48,6 @@ def bedslice_series(beds, region):
     chrom, start, end = region
     return beds.loc[chrom].loc[start:end]
 
-
-def bg2slice(bg2, region1, region2):
-    """
-    Slice a dataframe with columns ['chrom1', 'start1', 'end1', 'chrom2',
-    'start2', 'end2']. Assumes no proper nesting of intervals.
-    """
-    chrom1, start1, end1 = region1
-    chrom2, start2, end2 = region2
-    if end1 is None:
-        end1 = np.inf
-    if end2 is None:
-        end2 = np.inf
-    out = bg2[
-        (bg2["chrom1"] == chrom1)
-        & (bg2["start1"] >= start1)
-        & (bg2["end1"] < end1)
-        & (bg2["chrom2"] == chrom2)
-        & (bg2["start2"] >= start2)
-        & (bg2["end2"] < end2)
-    ]
-    return out
-
-
 def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
     """
     Expand each interval by a given amount.
