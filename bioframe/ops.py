@@ -155,8 +155,16 @@ def _overlap_intidxs(df1, df2, how='left', keep_order=False, cols1=None, cols2=N
 
     overlap_intidxs = []
     for group_keys, df1_group_idxs in df1_groups.items():
-        if group_keys not in df2_groups:
+
+        if group_keys not in df2_groups: 
+            if how == 'outer' or how == 'left':
+                overlap_intidxs_sub = [[
+                    df1_group_idxs[:,None],
+                    -1*np.ones_like(df1_group_idxs)[:,None],
+                    ]]
+                overlap_intidxs.append(np.block(overlap_intidxs_sub))
             continue
+
         df1_group_idxs = df1_group_idxs.values    
         df2_group_idxs = df2_groups[group_keys].values
 
@@ -192,6 +200,16 @@ def _overlap_intidxs(df1, df2, how='left', keep_order=False, cols1=None, cols2=N
             overlap_intidxs_sub += [[-1*np.ones_like(no_overlap_ids2)[:,None], no_overlap_ids2[:,None]]]
 
         overlap_intidxs.append(np.block(overlap_intidxs_sub))
+
+    if how == 'outer' or how == 'right':
+        for group_keys, df2_group_idxs in df2_groups.items():
+            if group_keys not in df1_groups: 
+                overlap_intidxs_sub = [[
+                    -1*np.ones_like(df2_group_idxs)[:,None],
+                    df2_group_idxs[:,None],
+                    ]]
+                overlap_intidxs.append(np.block(overlap_intidxs_sub))
+
 
     if len(overlap_intidxs)==0: return np.ndarray(shape=(0,2), dtype=np.int)
     overlap_intidxs = np.vstack(overlap_intidxs)
@@ -867,3 +885,62 @@ def closest(
         out_df = pd.concat([df_left, df_right, out_df], axis="columns")
 
     return out_df
+
+
+def subtract(
+    df1,
+    df2,
+    cols1=None,
+    cols2=None):
+
+    """
+    Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
+
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+    
+    cols1, cols2 : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+    
+    Returns
+    -------
+    df_subtracted : pandas.DataFrame
+    
+    """
+
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+
+    name_updates = {'chrom_1':'chrom','overlap_start':'start','overlap_end':'end'}
+    extra_columns_1 = list(np.setdiff1d(df1.columns,[ck1, sk1, ek1 ]))#+'_1')
+    for i in extra_columns_1:
+        name_updates[i+'_1'] = i
+
+    ### loop over chromosomes, then either return the same or subtracted intervals. 
+    df1_groups = df1.groupby(ck1).groups
+    df2_groups = df2.groupby(ck2).groups
+    df_subtracted = []
+    for group_keys, df1_group_idxs in df1_groups.items():
+        df1_group = df1.loc[df1_group_idxs]
+
+        # if nothing to subtract, add original intervals
+        if group_keys not in df2_groups:
+            df_subtracted.append(df1_group)
+            continue
+
+        df2_group_idxs = df2_groups[group_keys]
+        df2_group = df2.loc[df2_group_idxs]
+        df_subtracted_group = overlap(df1_group,complement(df2_group),return_overlap=True)[list(name_updates)]
+        df_subtracted.append(
+            df_subtracted_group.rename(columns=name_updates))
+    df_subtracted = pd.concat(df_subtracted)
+    return df_subtracted
+
+
+
+
+
