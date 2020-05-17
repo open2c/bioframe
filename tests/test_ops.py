@@ -58,6 +58,32 @@ def mock_bioframe(num_entries=100):
 
 
 ############# tests #####################
+def test_select():
+    df1 = pd.DataFrame([
+        ['chrX', 3, 8],
+        ['chr1', 4, 5],
+        ['chrX', 1, 5]],
+        columns=['chrom', 'start', 'end']
+    )
+
+    region1 = 'chr1:4-10'
+    df_result = pd.DataFrame([['chr1', 4, 5]],
+        columns=['chrom', 'start', 'end'] )
+    pd.testing.assert_frame_equal(df_result, bioframe.select(df1,region1).reset_index(drop=True))
+
+    region1 = 'chrX'
+    df_result = pd.DataFrame([
+        ['chrX', 3, 8],
+        ['chrX', 1, 5]],
+        columns=['chrom', 'start', 'end'])
+    pd.testing.assert_frame_equal(df_result, bioframe.select(df1,region1).reset_index(drop=True))
+
+    region1 = 'chrX:4-6'
+    df_result = pd.DataFrame([
+        ['chrX', 3, 8],
+        ['chrX', 1, 5]],
+        columns=['chrom', 'start', 'end'])
+    pd.testing.assert_frame_equal(df_result, bioframe.select(df1,region1).reset_index(drop=True))
 
 
 def test_expand():
@@ -95,6 +121,10 @@ def test_overlap():
     ]
     pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
     print("overlap elements agree")
+    
+    ### TO DO ####
+    ### test overlap 'left', 'outer', and 'right'
+
 
 
 def test_cluster():
@@ -291,6 +321,47 @@ def test_coverage():
          0  chr1     3       8     5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+
+
+def test_subtract():
+    df1 = pd.DataFrame([
+        ['chrX', 3, 8],
+        ['chr1', 4, 7],
+        ['chrX', 1, 5]],
+        columns=['chrom', 'start', 'end']
+    )
+    assert (len(bioframe.subtract(df1,df1))==0)
+
+    df2 = pd.DataFrame([
+        ['chrX', 0, 18],
+        ['chr1', 5, 6],],
+        columns=['chrom', 'start', 'end']
+    )
+
+    df1['animal'] = 'sea-creature'
+    df_result = pd.DataFrame([
+        ['chr1', 4, 5, 'sea-creature'],
+        ['chr1', 6, 7, 'sea-creature']],
+        columns=['chrom', 'start', 'end','animal'] )
+    pd.testing.assert_frame_equal(df_result, bioframe.subtract(df1,df2).reset_index(drop=True))
+
+    df2 = pd.DataFrame([
+        ['chrX', 0, 4],
+        ['chr1', 6, 6],
+        ['chrX', 4, 9]],
+        columns=['chrom', 'start', 'end'])
+
+    df1['animal'] = 'sea-creature'
+    df_result = pd.DataFrame([
+        ['chr1', 4, 6, 'sea-creature'],
+        ['chr1', 6, 7, 'sea-creature']],
+        columns=['chrom', 'start', 'end','animal'] )
+    print(bioframe.subtract(df1,df2))
+    pd.testing.assert_frame_equal(df_result, bioframe.subtract(df1,df2).reset_index(drop=True))
+
+
+
+
 
 
 
