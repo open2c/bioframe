@@ -87,10 +87,10 @@ def test_overlap():
     assert df1.equals(df2) == False
     p1 = bioframe_to_pyranges(df1)
     p2 = bioframe_to_pyranges(df2)
-    pp = pyranges_overlap_to_bioframe(p1.join(p2))[
+    pp = pyranges_overlap_to_bioframe(p1.join(p2, how=None))[
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
     ]
-    bb = bioframe.overlap(df1, df2)[
+    bb = bioframe.overlap(df1, df2, how='inner')[
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
     ]
     pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
@@ -261,6 +261,8 @@ def test_coverage():
     d = """chrom    start   end coverage
          0  chr1    3   8   5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    print(df)
+    print(bioframe.coverage(df1, df2))
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
 
