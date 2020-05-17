@@ -947,7 +947,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     name_updates = {"chrom_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
-    extra_columns_1 = list(np.setdiff1d(df1.columns, [ck1, sk1, ek1]))  # +'_1')
+    extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
 
