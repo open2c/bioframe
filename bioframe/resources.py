@@ -2,6 +2,7 @@ from __future__ import division, print_function
 from functools import partial
 from urllib.parse import urljoin, urlencode
 import urllib
+import os
 import posixpath as pp
 import os.path as op
 import pandas as pd
@@ -130,15 +131,34 @@ class UCSCClient:
 
 class EncodeClient:
     BASE_URL = 'http://www.encodeproject.org/'
+    ### 2020-05-15 compatible with ENCODE Metadata at: 
+    ### https://www.encodeproject.org/metadata/type=Experiment&status=released/
 
     def __init__(self, cachedir, assembly, metadata=None):
+        ## File accession column of Encode metadata sheet, sorted
+        KNOWN_ASSEMBLIES = ['GRCh38','GRCh38-minimal', 'ce10','ce11', 'dm3', 
+                            'dm6', 'hg19', 'mm10', 'mm10-minimal','mm9']
+        if assembly not in KNOWN_ASSEMBLIES: 
+            raise ValueError('assembly must be in:',KNOWN_ASSEMBLIES)
+
         self.cachedir = op.join(cachedir, assembly)
         if not op.isdir(self.cachedir):
-            raise OSError("Directory doesn't exist: '{}'".format(cachedir))
+            try:
+                os.makedirs(self.cachedir)
+            except FileExistsError:
+                pass
+            except:
+                raise OSError("Directory cannot be 't exist: '{}'".format(cachedir))
+
         if metadata is None:
             metadata_path = op.join(cachedir, 'metadata.tsv')
+            if not op.exists(metadata_path): 
+                raise OSError('need encode metadata in the path!')
+                ### TODO: add automatic download of metadata ###
             self._meta = pd.read_table(metadata_path, low_memory=False)
-            self._meta = self._meta[self._meta['Assembly'] == assembly].copy()
+            if sorted( list( (self._meta['File assembly'].dropna().unique()))) != (KNOWN_ASSEMBLIES):
+                raise ValueError('table assembly does not match known_assemblies, check ENCODE metadata version')
+            self._meta = self._meta[self._meta['File assembly'] == assembly].copy()
             self._meta = self._meta.set_index('File accession')
         else:
             self._meta = metadata

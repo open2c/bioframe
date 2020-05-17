@@ -34,6 +34,8 @@ GAPPEDPEAK_FIELDS = ['chrom', 'start', 'end', 'name', 'score', 'strand',
                      'blockCount', 'blockSizes', 'blockStarts',
                      'fc', '-log10p', '-log10q']
 
+JASPAR_FIELDS = ['chrom', 'start', 'end', 'name', 'score','pval','strand']
+
 GAP_FIELDS = [
     'bin',
     'chrom', 'start', 'end',
@@ -90,6 +92,7 @@ SCHEMAS = {
     'cytoband': CYTOBAND_FIELDS,
     'sam': BAM_FIELDS,
     'vcf': VCF_FIELDS,
+    'jaspar':JASPAR_FIELDS
 }
 
 

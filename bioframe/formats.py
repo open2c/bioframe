@@ -15,39 +15,42 @@ from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):
-    kwargs.setdefault('sep', '\t')
-    kwargs.setdefault('header', None)
-    if isinstance(filepath_or, str) and filepath_or.endswith('.gz'):
-        kwargs.setdefault('compression', 'gzip')
+    kwargs.setdefault("sep", "\t")
+    kwargs.setdefault("header", None)
+    if isinstance(filepath_or, str) and filepath_or.endswith(".gz"):
+        kwargs.setdefault("compression", "gzip")
     if schema is not None:
         try:
-            kwargs.setdefault('names', SCHEMAS[schema])
+            kwargs.setdefault("names", SCHEMAS[schema])
         except (KeyError, TypeError):
             if isinstance(schema, str):
                 raise ValueError("TSV schema not found: '{}'".format(schema))
-            kwargs.setdefault('names', schema)
+            kwargs.setdefault("names", schema)
     return pd.read_csv(filepath_or, **kwargs)
 
 
-def parse_gtf_attributes(attrs, kv_sep='=', item_sep=';', quotechar='"', **kwargs):
+def parse_gtf_attributes(attrs, kv_sep="=", item_sep=";", quotechar='"', **kwargs):
     item_lists = attrs.str.split(item_sep)
     item_lists = item_lists.apply(
         lambda items: [item.strip().split(kv_sep) for item in items]
     )
-    stripchars = quotechar + ' '
+    stripchars = quotechar + " "
     item_lists = item_lists.apply(
-        lambda items: [map(lambda x: x.strip(stripchars), item)
-                        for item in items if len(item) == 2]
+        lambda items: [
+            map(lambda x: x.strip(stripchars), item) for item in items if len(item) == 2
+        ]
     )
     kv_records = item_lists.apply(dict)
     return pd.DataFrame.from_records(kv_records, **kwargs)
 
 
-def read_chromsizes(filepath_or,
-                    filter_chroms=False,
-                    chrom_patterns=(r'^chr[0-9]+$', r'^chr[XY]$', r'^chrM$'),
-                    natsort=True,
-                    **kwargs):
+def read_chromsizes(
+    filepath_or,
+    filter_chroms=False,
+    chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
+    natsort=True,
+    **kwargs
+):
     """
     Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
     database, where ``db`` is a genome assembly name.
@@ -79,34 +82,41 @@ def read_chromsizes(filepath_or,
     * NCBI assembly terminology: <https://www.ncbi.nlm.nih.gov/grc/help/definitions>
 
     """
-    if isinstance(filepath_or, str) and filepath_or.endswith('.gz'):
-        kwargs.setdefault('compression', 'gzip')
+    if isinstance(filepath_or, str) and filepath_or.endswith(".gz"):
+        kwargs.setdefault("compression", "gzip")
 
     chromtable = pd.read_csv(
-        filepath_or, sep='\t', usecols=[0, 1],
-        names=['name', 'length'], dtype={'name':str}, **kwargs)
+        filepath_or,
+        sep="\t",
+        usecols=[0, 1],
+        names=["name", "length"],
+        dtype={"name": str},
+        **kwargs
+    )
 
     if filter_chroms:
         parts = []
         for pattern in chrom_patterns:
-            if not len(pattern): continue
-            part = chromtable[chromtable['name'].str.contains(pattern)]
+            if not len(pattern):
+                continue
+            part = chromtable[chromtable["name"].str.contains(pattern)]
             if natsort:
-                part = part.iloc[argnatsort(part['name'])]
+                part = part.iloc[argnatsort(part["name"])]
             parts.append(part)
         chromtable = pd.concat(parts, axis=0)
 
-    chromtable.index = chromtable['name'].values
-    return chromtable['length']
+    chromtable.index = chromtable["name"].values
+    return chromtable["length"]
 
 
 def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
     gap = pd.read_csv(
         filepath_or_fp,
-        sep='\t',
+        sep="\t",
         names=GAP_FIELDS,
-        usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs)
+        usecols=["chrom", "start", "end", "length", "type", "bridge"],
+        **kwargs
+    )
     if chroms is not None:
         gap = gap[gap.chrom.isin(chroms)]
     return gap
@@ -115,10 +125,11 @@ def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
 def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
     mrna = pd.read_csv(
         filepath_or_fp,
-        sep='\t',
+        sep="\t",
         names=UCSC_MRNA_FIELDS,
-        #usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs)
+        # usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
+        **kwargs
+    )
     if chroms is not None:
         mrna = mrna[mrna.chrom.isin(chroms)]
     return mrna
@@ -127,39 +138,41 @@ def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
 def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
     # https://sebastienvigneau.wordpress.com/2014/01/10/bigwig-to-bedgraph-to-wig/
     # http://redmine.soe.ucsc.edu/forum/index.php?t=msg&goto=5492&S=2925a24be1c20bb064fc09bd054f862d
-    cmd = ['bigWigToWig',
-           '-chrom={}'.format(chrom)]
+    cmd = ["bigWigToWig", "-chrom={}".format(chrom)]
     if start is not None:
-        cmd += ['-start={}'.format(start)]
+        cmd += ["-start={}".format(start)]
     if end is not None:
-        cmd += ['-end={}'.format(end)]
+        cmd += ["-end={}".format(end)]
     if cachedir is not None:
-        cmd += ['-udcDir={}'.format(cachedir)]
+        cmd += ["-udcDir={}".format(cachedir)]
 
-    with tempfile.NamedTemporaryFile('w+t') as fh:
+    with tempfile.NamedTemporaryFile("w+t") as fh:
         cmd += [filepath, fh.name]
         run(cmd, raises=True)
         fh.flush()
 
         trackline = fh.readline().split()
-        if trackline[0] == '#bedGraph':
-            info = {'type': 'bedGraph'}
-            out = pd.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
+        if trackline[0] == "#bedGraph":
+            info = {"type": "bedGraph"}
+            out = pd.read_csv(fh, sep="\t", names=["chrom", "start", "end", "value"])
         else:
             tracktype = trackline[0]
-            info = dict([kv.split('=') for kv in trackline[1:]])
-            info['type'] = tracktype
-            for key in ['start', 'step', 'span']:
-                if key in info: info[key] = int(info[key])
-            if tracktype == 'fixedStep':
-                out = pd.read_csv(fh, sep='\t', names=['value'])
+            info = dict([kv.split("=") for kv in trackline[1:]])
+            info["type"] = tracktype
+            for key in ["start", "step", "span"]:
+                if key in info:
+                    info[key] = int(info[key])
+            if tracktype == "fixedStep":
+                out = pd.read_csv(fh, sep="\t", names=["value"])
             else:
-                out = pd.read_csv(fh, sep='\t', names=['start', 'value'])
+                out = pd.read_csv(fh, sep="\t", names=["start", "value"])
 
     return info, out
 
 
-def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cachedir=None):
+def read_bigwig_binned(
+    filepath, chrom, start, end, nbins=1, aggfunc=None, cachedir=None
+):
     """
     Get summary data from bigWig for indicated region, broken into ``nbins`` equal parts.
 
@@ -182,69 +195,81 @@ def read_bigwig_binned(filepath, chrom, start, end, nbins=1, aggfunc=None, cache
         'coverage' - % of region that is covered
 
     """
-    cmd = ['bigWigSummary',
-           filepath, chrom, str(start+1), str(end), str(nbins)]
+    cmd = ["bigWigSummary", filepath, chrom, str(start + 1), str(end), str(nbins)]
     if aggfunc is not None:
-        cmd += ['-type={}'.format(aggfunc)]
+        cmd += ["-type={}".format(aggfunc)]
     if cachedir is not None:
-        cmd += ['-udcDir={}'.format(cachedir)]
+        cmd += ["-udcDir={}".format(cachedir)]
     out = run(cmd, raises=True)
-    return pd.read_csv(io.StringIO(out), sep='\t', na_values='n/a', header=None).iloc[0].values
+    return (
+        pd.read_csv(io.StringIO(out), sep="\t", na_values="n/a", header=None)
+        .iloc[0]
+        .values
+    )
 
 
 def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False):
     if as_wiggle:
         return _read_bigwig_as_wig(fp, chrom, start, end, cachedir)
 
-    cmd = [
-        'bigWigToBedGraph',
-        '-chrom={}'.format(chrom)
-    ]
+    cmd = ["bigWigToBedGraph", "-chrom={}".format(chrom)]
     if start is not None:
-        cmd += ['-start={}'.format(start)]
+        cmd += ["-start={}".format(start)]
     if end is not None:
-        cmd += ['-end={}'.format(end)]
+        cmd += ["-end={}".format(end)]
     if cachedir is not None:
-        cmd += ['-udcDir={}'.format(cachedir)]
+        cmd += ["-udcDir={}".format(cachedir)]
 
-    with tempfile.NamedTemporaryFile('w+t') as fh:
+    with tempfile.NamedTemporaryFile("w+t") as fh:
         cmd += [fp, fh.name]
         run(cmd, raises=True)
         fh.flush()
-        bg = pd.read_csv(fh, sep='\t', names=['chrom', 'start', 'end', 'value'])
+        bg = pd.read_csv(fh, sep="\t", names=["chrom", "start", "end", "value"])
 
     return bg
 
 
 def read_tabix(fp, chrom=None, start=None, end=None):
     import pysam
+
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
         df = pd.read_csv(
-            io.StringIO('\n'.join(f.fetch(chrom, start, end))),
-            sep='\t', header=None, names=names)
+            io.StringIO("\n".join(f.fetch(chrom, start, end))),
+            sep="\t",
+            header=None,
+            names=names,
+        )
     return df
 
 
-def read_pairix(fp, region1, region2=None, chromsizes=None,
-                columns=None, usecols=None, dtypes=None, **kwargs):
+def read_pairix(
+    fp,
+    region1,
+    region2=None,
+    chromsizes=None,
+    columns=None,
+    usecols=None,
+    dtypes=None,
+    **kwargs
+):
     import pypairix
     import cytoolz as toolz
 
     if dtypes is None:
         dtypes = {}
-    f = pypairix.open(fp, 'r')
+    f = pypairix.open(fp, "r")
 
     header = f.get_header()
     if len(header):
-        header_groups = toolz.groupby(lambda x: x.split(':')[0], header)
-        if '#chromsize' in header_groups and chromsizes is None:
-            items = [line.split()[1:] for line in header_groups['#chromsize']]
+        header_groups = toolz.groupby(lambda x: x.split(":")[0], header)
+        if "#chromsize" in header_groups and chromsizes is None:
+            items = [line.split()[1:] for line in header_groups["#chromsize"]]
             if len(items) and chromsizes is None:
                 names, lengths = zip(*((item[0], int(item[1])) for item in items))
                 chromsizes = pd.Series(index=names, data=lengths)
-        if '#columns' in header_groups and columns is None:
-            columns = header_groups['#columns'][0].split()[1:]
+        if "#columns" in header_groups and columns is None:
+            columns = header_groups["#columns"][0].split()[1:]
 
     chrom1, start1, end1 = parse_region(region1, chromsizes)
     if region2 is not None:
@@ -255,9 +280,7 @@ def read_pairix(fp, region1, region2=None, chromsizes=None,
     it = f.query2D(chrom1, start1, end1, chrom2, start2, end2)
     if usecols is not None:
         argusecols = [columns.index(col) for col in usecols]
-        records = [
-            (record[i] for i in argusecols) for record in it
-        ]
+        records = [(record[i] for i in argusecols) for record in it]
         columns = usecols
     else:
         records = it
@@ -268,42 +291,55 @@ def read_pairix(fp, region1, region2=None, chromsizes=None,
             if col in dtypes:
                 df[col] = df[col].astype(dtypes[col])
             else:
-                df[col] = pd.to_numeric(df[col], 'ignore')
+                df[col] = pd.to_numeric(df[col], "ignore")
     return df
 
 
 def read_bam(fp, chrom=None, start=None, end=None):
     import pysam
-    with closing(pysam.AlignmentFile(fp, 'rb')) as f:
+
+    with closing(pysam.AlignmentFile(fp, "rb")) as f:
         bam_iter = f.fetch(chrom, start, end)
-        records = [(s.qname, s.flag, s.rname, s.pos, s.mapq,
-                    s.cigarstring if s.mapq != 0 else np.nan,
-                    s.rnext, s.pnext, s.tlen, s.seq, s.qual,
-                    json.dumps(OrderedDict(s.tags))) for s in bam_iter]
+        records = [
+            (
+                s.qname,
+                s.flag,
+                s.rname,
+                s.pos,
+                s.mapq,
+                s.cigarstring if s.mapq != 0 else np.nan,
+                s.rnext,
+                s.pnext,
+                s.tlen,
+                s.seq,
+                s.qual,
+                json.dumps(OrderedDict(s.tags)),
+            )
+            for s in bam_iter
+        ]
         df = pd.DataFrame(records, columns=BAM_FIELDS)
     return df
 
 
 def extract_centromeres(df, schema=None, merge=True):
-    if schema == 'centromeres':
+    if schema == "centromeres":
         cens = df
-    elif schema == 'cytoband':
-        cens = df[df['gieStain'] == 'acen']
-    elif schema == 'gap':
-        cens = df[df['type'] == 'centromere']
+    elif schema == "cytoband":
+        cens = df[df["gieStain"] == "acen"]
+    elif schema == "gap":
+        cens = df[df["type"] == "centromere"]
     else:
-        raise ValueError(
-            '`schema` must be one of {"centromeres", "cytoband", "gap"}.')
+        raise ValueError('`schema` must be one of {"centromeres", "cytoband", "gap"}.')
 
     if merge:
-        cens = (cens.groupby('chrom')
-                    .agg({'start': np.min, 'end': np.max})
-                    .reset_index())
+        cens = cens.groupby("chrom").agg({"start": np.min, "end": np.max}).reset_index()
 
-    cens['mid'] = (cens['start'] + cens['end'])//2
-    cens = (cens[['chrom', 'start', 'end', 'mid']]
-            .sort_values('chrom')
-            .reset_index(drop=True))
+    cens["mid"] = (cens["start"] + cens["end"]) // 2
+    cens = (
+        cens[["chrom", "start", "end", "mid"]]
+        .sort_values("chrom")
+        .reset_index(drop=True)
+    )
 
     return cens
 
@@ -312,9 +348,9 @@ class PysamFastaRecord(object):
     def __init__(self, ff, ref):
         self.ff = ff
         if ref not in ff.references:
-            raise KeyError(
-                "Reference name '{}' not found in '{}'".format(ref, ff))
+            raise KeyError("Reference name '{}' not found in '{}'".format(ref, ff))
         self.ref = ref
+
     def __getitem__(self, key):
         if isinstance(key, slice):
             start, stop = key.start, key.stop
@@ -324,7 +360,7 @@ class PysamFastaRecord(object):
         return self.ff.fetch(self.ref, start, stop)
 
 
-def load_fasta(filepath_or, engine='pysam', **kwargs):
+def load_fasta(filepath_or, engine="pysam", **kwargs):
     """
     Load lazy fasta sequences from an indexed fasta file (optionally compressed)
     or from a collection of uncompressed fasta files.
@@ -355,7 +391,7 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
     is_multifile = not isinstance(filepath_or, str)
     records = OrderedDict()
 
-    if engine == 'pysam':
+    if engine == "pysam":
         try:
             import pysam
         except ImportError:
@@ -371,7 +407,7 @@ def load_fasta(filepath_or, engine='pysam', **kwargs):
             for name in ff.references:
                 records[name] = PysamFastaRecord(ff, name)
 
-    elif engine == 'pyfaidx':
+    elif engine == "pyfaidx":
         try:
             import pyfaidx
         except ImportError:
@@ -412,7 +448,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
 
     """
     is_bedgraph = True
-    for col in ['chrom', 'start', 'end']:
+    for col in ["chrom", "start", "end"]:
         if col not in df.columns:
             is_bedgraph = False
     if len(df.columns) < 4:
@@ -420,36 +456,32 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
 
     if not is_bedgraph:
         raise ValueError(
-            "A bedGraph-like DataFrame is required, got {}".format(
-                df.columns))
+            "A bedGraph-like DataFrame is required, got {}".format(df.columns)
+        )
 
     if value_field is None:
         value_field = df.columns[3]
 
-    columns = ['chrom', 'start', 'end', value_field]
+    columns = ["chrom", "start", "end", value_field]
     bg = df[columns].copy()
-    bg['chrom'] = bg['chrom'].astype(str)
-    bg = bg.sort_values(['chrom', 'start', 'end'])
+    bg["chrom"] = bg["chrom"].astype(str)
+    bg = bg.sort_values(["chrom", "start", "end"])
 
-    with tempfile.NamedTemporaryFile(suffix='.bg') as f, \
-         tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
+    with tempfile.NamedTemporaryFile(suffix=".bg") as f, tempfile.NamedTemporaryFile(
+        "wt", suffix=".chrom.sizes"
+    ) as cs:
 
-        chromsizes.to_csv(cs, sep='\t', header=False)
+        chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 
         bg.to_csv(
-            f.name,
-            sep='\t',
-            columns=columns,
-            index=False,
-            header=False,
-            na_rep='nan')
+            f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
+        )
 
-        run(['bedGraphToBigWig', f.name, cs.name, outpath],
-            print_cmd=True)
+        run(["bedGraphToBigWig", f.name, cs.name, outpath], print_cmd=True)
 
 
-def to_bigbed(df, chromsizes, outpath, schema='bed6'):
+def to_bigbed(df, chromsizes, outpath, schema="bed6"):
     """
     Save a bedGraph-like dataframe as a binary BigWig track.
 
@@ -469,51 +501,62 @@ def to_bigbed(df, chromsizes, outpath, schema='bed6'):
     """
     import tempfile
     import subprocess
+
     is_bed6 = True
-    for col in ['chrom', 'start', 'end', 'name', 'score', 'strand']:
+    for col in ["chrom", "start", "end", "name", "score", "strand"]:
         if col not in df.columns:
             is_bed6 = False
     if len(df.columns) < 6:
         is_bed6 = False
 
     if not is_bed6:
-        raise ValueError(
-            "A bed6-like DataFrame is required, got {}".format(
-                df.columns))
+        raise ValueError("A bed6-like DataFrame is required, got {}".format(df.columns))
 
-    columns = ['chrom', 'start', 'end', 'name', 'score', 'strand']
+    columns = ["chrom", "start", "end", "name", "score", "strand"]
     bed = df[columns].copy()
-    bed['chrom'] = bed['chrom'].astype(str)
-    bed = bed.sort_values(['chrom', 'start', 'end'])
+    bed["chrom"] = bed["chrom"].astype(str)
+    bed = bed.sort_values(["chrom", "start", "end"])
 
-    with tempfile.NamedTemporaryFile(suffix='.bed') as f, \
-         tempfile.NamedTemporaryFile('wt', suffix='.chrom.sizes') as cs:
+    with tempfile.NamedTemporaryFile(suffix=".bed") as f, tempfile.NamedTemporaryFile(
+        "wt", suffix=".chrom.sizes"
+    ) as cs:
 
-        chromsizes.to_csv(cs, sep='\t', header=False)
+        chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 
         bed.to_csv(
-            f.name,
-            sep='\t',
-            columns=columns,
-            index=False,
-            header=False,
-            na_rep='nan')
+            f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
+        )
 
-        p = subprocess.run([
-                'bedToBigBed',
-                '-type={}'.format(schema),
-                f.name,
-                cs.name,
-                outpath
-            ],
+        p = subprocess.run(
+            ["bedToBigBed", "-type={}".format(schema), f.name, cs.name, outpath],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+            stderr=subprocess.PIPE,
+        )
     return p
 
 
-def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
-               use_dictionary=True, version=2.0, **kwargs):
+### maybe not necessary if schema gets updated to accept extra keywords
+def read_jaspar_tsv(filename, nrows=None):
+    df = pd.read_csv(
+        filename,
+        sep="\t",
+        nrows=nrows,
+        names=["chrom", "start", "end", "name", "score", "pval", "strand"],
+        skiprows=1,
+    )
+    return df
+
+
+def to_parquet(
+    pieces,
+    outpath,
+    row_group_size=None,
+    compression="snappy",
+    use_dictionary=True,
+    version=2.0,
+    **kwargs
+):
     """
     Save an iterable of dataframe chunks to a single Apache Parquet file. For
     more info about Parquet, see https://arrow.apache.org/docs/python/parquet.html.
@@ -544,7 +587,7 @@ def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
         import pyarrow.parquet
         import pyarrow as pa
     except ImportError:
-        raise ImportError('Saving to parquet requires the `pyarrow` package')
+        raise ImportError("Saving to parquet requires the `pyarrow` package")
 
     if isinstance(pieces, pd.DataFrame):
         pieces = (pieces,)
@@ -559,7 +602,8 @@ def to_parquet(pieces, outpath, row_group_size=None, compression='snappy',
                     compression=compression,
                     use_dictionary=use_dictionary,
                     version=version,
-                    **kwargs)
+                    **kwargs
+                )
             writer.write_table(table, row_group_size=row_group_size)
     finally:
         writer.close()
@@ -592,32 +636,37 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
     DataFrame or ParquetFileIterator
 
     """
-    use_threads = kwargs.pop('use_threads', True)
+    use_threads = kwargs.pop("use_threads", True)
 
     if not iterator:
-        return pd.read_parquet(filepath, columns=columns,
-                               use_threads=use_threads, **kwargs)
+        return pd.read_parquet(
+            filepath, columns=columns, use_threads=use_threads, **kwargs
+        )
     else:
         try:
             from pyarrow.parquet import ParquetFile
         except ImportError:
             raise ImportError(
-                'Iterating over Parquet data requires the `pyarrow` package.')
+                "Iterating over Parquet data requires the `pyarrow` package."
+            )
 
         class ParquetFileIterator(ParquetFile):
             def __iter__(self):
                 return self
+
             def __next__(self):
-                if not hasattr(self, '_rgid'):
+                if not hasattr(self, "_rgid"):
                     self._rgid = 0
                 if self._rgid < self.num_row_groups:
                     rg = self.read_row_group(
                         self._rgid,
                         columns=columns,
                         use_threads=use_threads,
-                        use_pandas_metadata=True)
+                        use_pandas_metadata=True,
+                    )
                     self._rgid += 1
                 else:
                     raise StopIteration
                 return rg.to_pandas()
+
         return ParquetFileIterator(filepath, **kwargs)
