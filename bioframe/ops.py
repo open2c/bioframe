@@ -191,14 +191,13 @@ def _overlap_intidxs(df1, df2, how='left', keep_order=False, cols1=None, cols2=N
             no_overlap_ids1 = np.where(
                 np.bincount(overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)) == 0
             )[0]
-            overlap_intidxs_sub += [[no_overlap_ids1[:,None], -1*np.ones_like(no_overlap_ids1)[:,None]]]
-            
+            overlap_intidxs_sub += [[ df1_group_idxs[no_overlap_ids1][:,None], -1*np.ones_like(no_overlap_ids1)[:,None] ]]
+
         if how == 'outer' or how == 'right':
             no_overlap_ids2 = np.where(
                 np.bincount(overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)) == 0
             )[0]
-            overlap_intidxs_sub += [[-1*np.ones_like(no_overlap_ids2)[:,None], no_overlap_ids2[:,None]]]
-
+            overlap_intidxs_sub += [[-1*np.ones_like(no_overlap_ids2)[:,None], df2_group_idxs[no_overlap_ids2][:,None]]]
         overlap_intidxs.append(np.block(overlap_intidxs_sub))
 
     if how == 'outer' or how == 'right':
