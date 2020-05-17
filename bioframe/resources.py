@@ -132,7 +132,7 @@ class UCSCClient:
 class EncodeClient:
     BASE_URL = 'http://www.encodeproject.org/'
     ### 2020-05-15 compatible with ENCODE Metadata at: 
-    ### https://www.encodeproject.org/metadata/type=Experiment&status=released/
+    ### https://www.encodeproject.org/metadata/type=Experiment&status=released/metadata.tsv
 
     def __init__(self, cachedir, assembly, metadata=None):
         ## File accession column of Encode metadata sheet, sorted
@@ -153,8 +153,13 @@ class EncodeClient:
         if metadata is None:
             metadata_path = op.join(cachedir, 'metadata.tsv')
             if not op.exists(metadata_path): 
-                raise OSError('need encode metadata in the path!')
-                ### TODO: add automatic download of metadata ###
+                url = 'https://www.encodeproject.org/metadata/type=Experiment&status=released/metadata.tsv'
+                print('getting metadata from ENCODE, please wait while (~240Mb) file downloads')
+                with requests.get(url, stream=True) as r:
+                    r.raise_for_status()
+                    with open(metadata_path, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=8192): 
+                            f.write(chunk)
             self._meta = pd.read_table(metadata_path, low_memory=False)
             if sorted( list( (self._meta['File assembly'].dropna().unique()))) != (KNOWN_ASSEMBLIES):
                 raise ValueError('table assembly does not match known_assemblies, check ENCODE metadata version')

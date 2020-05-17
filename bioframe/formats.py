@@ -535,19 +535,6 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
         )
     return p
 
-
-### maybe not necessary if schema gets updated to accept extra keywords
-def read_jaspar_tsv(filename, nrows=None):
-    df = pd.read_csv(
-        filename,
-        sep="\t",
-        nrows=nrows,
-        names=["chrom", "start", "end", "name", "score", "pval", "strand"],
-        skiprows=1,
-    )
-    return df
-
-
 def to_parquet(
     pieces,
     outpath,
