@@ -141,7 +141,7 @@ def parse_region(reg, chromsizes=None):
     return chrom, start, end
 
 
-def add_name(reg_df, cols=("chrom", "start", "end", "name")):
+def regions_add_name(reg_df, cols=("chrom", "start", "end", "name")):
     """
     Checks that input dataframe has "name" column
     If not, auto-creates a UCSC name
@@ -156,7 +156,7 @@ def add_name(reg_df, cols=("chrom", "start", "end", "name")):
     return df[list(cols)]
 
 
-def normalize_regions(
+def parse_regions(
     regions,
     chromsizes=None,
     replace_None=True,
@@ -178,7 +178,7 @@ def normalize_regions(
     replace_None: bool (optional):
         Try to replace None with 0 or chrom_end 
         If False, Nones are not checked
-        If True, will raise an error if chromsizes are needed but nt provided. 
+        If True, will raise an error if chromsizes are needed but not provided. 
     force_name: bool (optional)
         if True, will force the name to be UCSC style
     check_start_end: bool, optional (default:True)
@@ -257,10 +257,10 @@ def normalize_regions(
                         f"End {ends_orig[i]} undefined and no chromsizes proviced"
                     )
         new_regions[cols[2]] = ends
-    new_regions = add_name(new_regions)
+    new_regions = regions_add_name(new_regions)
     if force_UCSC_names:
         new_regions.pop("name")
-        new_regions = add_name(new_regions)
+        new_regions = regions_add_name(new_regions)
     if check_start_end and replace_None:
         if (new_regions[cols[2]] < new_regions[cols[1]]).any():
             raise ValueError("Start > end detected")
