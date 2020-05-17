@@ -14,7 +14,8 @@ def _get_default_colnames():
 
 def select(df, region, cols=None):
     """
-    Return all rows overlapping a genomic region.  
+    Return all genomic intervals in a dataframe that overlap 
+    a genomic region.  
 
     Parameters
     ----------
@@ -965,7 +966,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
         df2_group_idxs = df2_groups[group_keys]
         df2_group = df2.loc[df2_group_idxs]
         df_subtracted_group = overlap(
-            df1_group, complement(df2_group), how='inner', return_overlap=True
+            df1_group, complement(df2_group), how="inner", return_overlap=True
         )[list(name_updates)]
         df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
     df_subtracted = pd.concat(df_subtracted)
