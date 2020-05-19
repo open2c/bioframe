@@ -156,75 +156,66 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     # Find overlapping intervals per chromosome.
     df1_groups = df1.groupby(ck1).groups
     df2_groups = df2.groupby(ck2).groups
+    all_groups = sorted(set.union(set(df1_groups), set(df2_groups)))
 
     overlap_intidxs = []
-    for group_keys, df1_group_idxs in df1_groups.items():
+    
+    for group_keys in all_groups:
+        df1_group_idxs = df1_groups[group_keys].values if (group_keys in df1_groups) else np.array([])
+        df2_group_idxs = df2_groups[group_keys].values if (group_keys in df2_groups) else np.array([])
+        overlap_intidxs_sub = []
+        
+        both_groups_nonempty = (df1_group_idxs.size > 0) and (df2_group_idxs.size > 0)
+        
+        if both_groups_nonempty:
+            overlap_idxs_loc = arrops.overlap_intervals(
+                df1[sk1].values[df1_group_idxs], 
+                df1[ek1].values[df1_group_idxs], 
+                df2[sk2].values[df2_group_idxs], 
+                df2[ek2].values[df2_group_idxs],
+            )
 
-        if group_keys not in df2_groups:
-            if how == "outer" or how == "left":
-                overlap_intidxs_sub = [
-                    [
-                        df1_group_idxs[:, None],
-                        -1 * np.ones_like(df1_group_idxs)[:, None],
-                    ]
-                ]
-                overlap_intidxs.append(np.block(overlap_intidxs_sub))
-            continue
-
-        df1_group_idxs = df1_group_idxs.values
-        df2_group_idxs = df2_groups[group_keys].values
-
-        df1_group_starts = df1[sk1].values[df1_group_idxs]
-        df1_group_ends = df1[ek1].values[df1_group_idxs]
-        df2_group_starts = df2[sk2].values[df2_group_idxs]
-        df2_group_ends = df2[ek2].values[df2_group_idxs]
-
-        overlap_idxs_loc = arrops.overlap_intervals(
-            df1_group_starts, df1_group_ends, df2_group_starts, df2_group_ends,
-        )
-
-        # Convert local per-chromosome indices into the
-        # indices of the original table.
-        overlap_intidxs_sub = [
-            [
-                df1_group_idxs[overlap_idxs_loc[:, 0]][:, None],
-                df2_group_idxs[overlap_idxs_loc[:, 1]][:, None],
-            ]
-        ]
-
-        if how == "outer" or how == "left":
-            no_overlap_ids1 = np.where(
-                np.bincount(overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)) == 0
-            )[0]
+            # Convert local per-chromosome indices into the
+            # indices of the original table.
             overlap_intidxs_sub += [
                 [
-                    df1_group_idxs[no_overlap_ids1][:, None],
-                    -1 * np.ones_like(no_overlap_ids1)[:, None],
+                    df1_group_idxs[overlap_idxs_loc[:, 0]],
+                    df2_group_idxs[overlap_idxs_loc[:, 1]],
                 ]
             ]
 
-        if how == "outer" or how == "right":
-            no_overlap_ids2 = np.where(
-                np.bincount(overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)) == 0
-            )[0]
+        if how in ["outer", "left"] and df1_group_idxs.size>0:
+            if both_groups_nonempty:
+                no_overlap_ids1 = df1_group_idxs[np.where(
+                    np.bincount(overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)) == 0
+                )[0]]
+            else:
+                no_overlap_ids1 = df1_group_idxs
+                
             overlap_intidxs_sub += [
                 [
-                    -1 * np.ones_like(no_overlap_ids2)[:, None],
-                    df2_group_idxs[no_overlap_ids2][:, None],
+                    no_overlap_ids1,
+                    -1 * np.ones_like(no_overlap_ids1),
                 ]
             ]
-        overlap_intidxs.append(np.block(overlap_intidxs_sub))
 
-    if how == "outer" or how == "right":
-        for group_keys, df2_group_idxs in df2_groups.items():
-            if group_keys not in df1_groups:
-                overlap_intidxs_sub = [
-                    [
-                        -1 * np.ones_like(df2_group_idxs)[:, None],
-                        df2_group_idxs[:, None],
-                    ]
+        if how in ["outer", "right"] and df2_group_idxs.size>0:
+            if both_groups_nonempty:
+                no_overlap_ids2 = df2_group_idxs[np.where(
+                    np.bincount(overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)) == 0
+                )[0]]
+            else:
+                no_overlap_ids2 = df2_group_idxs
+                
+            overlap_intidxs_sub += [
+                [
+                    -1 * np.ones_like(no_overlap_ids2),
+                    no_overlap_ids2,
                 ]
-                overlap_intidxs.append(np.block(overlap_intidxs_sub))
+            ]
+            
+        overlap_intidxs.append(np.block([[idxs[:,None] for idxs in idxs_pair] 
+                                         for idxs_pair in overlap_intidxs_sub]))
 
     if len(overlap_intidxs) == 0:
         return np.ndarray(shape=(0, 2), dtype=np.int)
