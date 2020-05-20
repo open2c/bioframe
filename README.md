@@ -1,4 +1,4 @@
-![Bioframe logo](docs/figs/bioframe-logo.png)
+<img src="./docs/figs/bioframe-logo.png" width=75%> 
 
 
 Bioframe is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of [pandas](https://pandas.pydata.org/) enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization (e.g. matplotlib, seaborn) and iteration of genomic analyses.
@@ -19,33 +19,38 @@ Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/)
 
 ## Genomic interval operations
 
+
+To `overlap` two dataframes, call:
 ```python
 import bioframe as bf
-```
 
-To overlap two dataframes, call
-```python
 bf.overlap(df1,df2)
+
 ```
 
 For these two input dataframes, with intervals all on the same chromosome:
+<img src="./docs/figs/df1.png" width=75%> 
+<img src="./docs/figs/df2.png" width=75%> 
 
 
-`overlap` will return the following interval pairs:
+`overlap` will return the following interval pairs as overlaps:
+<img src="./docs/figs/overlap_inner_0.png" width=75%> 
+<img src="./docs/figs/overlap_inner_1.png" width=75%> 
 
 
-
-
-To merge all overlapping intervals in a dataframe, call:
+To `merge` all overlapping intervals in a dataframe, call:
 ```python
+import bioframe as bf
+
 bf.merge(df1)
+
 ```
 
 For this input dataframe, with intervals all on the same chromosome:
+<img src="./docs/figs/df1.png" width=75%> 
 
-
-
-`merge` will return a new dataframe with these intervals:
+`merge` will return a new dataframe with these merged intervals:
+<img src="./docs/figs/merge_df1.png" width=75%> 
 
 
 See this [jupyter notebook](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/intervals_tutorials.ipynb) for visualizations of other core bioframe functions.
