@@ -1,3 +1,5 @@
+# Bioframe: Operations on Genomic Interval Dataframes
+
 <img src="./docs/figs/bioframe-logo.png" width=75%> 
 
 
@@ -11,11 +13,12 @@ The philosophy underlying bioframe is to enable flexible operations: instead of 
 - `complement`: Find genomic intervals that are not covered by any interval from a dataframe.
 - `overlap`: Find pairs of overlapping genomic intervals between two dataframes. 
 
-Bioframe additionally has functions that are frequently used for genomic interval operations and can be expressed as combinations of these core operations and dataframe operations, including: coverage, expand, merge, select, and subtract.
+Bioframe additionally has functions that are frequently used for genomic interval operations and can be expressed as combinations of these core operations and dataframe operations, including: `coverage`, `expand`, `merge`,  
+`select`, and `subtract`.
 
 Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
-Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/) and explore 
+Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/) and explore the [jupyter notebooks](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/)
 
 ## Genomic interval operations
 
@@ -29,13 +32,15 @@ bf.overlap(df1,df2)
 ```
 
 For these two input dataframes, with intervals all on the same chromosome:
-<img src="./docs/figs/df1.png" width=75%> 
-<img src="./docs/figs/df2.png" width=75%> 
+
+<img src="./docs/figs/df1.png" width=60%> 
+<img src="./docs/figs/df2.png" width=60%> 
 
 
 `overlap` will return the following interval pairs as overlaps:
-<img src="./docs/figs/overlap_inner_0.png" width=75%> 
-<img src="./docs/figs/overlap_inner_1.png" width=75%> 
+
+<img src="./docs/figs/overlap_inner_0.png" width=60%> 
+<img src="./docs/figs/overlap_inner_1.png" width=60%> 
 
 
 To `merge` all overlapping intervals in a dataframe, call:
@@ -47,10 +52,12 @@ bf.merge(df1)
 ```
 
 For this input dataframe, with intervals all on the same chromosome:
-<img src="./docs/figs/df1.png" width=75%> 
+
+<img src="./docs/figs/df1.png" width=60%> 
 
 `merge` will return a new dataframe with these merged intervals:
-<img src="./docs/figs/merge_df1.png" width=75%> 
+
+<img src="./docs/figs/merge_df1.png" width=60%> 
 
 
 See this [jupyter notebook](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/intervals_tutorials.ipynb) for visualizations of other core bioframe functions.
