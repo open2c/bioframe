@@ -309,10 +309,10 @@ def overlap(
 
     df_input_1 = None
     df_input_2 = None
-    if return_input == True or str(return_input) == "1" or return_input == "left":
+    if return_input is True or str(return_input) == "1" or return_input == "left":
         df_input_1 = df1.iloc[overlap_df_idxs[:, 0]].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
-    if return_input == True or str(return_input) == "2" or return_input == "right":
+    if return_input is True or str(return_input) == "2" or return_input == "right":
         df_input_2 = df2.iloc[overlap_df_idxs[:, 1]].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
