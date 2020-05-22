@@ -124,7 +124,7 @@ def digest(fasta_records, enzyme):
         raise ValueError("Unknown enzyme name: {}".format(enzyme))
 
     def _each(chrom):
-        seq = bioseq.Seq(str(fasta_records[chrom]))
+        seq = bioseq.Seq(str(fasta_records[chrom][:]))
         cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
         n_frags = len(cuts) - 1
 
