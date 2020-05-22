@@ -18,11 +18,14 @@ def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
     ----------
     chromsizes : pandas.Series
         Series mapping chromosomes to lengths in bp.
+
     mids : dict-like
         Mapping of chromosomes to midpoint locations.
+
     binsize : int, optional
         Round midpoints to nearest bin edge for compatibility with a given
         bin grid.
+
     suffixes : tuple, optional
         Suffixes to name chromosome arms. Defaults to p and q.
 
@@ -61,6 +64,7 @@ def binnify(chromsizes, binsize, rel_ids=False):
     ----------
     chromsizes : Series
         pandas Series indexed by chromosome name with chromosome lengths in bp.
+
     binsize : int
         size of bins in bp
 
@@ -70,8 +74,8 @@ def binnify(chromsizes, binsize, rel_ids=False):
 
     """
 
-    if type(binsize) is not int: raise ValueError('binsize must be int')
-
+    if type(binsize) is not int:
+        raise ValueError("binsize must be int")
 
     def _each(chrom):
         clen = chromsizes[chrom]
@@ -105,6 +109,8 @@ def digest(fasta_records, enzyme):
     ----------
     fasta_records : OrderedDict
         Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
     enzyme: str
         Name of restriction enzyme.
 
@@ -137,7 +143,34 @@ def digest(fasta_records, enzyme):
     return pd.concat(map(_each, chroms), axis=0, ignore_index=True)
 
 
-def frac_mapped(bintable, fasta_records):
+def frac_mapped(df, fasta_records, return_input=True):
+    """
+    Calculate the fraction of mapped base-pairs for each interval in a dataframe. 
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A sets of genomic intervals stored as a DataFrame.
+
+    fasta_records : OrderedDict
+        Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
+    return_input: bool
+        if False, only return Series named frac_mapped.
+
+    Returns
+    -------
+    df_mapped : pd.DataFrame 
+        Original dataframe with new column 'frac_mapped' appended.
+
+    """
+
+    if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
+        return ValueError(
+            "chrom from intervals not in fasta_records: double-check genome agreement"
+        )
+
     def _each(bin):
         s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
@@ -145,10 +178,46 @@ def frac_mapped(bintable, fasta_records):
         n += s.count("n")
         return (nbases - n) / nbases
 
-    return bintable.apply(_each, axis=1)
+    if return_input:
+        return pd.concat(
+            [df, df.apply(_each, axis=1).rename("frac_mapped", inplace=True)],
+            axis="columns",
+        )
+    else:
+        return df.apply(_each, axis=1).rename("frac_mapped", inplace=True)
 
 
-def frac_gc(bintable, fasta_records, mapped_only=True):
+def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
+    """
+    Calculate the fraction of GC basepairs for each interval in a dataframe. 
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A sets of genomic intervals stored as a DataFrame.
+
+    fasta_records : OrderedDict
+        Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
+    mapped_only: bool
+        if True, ignore 'N' in the fasta_records for calculation. 
+        if True and there are no mapped base-pairs in an interval, return np.nan.
+
+    return_input: bool
+        if False, only return Series named frac_mapped.
+
+    Returns
+    -------
+    df_mapped : pd.DataFrame 
+        Original dataframe with new column 'frac_mapped' appended.
+    
+    """
+    if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
+        return ValueError(
+            "chrom from intervals not in fasta_records: double-check genome agreement"
+        )
+
     def _each(chrom_group):
         chrom = chrom_group.name
         seq = fasta_records[chrom]
@@ -167,8 +236,15 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
             gc.append((g + c) / nbases if nbases > 0 else np.nan)
         return gc
 
-    out = bintable.groupby("chrom", sort=False).apply(_each)
-    return pd.Series(data=np.concatenate(out), index=bintable.index)
+    out = df.groupby("chrom", sort=False).apply(_each)
+
+    if return_input:
+        return pd.concat(
+            [df, pd.Series(data=np.concatenate(out), index=df.index).rename("GC")],
+            axis="columns",
+        )
+    else:
+        return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
 def frac_gene_coverage(bintable, mrna):
@@ -185,15 +261,18 @@ def frac_gene_coverage(bintable, mrna):
     -------
     XXXX
 
-    """    
-    
-    raise ValueError('implementation currently broken!')
+    """
+
+    raise ValueError("implementation currently broken!")
 
     if isinstance(mrna, six.string_types):
         from .resources import UCSCClient
-        mrna=UCSCClient(mrna).fetch_mrna().rename(
-        columns={'tName': 'chrom', 'tStart': 'start', 'tEnd': 'end'})
 
+        mrna = (
+            UCSCClient(mrna)
+            .fetch_mrna()
+            .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
+        )
 
     #### currently broken ####
     bintable = ops.coverage(
