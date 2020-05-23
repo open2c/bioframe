@@ -348,8 +348,10 @@ def overlap(
 
 
 def cluster(
-    df, min_dist=0, out=["input", "cluster"], return_cluster_df=False, cols=None
-):
+    df, min_dist=0, return_input=True, 
+    return_cluster_ids =True, return_cluster_intervals=True, 
+    return_cluster_df=False, cols=None
+    ):
     """
     Cluster overlapping intervals.
 
@@ -375,7 +377,7 @@ def cluster(
         Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
         
     return_cluster_df : bool
-        If True, return
+        If True, return df_clusters
 
     Returns
     -------
@@ -441,20 +443,17 @@ def cluster(
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
 
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
-
+ 
     out_df = {}
-    if "cluster" in out:
-        out_df[out["cluster"]] = cluster_ids
-    if "cluster_start" in out:
-        out_df[out["cluster_start"]] = clusters[sk].values[cluster_ids]
-    if "cluster_end" in out:
-        out_df[out["cluster_end"]] = clusters[ek].values[cluster_ids]
+    if return_cluster_ids:
+        out_df["cluster"] = cluster_ids
+    if return_cluster_intervals:
+        out_df["cluster_start"] = clusters[sk].values[cluster_ids]
+        out_df["cluster_end"] = clusters[ek].values[cluster_ids]
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         out_df = pd.concat([df, out_df], axis="columns")
 
     out_df.set_index(df_index)
