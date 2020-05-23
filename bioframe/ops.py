@@ -780,7 +780,12 @@ def closest(
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
-    out=["input", "distance"],
+    return_input=True,
+    return_index=False,
+    return_distance=True,
+    return_overlap = False,
+    #out=["input", "distance"],
+    #['input', 'index', 'distance', 'have_overlap', 'overlap_start', 'overlap_end']
     suffixes=["_1", "_2"],
     cols1=None,
     cols2=None,
@@ -804,6 +809,19 @@ def closest(
         Allowed values: ['input', 'index', 'distance', 'have_overlap', 
         'overlap_start', 'overlap_end'].
 
+    return_input : bool
+        If True, return input
+        
+    return_index : bool
+        If True, return indices
+
+    return_distance : bool
+        If True, return distances. Returns zero for overlaps.
+
+    return_overlap = False,
+        If True, return columns: have_overlap, overlap_start, and overlap_end.
+        Fills df_closest['overlap_start'] and df['overlap_end'] with pd.NA if non-overlapping.
+        
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
     
@@ -849,15 +867,12 @@ def closest(
         return  # case of no closest intervals
 
     # Make an output DataFrame.
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
-
     out_df = {}
-    if "index" in out:
-        out_df[out["index"] + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
-        out_df[out["index"] + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+    if return_index:
+        out_df[ "index" + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
+        out_df[ "index" + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
 
-    if any([k in out for k in ["have_overlap", "overlap_start", "overlap_end"]]):
+    if return_overlap: 
         overlap_start = np.amax(
             np.vstack(
                 [
@@ -878,14 +893,11 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        if "have_overlap" in out:
-            out_df[out["have_overlap"]] = have_overlap
-        if "overlap_start" in out:
-            out_df[out["overlap_start"]] = np.where(have_overlap, overlap_start, -1)
-        if "overlap_end" in out:
-            out_df[out["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
+        out_df[ "have_overlap"] = have_overlap
+        out_df[ "overlap_start"] = np.where(have_overlap, overlap_start, pd.NA)#-1)
+        out_df[ "overlap_end"] = np.where(have_overlap, overlap_end, pd.NA)
 
-    if "distance" in out:
+    if return_distance:
         distance_left = np.maximum(
             0,
             df1[sk1].values[closest_df_idxs[:, 0]]
@@ -897,11 +909,11 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        out_df[out["distance"]] = distance
+        out_df[ "distance"] = distance
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         df_left = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
         df_left.columns = [c + suffixes[0] for c in df_left.columns]
         df_right = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)

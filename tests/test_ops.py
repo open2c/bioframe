@@ -275,6 +275,28 @@ def test_closest():
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
+    ### test other return arguments ###
+    df2.iloc[0, 0] = "chr1"
+    d = """
+        index_1 index_2 have_overlap    overlap_start   overlap_end distance
+        0   0   0   True    4   5   0
+        1   0   1   False   <NA>    <NA>    5
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=2,
+            return_overlap=True,
+            return_index=True,
+            return_input=False,
+            return_distance=True,
+        ),
+        check_dtype=False,
+    )
+
 
 def test_coverage():
 
