@@ -348,10 +348,14 @@ def overlap(
 
 
 def cluster(
-    df, min_dist=0, return_input=True, 
-    return_cluster_ids =True, return_cluster_intervals=True, 
-    return_cluster_df=False, cols=None
-    ):
+    df,
+    min_dist=0,
+    return_input=True,
+    return_cluster_ids=True,
+    return_cluster_intervals=True,
+    return_cluster_df=False,
+    cols=None,
+):
     """
     Cluster overlapping intervals.
 
@@ -443,7 +447,6 @@ def cluster(
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
 
- 
     out_df = {}
     if return_cluster_ids:
         out_df["cluster"] = cluster_ids
@@ -607,7 +610,7 @@ def complement(df, chromsizes=None, cols=None):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
+def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
      in set 1 find the number of base pairs covered by intervals in set 2. 
@@ -617,10 +620,8 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
             
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'coverage'].
+    return_input : bool
+        If True, return input as well as computed coverage
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -641,6 +642,7 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     overlap_idxs = overlap(
         df1,
         df2_merged,
+        how="left",
         return_index=True,
         return_overlap=True,
         cols1=cols1,
@@ -653,27 +655,16 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
 
     coverage_sparse_df = overlap_idxs.groupby("index_1").agg({"overlap": "sum"})
 
-    # Make an output DataFrame.
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
-
     out_df = {}
-
-    if "index" in out:
-        out_df[out["index"]] = df1.index
-
-    if "coverage" in out:
-        out_df[out["coverage"]] = (
-            pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
-            .add(coverage_sparse_df["overlap"], fill_value=0)
-            .astype(df1[sk1].dtype)
-        )
-
+    out_df["coverage"] = (
+        pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
+        .add(coverage_sparse_df["overlap"], fill_value=0)
+        .astype(df1[sk1].dtype)
+    )
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         out_df = pd.concat([df1, out_df], axis="columns")
-
     return out_df
 
 
