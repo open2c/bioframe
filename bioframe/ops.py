@@ -213,8 +213,8 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
                     no_overlap_ids2,
                 ]
             ]
-            
-        overlap_intidxs.append(np.block([[idxs[:,None] for idxs in idxs_pair] 
+        if overlap_intidxs_sub:
+            overlap_intidxs.append(np.block([[idxs[:,None] for idxs in idxs_pair] 
                                          for idxs_pair in overlap_intidxs_sub]))
 
     if len(overlap_intidxs) == 0:
@@ -775,8 +775,6 @@ def closest(
     return_index=False,
     return_distance=True,
     return_overlap = False,
-    #out=["input", "distance"],
-    #['input', 'index', 'distance', 'have_overlap', 'overlap_start', 'overlap_end']
     suffixes=["_1", "_2"],
     cols1=None,
     cols2=None,
@@ -793,12 +791,6 @@ def closest(
         
     k : int
         The number of closest intervals to report.
-    
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'distance', 'have_overlap', 
-        'overlap_start', 'overlap_end'].
 
     return_input : bool
         If True, return input
