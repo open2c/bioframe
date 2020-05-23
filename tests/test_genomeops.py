@@ -2,12 +2,15 @@ import pandas as pd
 import bioframe
 import numpy as np
 from io import StringIO
+import os.path as op
+
+testdir = op.realpath(op.dirname(__file__))
 
 ### todo: test make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
 
 
 def test_binnify():
-    chromsizes = bioframe.read_chromsizes("./test_data/test.chrom.sizes")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
     assert len(chromsizes) == 2
     assert len(bioframe.binnify(chromsizes, int(np.max(chromsizes.values)))) == len(
         chromsizes
@@ -19,7 +22,7 @@ def test_binnify():
 
 
 def test_digest():
-    fasta_records = bioframe.load_fasta("./test_data/test.fa")
+    fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
     assert len(fasta_records) == 2
     ### no HindIII sites in the test.fa fasta records, so shouldn't change shape[0]
     assert bioframe.digest(fasta_records, "HindIII").shape == (2, 3)
@@ -30,8 +33,8 @@ def test_digest():
 
 
 def test_frac_mapped():
-    chromsizes = bioframe.read_chromsizes("./test_data/test.chrom.sizes")
-    fasta_records = bioframe.load_fasta("./test_data/test.fa")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
+    fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
     unmapped = np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0])
     assert (
@@ -59,8 +62,8 @@ def test_frac_mapped():
 
 
 def test_frac_gc():
-    chromsizes = bioframe.read_chromsizes("./test_data/test.chrom.sizes")
-    fasta_records = bioframe.load_fasta("./test_data/test.fa")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
+    fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
     unmapped_bp = (
         0
