@@ -159,19 +159,27 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     all_groups = sorted(set.union(set(df1_groups), set(df2_groups)))
 
     overlap_intidxs = []
-    
+
     for group_keys in all_groups:
-        df1_group_idxs = df1_groups[group_keys].values if (group_keys in df1_groups) else np.array([])
-        df2_group_idxs = df2_groups[group_keys].values if (group_keys in df2_groups) else np.array([])
+        df1_group_idxs = (
+            df1_groups[group_keys].values
+            if (group_keys in df1_groups)
+            else np.array([])
+        )
+        df2_group_idxs = (
+            df2_groups[group_keys].values
+            if (group_keys in df2_groups)
+            else np.array([])
+        )
         overlap_intidxs_sub = []
-        
+
         both_groups_nonempty = (df1_group_idxs.size > 0) and (df2_group_idxs.size > 0)
-        
+
         if both_groups_nonempty:
             overlap_idxs_loc = arrops.overlap_intervals(
-                df1[sk1].values[df1_group_idxs], 
-                df1[ek1].values[df1_group_idxs], 
-                df2[sk2].values[df2_group_idxs], 
+                df1[sk1].values[df1_group_idxs],
+                df1[ek1].values[df1_group_idxs],
+                df2[sk2].values[df2_group_idxs],
                 df2[ek2].values[df2_group_idxs],
             )
 
@@ -184,38 +192,48 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
                 ]
             ]
 
-        if how in ["outer", "left"] and df1_group_idxs.size>0:
+        if how in ["outer", "left"] and df1_group_idxs.size > 0:
             if both_groups_nonempty:
-                no_overlap_ids1 = df1_group_idxs[np.where(
-                    np.bincount(overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)) == 0
-                )[0]]
+                no_overlap_ids1 = df1_group_idxs[
+                    np.where(
+                        np.bincount(
+                            overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)
+                        )
+                        == 0
+                    )[0]
+                ]
             else:
                 no_overlap_ids1 = df1_group_idxs
-                
+
             overlap_intidxs_sub += [
-                [
-                    no_overlap_ids1,
-                    -1 * np.ones_like(no_overlap_ids1),
-                ]
+                [no_overlap_ids1, -1 * np.ones_like(no_overlap_ids1),]
             ]
 
-        if how in ["outer", "right"] and df2_group_idxs.size>0:
+        if how in ["outer", "right"] and df2_group_idxs.size > 0:
             if both_groups_nonempty:
-                no_overlap_ids2 = df2_group_idxs[np.where(
-                    np.bincount(overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)) == 0
-                )[0]]
+                no_overlap_ids2 = df2_group_idxs[
+                    np.where(
+                        np.bincount(
+                            overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)
+                        )
+                        == 0
+                    )[0]
+                ]
             else:
                 no_overlap_ids2 = df2_group_idxs
-                
+
             overlap_intidxs_sub += [
-                [
-                    -1 * np.ones_like(no_overlap_ids2),
-                    no_overlap_ids2,
-                ]
+                [-1 * np.ones_like(no_overlap_ids2), no_overlap_ids2,]
             ]
         if overlap_intidxs_sub:
-            overlap_intidxs.append(np.block([[idxs[:,None] for idxs in idxs_pair] 
-                                         for idxs_pair in overlap_intidxs_sub]))
+            overlap_intidxs.append(
+                np.block(
+                    [
+                        [idxs[:, None] for idxs in idxs_pair]
+                        for idxs_pair in overlap_intidxs_sub
+                    ]
+                )
+            )
 
     if len(overlap_intidxs) == 0:
         return np.ndarray(shape=(0, 2), dtype=np.int)
@@ -342,7 +360,7 @@ def cluster(
     df,
     min_dist=0,
     cols=None,
-    on = ['chrom'],
+    on=["chrom"],
     return_input=True,
     return_cluster_ids=True,
     return_cluster_intervals=True,
@@ -402,7 +420,10 @@ def cluster(
     df = df.reset_index(drop=True)
 
     # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
-    if ck not in on: raise ValueError('chromosome column must be specified for clustering and match one of the columns in cols')
+    if ck not in on:
+        raise ValueError(
+            "chromosome column must be specified for clustering and match one of the columns in cols"
+        )
     df_groups = df.groupby(on).groups
 
     cluster_ids = np.full(df.shape[0], -1)
@@ -427,17 +448,18 @@ def cluster(
         max_cluster_id += n_clusters
 
         cluster_ids[df_group_idxs.values] = cluster_ids_group
-        
+
         ## Storing chromosome names causes a 2x slowdown. :(
-        if type(group_keys) is str: group_keys = tuple((group_keys,))
+        if type(group_keys) is str:
+            group_keys = tuple((group_keys,))
         clusters_group = {}
         for col in on:
-            clusters_group[col] = pd.Series(data=np.full(n_clusters,
-                                            group_keys[on.index(col)]),
-                                            dtype=df[col].dtype)
+            clusters_group[col] = pd.Series(
+                data=np.full(n_clusters, group_keys[on.index(col)]), dtype=df[col].dtype
+            )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group
-        clusters_group['n_intervals'] = interval_counts
+        clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
 
         clusters.append(clusters_group)
@@ -446,7 +468,9 @@ def cluster(
     clusters = pd.concat(clusters).reset_index(drop=True)
     # reorder cluster columns to have chrom,start,end first
     clusters_names = list(clusters.keys())
-    clusters = clusters[[ck,sk,ek] + [col for col in clusters_names   if col not in [ck, sk, ek] ] ]
+    clusters = clusters[
+        [ck, sk, ek] + [col for col in clusters_names if col not in [ck, sk, ek]]
+    ]
 
     out_df = {}
     if return_cluster_ids:
@@ -467,7 +491,8 @@ def cluster(
     else:
         return out_df
 
-def merge(df, min_dist=0, cols=None, on=['chrom']):
+
+def merge(df, min_dist=0, cols=None, on=["chrom"]):
     """
     Merge overlapping intervals.
 
@@ -486,6 +511,11 @@ def merge(df, min_dist=0, cols=None, on=['chrom']):
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    on : list
+        List of column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby before clustering. Default is 'chrom', which must match the first name 
+        from cols. Examples for additional columns include 'strand'. 
             
     Returns
     -------
@@ -501,7 +531,10 @@ def merge(df, min_dist=0, cols=None, on=['chrom']):
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
-    if ck not in on: raise ValueError('chromosome column must be specified for clustering and match one of the columns in cols')
+    if ck not in on:
+        raise ValueError(
+            "chromosome column must be specified for clustering and match one of the columns in cols"
+        )
     df_groups = df.groupby(on).groups
     clusters = []
 
@@ -522,15 +555,16 @@ def merge(df, min_dist=0, cols=None, on=['chrom']):
         n_clusters = cluster_starts_group.shape[0]
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        if type(group_keys) is str: group_keys = tuple((group_keys,))
+        if type(group_keys) is str:
+            group_keys = tuple((group_keys,))
         clusters_group = {}
         for col in on:
-            clusters_group[col] = pd.Series(data=np.full(n_clusters,
-                                            group_keys[on.index(col)]),
-                                            dtype=df[col].dtype)
+            clusters_group[col] = pd.Series(
+                data=np.full(n_clusters, group_keys[on.index(col)]), dtype=df[col].dtype
+            )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group
-        clusters_group['n_intervals'] = interval_counts
+        clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
 
         clusters.append(clusters_group)
@@ -538,7 +572,9 @@ def merge(df, min_dist=0, cols=None, on=['chrom']):
     clusters = pd.concat(clusters).reset_index(drop=True)
     # reorder cluster columns to have chrom,start,end first
     clusters_names = list(clusters.keys())
-    clusters = clusters[[ck,sk,ek] + [col for col in clusters_names   if col not in [ck, sk, ek] ] ]
+    clusters = clusters[
+        [ck, sk, ek] + [col for col in clusters_names if col not in [ck, sk, ek]]
+    ]
 
     return clusters
 
@@ -788,7 +824,7 @@ def closest(
     return_input=True,
     return_index=False,
     return_distance=True,
-    return_overlap = False,
+    return_overlap=False,
     suffixes=["_1", "_2"],
     cols1=None,
     cols2=None,
@@ -866,10 +902,10 @@ def closest(
     # Make an output DataFrame.
     out_df = {}
     if return_index:
-        out_df[ "index" + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
-        out_df[ "index" + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+        out_df["index" + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
+        out_df["index" + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
 
-    if return_overlap: 
+    if return_overlap:
         overlap_start = np.amax(
             np.vstack(
                 [
@@ -890,9 +926,9 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        out_df[ "have_overlap"] = have_overlap
-        out_df[ "overlap_start"] = np.where(have_overlap, overlap_start, pd.NA)#-1)
-        out_df[ "overlap_end"] = np.where(have_overlap, overlap_end, pd.NA)
+        out_df["have_overlap"] = have_overlap
+        out_df["overlap_start"] = np.where(have_overlap, overlap_start, pd.NA)  # -1)
+        out_df["overlap_end"] = np.where(have_overlap, overlap_end, pd.NA)
 
     if return_distance:
         distance_left = np.maximum(
@@ -906,7 +942,7 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        out_df[ "distance"] = distance
+        out_df["distance"] = distance
 
     out_df = pd.DataFrame(out_df)
 

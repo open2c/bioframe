@@ -158,6 +158,29 @@ def test_cluster():
         == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
     ).all()
 
+    # test on=[] argument
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 3, 8, "+", "cat", 5.5],
+            ["chr1", 3, 8, "-", "dog", 6.5],
+            ["chr1", 6, 10, "-", "cat", 6.5],
+            ["chrX", 6, 10, "-", "cat", 6.5],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal", "location"],
+    )
+    assert (
+        bioframe.cluster(df1, on=["chrom", "animal"])["cluster"].values
+        == np.array([0, 1, 0, 2])
+    ).all()
+    assert (
+        bioframe.cluster(df1, on=["chrom", "strand"])["cluster"].values
+        == np.array([0, 1, 1, 2])
+    ).all()
+    assert (
+        bioframe.cluster(df1, on=["chrom", "location", "animal"])["cluster"].values
+        == np.array([0, 2, 1, 3])
+    ).all()
+
 
 def test_merge():
     df1 = pd.DataFrame(
@@ -199,6 +222,29 @@ def test_merge():
         bioframe.merge(df1),
         check_dtype=False,
         check_exact=True,
+    )
+
+    # test on=['chrom',...] argument
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 3, 8, "+", "cat", 5.5],
+            ["chr1", 3, 8, "-", "dog", 6.5],
+            ["chr1", 6, 10, "-", "cat", 6.5],
+            ["chrX", 6, 10, "-", "cat", 6.5],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal", "location"],
+    )
+    assert len(bioframe.merge(df1, on=["chrom"])) == 2
+    assert len(bioframe.merge(df1, on=["chrom", "strand"])) == 3
+    assert len(bioframe.merge(df1, on=["chrom", "strand", "location"])) == 3
+    assert len(bioframe.merge(df1, on=["chrom", "strand", "location", "animal"])) == 4
+    d = """ chrom   start   end animal  n_intervals
+        0   chr1    3   10  cat 2
+        1   chr1    3   8   dog 1
+        2   chrX    6   10  cat 1"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(
+        df, bioframe.merge(df1, on=["chrom", "animal"]), check_dtype=False,
     )
 
 
