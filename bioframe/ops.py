@@ -341,11 +341,12 @@ def overlap(
 def cluster(
     df,
     min_dist=0,
+    cols=None,
+    on = ['chrom'],
     return_input=True,
     return_cluster_ids=True,
     return_cluster_intervals=True,
     return_cluster_df=False,
-    cols=None,
 ):
     """
     Cluster overlapping intervals.
@@ -366,11 +367,20 @@ def cluster(
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
-        
+    on : list
+        List of column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby before clustering. Default is 'chrom', which must match the first name 
+        from cols. Examples for additional columns include 'strand'. 
+
+    return_input : bool
+        If True, return input
+
+    return_cluster_ids : bool
+        If True, return ids for clusters
+
+    return_cluster_invervals : bool
+        If True, return clustered interval the original interval belongs to
+
     return_cluster_df : bool
         If True, return df_clusters
 
@@ -382,20 +392,18 @@ def cluster(
         A pandas dataframe with coordinates of merged clusters.
 
     """
-
     if min_dist is not None:
         if min_dist < 0:
             raise ValueError("min_dist>=0 currently required")
-
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-
     # Switch to integer indices.
     df_index = df.index
     df = df.reset_index(drop=True)
 
-    # Find overlapping intervals per chromosome.
-    df_groups = df.groupby(ck).groups
+    # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
+    if ck not in on: raise ValueError('chromosome column must be specified for clustering and match one of the columns in cols')
+    df_groups = df.groupby(on).groups
 
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
@@ -405,7 +413,6 @@ def cluster(
         if df_group_idxs.empty:
             continue
         df_group = df.loc[df_group_idxs]
-
         (
             cluster_ids_group,
             cluster_starts_group,
@@ -415,28 +422,31 @@ def cluster(
         )
 
         interval_counts = np.bincount(cluster_ids_group)
-
         cluster_ids_group += max_cluster_id + 1
-
         n_clusters = cluster_starts_group.shape[0]
         max_cluster_id += n_clusters
 
         cluster_ids[df_group_idxs.values] = cluster_ids_group
-
+        
         ## Storing chromosome names causes a 2x slowdown. :(
-        chrom = group_keys
-        clusters_group = {
-            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_group,
-            ek: cluster_ends_group,
-            "n_intervals": interval_counts,
-        }
+        if type(group_keys) is str: group_keys = tuple((group_keys,))
+        clusters_group = {}
+        for col in on:
+            clusters_group[col] = pd.Series(data=np.full(n_clusters,
+                                            group_keys[on.index(col)]),
+                                            dtype=df[col].dtype)
+        clusters_group[sk] = cluster_starts_group
+        clusters_group[ek] = cluster_ends_group
+        clusters_group['n_intervals'] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
 
         clusters.append(clusters_group)
 
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
+    # reorder cluster columns to have chrom,start,end first
+    clusters_names = list(clusters.keys())
+    clusters = clusters[[ck,sk,ek] + [col for col in clusters_names   if col not in [ck, sk, ek] ] ]
 
     out_df = {}
     if return_cluster_ids:
@@ -457,8 +467,7 @@ def cluster(
     else:
         return out_df
 
-
-def merge(df, min_dist=0, cols=None):
+def merge(df, min_dist=0, cols=None, on=['chrom']):
     """
     Merge overlapping intervals.
 
@@ -491,9 +500,9 @@ def merge(df, min_dist=0, cols=None):
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
-    # Find overlapping intervals per chromosome.
-    df_groups = df.groupby(ck).groups
-
+    # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
+    if ck not in on: raise ValueError('chromosome column must be specified for clustering and match one of the columns in cols')
+    df_groups = df.groupby(on).groups
     clusters = []
 
     for group_keys, df_group_idxs in df_groups.items():
@@ -513,18 +522,23 @@ def merge(df, min_dist=0, cols=None):
         n_clusters = cluster_starts_group.shape[0]
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        chrom = group_keys
-        clusters_group = {
-            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_group,
-            ek: cluster_ends_group,
-            "n_intervals": interval_counts,
-        }
+        if type(group_keys) is str: group_keys = tuple((group_keys,))
+        clusters_group = {}
+        for col in on:
+            clusters_group[col] = pd.Series(data=np.full(n_clusters,
+                                            group_keys[on.index(col)]),
+                                            dtype=df[col].dtype)
+        clusters_group[sk] = cluster_starts_group
+        clusters_group[ek] = cluster_ends_group
+        clusters_group['n_intervals'] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
 
         clusters.append(clusters_group)
 
     clusters = pd.concat(clusters).reset_index(drop=True)
+    # reorder cluster columns to have chrom,start,end first
+    clusters_names = list(clusters.keys())
+    clusters = clusters[[ck,sk,ek] + [col for col in clusters_names   if col not in [ck, sk, ek] ] ]
 
     return clusters
 
