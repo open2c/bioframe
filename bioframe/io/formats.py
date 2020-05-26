@@ -8,10 +8,10 @@ import io
 import numpy as np
 import pandas as pd
 
-from ._process import run
-from ._region import parse_region
-from .arrops import argnatsort
-from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+from bioframe.io._process import run
+from bioframe._region import parse_region
+from bioframe.arrops import argnatsort
+from bioframe.io.schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
 def read_table(filepath_or, schema=None, **kwargs):

@@ -1,4 +1,3 @@
-from __future__ import division, print_function
 from functools import partial
 from urllib.parse import urljoin, urlencode
 import urllib
