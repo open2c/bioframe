@@ -364,7 +364,6 @@ def cluster(
     return_input=True,
     return_cluster_ids=True,
     return_cluster_intervals=True,
-    return_cluster_df=False,
 ):
     """
     Cluster overlapping intervals.
@@ -405,9 +404,6 @@ def cluster(
     Returns
     -------
     df_clustered : pd.DataFrame
-
-    df_clusters : pd.DataFrame, optional
-        A pandas dataframe with coordinates of merged clusters.
 
     """
     if min_dist is not None:
@@ -461,7 +457,6 @@ def cluster(
         clusters_group[ek] = cluster_ends_group
         clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
-
         clusters.append(clusters_group)
 
     assert np.all(cluster_ids >= 0)
@@ -486,10 +481,7 @@ def cluster(
 
     out_df.set_index(df_index)
 
-    if return_cluster_df:
-        return out_df, clusters
-    else:
-        return out_df
+    return out_df
 
 
 def merge(df, min_dist=0, cols=None, on=["chrom"]):
