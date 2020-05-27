@@ -160,14 +160,13 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     if on is not None:
         group_list1 = [ck1] + on
         group_list2 = [ck2] + on
-        print('groupby on')
     else:
         group_list1 = [ck1]
         group_list2 = [ck2]
     df1_groups = df1.groupby(group_list1).groups
     df2_groups = df2.groupby(group_list2).groups
-    #all_groups = sorted(set.union(set(df1_groups), set(df2_groups))) ### breaks if any of the groupby elements are pd.NA...
-    all_groups = list(set.union(set(df1_groups), set(df2_groups)))
+    all_groups = sorted(set.union(set(df1_groups), set(df2_groups))) ### breaks if any of the groupby elements are pd.NA...
+    #all_groups = list(set.union(set(df1_groups), set(df2_groups))) ### disagrees with pyranges order so a test fails... 
 
     overlap_intidxs = []
     for group_keys in all_groups:
@@ -1024,3 +1023,41 @@ def subtract(df1, df2, cols1=None, cols2=None):
         df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
     df_subtracted = pd.concat(df_subtracted)
     return df_subtracted
+
+
+def setdiff(df1, df2, cols1=None, cols2=None, on=None):
+    """
+    Generate a new dataframe of genomic intervals by removing any interval from the
+    first dataframe that overlaps an interval from the second dataframe.
+
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as DataFrames.
+    
+    cols1, cols2 : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    on : None or list
+        Additional column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby when considering overlaps and must be present in both dataframes. 
+        Examples for additional columns include 'strand'. 
+
+    Returns
+    -------
+    df_setdiff : pandas.DataFrame
+    
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+
+    df_overlapped = _overlap_intidxs(df1,df2, how='inner', cols1=cols1,cols2=cols2, on=on)
+    inds_non_overlapped = np.setdiff1d(np.arange(len(df1)),df_overlapped[:,0])
+    df_setdiff = df1.iloc[ inds_non_overlapped]  
+    return df_setdiff
+
+
+
+

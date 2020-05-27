@@ -410,3 +410,38 @@ def test_subtract():
     pd.testing.assert_frame_equal(
         df_result, bioframe.subtract(df1, df2).reset_index(drop=True)
     )
+
+
+def test_setdiff():
+
+    df1 = pd.DataFrame([
+        ['chr1', 8, 12,'+', 'cat'],
+        ['chr1', 8, 12,'-', 'cat'],
+        ['chrX', 1, 8, '+', 'cat']],
+        columns=['chrom1', 'start', 'end', 'strand','animal'])
+
+    df2 = pd.DataFrame([ 
+        ['chrX', 7, 10, '-', 'dog'] ,
+        ['chr1', 6, 10, '-', 'cat'] ,
+        ['chr1', 6, 10, '-', 'cat'] ],
+        columns=['chrom2', 'start', 'end', 'strand','animal'] )
+
+
+    assert (len( bioframe.setdiff(df1,df2,
+                     cols1=('chrom1','start','end'), 
+                     cols2=('chrom2','start','end'),
+                     on = None)) == 0) #everything overlaps
+
+    assert (len( bioframe.setdiff(df1,df2,
+                     cols1=('chrom1','start','end'), 
+                     cols2=('chrom2','start','end'),
+                     on = ['animal'])) == 1) #two overlap, one remains
+
+    assert (len( bioframe.setdiff(df1,df2,
+                     cols1=('chrom1','start','end'), 
+                     cols2=('chrom2','start','end'),
+                     on = ['strand'])) == 2) #one overlaps, two remain
+
+
+
+
