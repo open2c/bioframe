@@ -11,6 +11,17 @@ from ._region import parse_region
 def _get_default_colnames():
     return "chrom", "start", "end"
 
+def _verify_columns(df, colnames):
+    """
+    df: pandas.DataFrame
+
+    colnames: list of columns
+    """
+    if not set(colnames).issubset(df.columns):
+        raise ValueError(
+            'keys '+ ', '.join(set(colnames).difference(set(df1.columns)))+' not in df.columns')
+
+
 
 def select(df, region, cols=None):
     """
@@ -151,18 +162,24 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     # Allow users to specify the names of columns containing the interval coordinates.
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    _verify_columns(df1, [ck1, sk1, ek1])
+    _verify_columns(df2, [ck2, sk2, ek2])
+
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
+    group_list1 = [ck1]
+    group_list2 = [ck2]
     if on is not None:
-        group_list1 = [ck1] + on
-        group_list2 = [ck2] + on
-    else:
-        group_list1 = [ck1]
-        group_list2 = [ck2]
+        if type(on) is not list: raise ValueError("on=[] must be None or list")
+        if (ck1 in on) or (ck2 in on): raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df1, on)
+        _verify_columns(df2, on)
+        group_list1 +=  on
+        group_list2 +=  on
     df1_groups = df1.groupby(group_list1).groups
     df2_groups = df2.groupby(group_list2).groups
     all_groups = sorted(set.union(set(df1_groups), set(df2_groups))) ### breaks if any of the groupby elements are pd.NA...
@@ -385,7 +402,7 @@ def cluster(
     df,
     min_dist=0,
     cols=None,
-    on=["chrom"],
+    on=None,
     return_input=True,
     return_cluster_ids=True,
     return_cluster_intervals=True,
@@ -409,10 +426,9 @@ def cluster(
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
-    on : list
+    on : None or list
         List of column names to perform clustering on indepdendently, passed as an argument
-        to df.groupby before clustering. Default is 'chrom', which must match the first name 
-        from cols. Examples for additional columns include 'strand'. 
+        to df.groupby before clustering. Default is None. An example use would be on=['strand'].
 
     return_input : bool
         If True, return input
@@ -436,16 +452,20 @@ def cluster(
             raise ValueError("min_dist>=0 currently required")
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df,[ck,sk,ek])
+
     # Switch to integer indices.
     df_index = df.index
     df = df.reset_index(drop=True)
 
-    # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
-    if ck not in on:
-        raise ValueError(
-            "chromosome column must be specified for clustering and match one of the columns in cols"
-        )
-    df_groups = df.groupby(on).groups
+    # Find overlapping intervals for groups specified by ck1 and on=[] (default on=None)
+    group_list = [ck]
+    if on is not None:
+        if type(on) is not list: raise ValueError("on=[] must be None or list")
+        if (ck in on): raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df, on)
+        group_list += on
+    df_groups = df.groupby(group_list).groups
 
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
@@ -474,9 +494,9 @@ def cluster(
         if type(group_keys) is str:
             group_keys = tuple((group_keys,))
         clusters_group = {}
-        for col in on:
+        for col in group_list:
             clusters_group[col] = pd.Series(
-                data=np.full(n_clusters, group_keys[on.index(col)]), dtype=df[col].dtype
+                data=np.full(n_clusters, group_keys[group_list.index(col)]), dtype=df[col].dtype
             )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group
@@ -509,7 +529,7 @@ def cluster(
     return out_df
 
 
-def merge(df, min_dist=0, cols=None, on=["chrom"]):
+def merge(df, min_dist=0, cols=None, on=None):
     """
     Merge overlapping intervals.
 
@@ -546,13 +566,17 @@ def merge(df, min_dist=0, cols=None, on=["chrom"]):
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck,sk,ek])
 
-    # Find overlapping intervals for groups specified by on=[] (default on=['chrom'])
-    if ck not in on:
-        raise ValueError(
-            "chromosome column must be specified for clustering and match one of the columns in cols"
-        )
-    df_groups = df.groupby(on).groups
+    # Find overlapping intervals for groups specified by on=[] (default on=None)
+    group_list = [ck]
+    if on is not None:
+        if type(on) is not list: raise ValueError("on=[] must be None or list")
+        if (ck in on): raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df, on)
+        group_list += on
+    df_groups = df.groupby(group_list).groups
+
     clusters = []
 
     for group_keys, df_group_idxs in df_groups.items():
@@ -575,9 +599,9 @@ def merge(df, min_dist=0, cols=None, on=["chrom"]):
         if type(group_keys) is str:
             group_keys = tuple((group_keys,))
         clusters_group = {}
-        for col in on:
+        for col in group_list:
             clusters_group[col] = pd.Series(
-                data=np.full(n_clusters, group_keys[on.index(col)]), dtype=df[col].dtype
+                data=np.full(n_clusters, group_keys[group_list.index(col)]), dtype=df[col].dtype
             )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group

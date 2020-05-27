@@ -169,15 +169,15 @@ def test_cluster():
         columns=["chrom", "start", "end", "strand", "animal", "location"],
     )
     assert (
-        bioframe.cluster(df1, on=["chrom", "animal"])["cluster"].values
+        bioframe.cluster(df1, on=["animal"])["cluster"].values
         == np.array([0, 1, 0, 2])
     ).all()
     assert (
-        bioframe.cluster(df1, on=["chrom", "strand"])["cluster"].values
+        bioframe.cluster(df1, on=["strand"])["cluster"].values
         == np.array([0, 1, 1, 2])
     ).all()
     assert (
-        bioframe.cluster(df1, on=["chrom", "location", "animal"])["cluster"].values
+        bioframe.cluster(df1, on=["location", "animal"])["cluster"].values
         == np.array([0, 2, 1, 3])
     ).all()
 
@@ -234,17 +234,17 @@ def test_merge():
         ],
         columns=["chrom", "start", "end", "strand", "animal", "location"],
     )
-    assert len(bioframe.merge(df1, on=["chrom"])) == 2
-    assert len(bioframe.merge(df1, on=["chrom", "strand"])) == 3
-    assert len(bioframe.merge(df1, on=["chrom", "strand", "location"])) == 3
-    assert len(bioframe.merge(df1, on=["chrom", "strand", "location", "animal"])) == 4
+    assert len(bioframe.merge(df1, on=None)) == 2
+    assert len(bioframe.merge(df1, on=["strand"])) == 3
+    assert len(bioframe.merge(df1, on=["strand", "location"])) == 3
+    assert len(bioframe.merge(df1, on=["strand", "location", "animal"])) == 4
     d = """ chrom   start   end animal  n_intervals
         0   chr1    3   10  cat 2
         1   chr1    3   8   dog 1
         2   chrX    6   10  cat 1"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
-        df, bioframe.merge(df1, on=["chrom", "animal"]), check_dtype=False,
+        df, bioframe.merge(df1, on=["animal"]), check_dtype=False,
     )
 
 
