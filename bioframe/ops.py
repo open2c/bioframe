@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from . import arrops
-from ._region import parse_region
+from ._region import parse_region, add_name
 
 
 def _get_default_colnames():
@@ -19,7 +19,7 @@ def _verify_columns(df, colnames):
     """
     if not set(colnames).issubset(df.columns):
         raise ValueError(
-            'keys '+ ', '.join(set(colnames).difference(set(df1.columns)))+' not in df.columns')
+            'keys '+ ', '.join(set(colnames).difference(set(df.columns)))+' not in df.columns')
 
 
 
@@ -1022,7 +1022,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    name_updates = {"chrom_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    name_updates = {ck1+"_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
     extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
@@ -1082,6 +1082,69 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     df_setdiff = df1.iloc[ inds_non_overlapped]  
     return df_setdiff
 
+
+def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_left','_right']):
+    """
+    Generate a new dataframe of genomic intervals by removing any interval from the
+    first dataframe that overlaps an interval from the second dataframe.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Genomic intervals stored as a DataFrame.
+    
+    points : pandas.DataFrame or dict
+        If pandas.DataFrame, a set of genomic positions specified in columns 'chrom', 'pos'. 
+        Names of cols can be overwridden by cols_points.
+        If dict, mapping of chromosomes to positions.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+
+    Returns
+    -------
+    df_split : pandas.DataFrame
+    
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    ck2, sk2 = ('chrom','pos') if cols_points is None else cols_points
+
+    name_updates = {ck1+"_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    if add_names:
+        name_updates["index_2"] = "index_2"
+        return_index = True
+    else:
+        return_index = False
+    extra_columns_1 = [i for i in list(df.columns) if i not in [ck1, sk1, ek1]]
+    for i in extra_columns_1:
+        name_updates[i + "_1"] = i
+    print(name_updates)
+    
+    
+    if isinstance(points, dict):
+        points = pd.DataFrame.from_dict(points, orient='index',columns = [sk2])
+        points.reset_index(inplace=True)
+        points.rename(columns={'index':'chrom'}, inplace=True)
+    elif not isinstance(points, pd.DataFrame):
+        raise ValueError("points must be a dict or pd.Dataframe")
+
+
+    points['start'] = points[sk2]
+    points['end'] = points[sk2]
+    df_split = overlap( df, complement(points), how="inner", cols1=cols, cols2=(ck2,'start','end'), 
+        return_overlap=True, return_index=return_index)[list(name_updates)]
+    df_split.rename(columns=name_updates, inplace=True)
+    
+    if add_names:
+        df_split = add_name(df_split)
+        sides = np.mod(df_split['index_2'].values,2).astype(int) #.astype(str)
+        df_split['name'] = df_split['name'].values + np.array(suffixes)[sides]
+        df_split.drop(columns=['index_2'])
+
+    return df_split
 
 
 
