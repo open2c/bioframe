@@ -1121,8 +1121,6 @@ def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_
     extra_columns_1 = [i for i in list(df.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
-    print(name_updates)
-    
     
     if isinstance(points, dict):
         points = pd.DataFrame.from_dict(points, orient='index',columns = [sk2])
@@ -1145,6 +1143,5 @@ def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_
         df_split.drop(columns=['index_2'])
 
     return df_split
-
 
 
