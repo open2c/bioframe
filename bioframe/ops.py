@@ -1085,7 +1085,7 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
 
 def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_left','_right']):
     """
-    Generate a new dataframe of genomic intervals by removing any interval from the
+    Generate a new dataframe of genomic intervals by splitting each interval from the 
     first dataframe that overlaps an interval from the second dataframe.
 
     Parameters

@@ -10,50 +10,72 @@ from ._region import parse_region
 import six
 
 
-def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
+def make_chromarms(
+    chromsizes,
+    midpoints,
+    cols_chroms=("chrom", "length"),
+    cols_mids=("chrom", "mids"),
+    suffixes=("_p", "_q"),
+):
     """
     Split chromosomes into chromosome arms
 
     Parameters
     ----------
-    chromsizes : pandas.Series
-        Series mapping chromosomes to lengths in bp.
+    chromsizes : pandas.Dataframe or pandas.Series
+        If pandas.Series, a map from chromosomes to lengths in bp.
+        If pandas.Dataframe, a dataframe with columns 'chrom' and 'length'.
 
-    mids : dict-like
+    midpoints : pandas.Dataframe or dict-like
         Mapping of chromosomes to midpoint locations.
-
-    binsize : int, optional
-        Round midpoints to nearest bin edge for compatibility with a given
-        bin grid.
 
     suffixes : tuple, optional
         Suffixes to name chromosome arms. Defaults to p and q.
 
     Returns
     -------
-    4-column BED-like DataFrame (chrom, start, end, name).
-    Arm names are chromosome names + suffix.
-    Any chromosome not included in ``mids`` will be omitted.
+    df_chromarms 
+        4-column BED-like DataFrame (chrom, start, end, name).
+        Arm names are chromosome names + suffix.
+        Any chromosome not included in ``mids`` will be omitted.
 
     """
-    chromosomes = [chrom for chrom in chromsizes.index if chrom in mids]
+    ck1, sk1 = cols_chroms
+    ck2, sk2 = cols_mids
 
-    p_arms = [[chrom, 0, mids[chrom], chrom + suffixes[0]] for chrom in chromosomes]
-    if binsize is not None:
-        for x in p_arms:
-            x[2] = int(round(x[2] / binsize)) * binsize
+    if isinstance(chromsizes, pd.Series):
+        df_chroms = (
+            pd.DataFrame(chromsizes).reset_index().rename(columns={"index": ck1})
+        )
+    elif isinstance(chromsizes, pd.DataFrame):
+        df_chroms = chromsizes.copy()
+    else:
+        raise ValueError("unknown input type for chromsizes")
 
-    q_arms = [
-        [chrom, mids[chrom], chromsizes[chrom], chrom + suffixes[1]]
-        for chrom in chromosomes
-    ]
-    if binsize is not None:
-        for x in q_arms:
-            x[1] = int(round(x[1] / binsize)) * binsize
+    if isinstance(midpoints, dict):
+        df_mids = pd.DataFrame.from_dict(midpoints, orient="index", columns=[sk2])
+        df_mids.reset_index(inplace=True)
+        df_mids.rename(columns={"index": ck2}, inplace=True)
+    elif isinstance(midpoints, pd.DataFrame):
+        df_mids = midpoints.copy()
 
-    interleaved = [*sum(zip(p_arms, q_arms), ())]
+    ops._verify_columns(df_mids, [ck2, sk2])
+    ops._verify_columns(df_chroms, [ck1, sk1])
+    
+    df_chroms["start"] = 0
+    df_chroms["end"] = df_chroms[sk1].values
 
-    return pd.DataFrame(interleaved, columns=["chrom", "start", "end", "name"])
+    df_chromarms = ops.split(
+        df_chroms,
+        df_mids,
+        add_names=True,
+        cols=(ck1, "start", "end"),
+        cols_points=(ck2, sk2),
+        suffixes=suffixes,
+    )
+    df_chromarms["name"].replace("[\:\[].*?[\)\_]", "", regex=True, inplace=True)
+    df_chromarms.drop(columns=["index_2", "length"], inplace=True)
+    return df_chromarms
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
