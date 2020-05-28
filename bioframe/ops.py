@@ -1222,7 +1222,6 @@ def count_overlaps(
         cols1=cols1,
         cols2=cols2,
     )
-    print(df_counts.groupby(["index_1"])["index_2"].count().values)
     df_counts = pd.concat(
         [
             df1,

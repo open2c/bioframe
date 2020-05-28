@@ -61,7 +61,7 @@ def make_chromarms(
 
     ops._verify_columns(df_mids, [ck2, sk2])
     ops._verify_columns(df_chroms, [ck1, sk1])
-    
+
     df_chroms["start"] = 0
     df_chroms["end"] = df_chroms[sk1].values
 
@@ -269,38 +269,34 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
-def frac_gene_coverage(bintable, mrna):
+def frac_gene_coverage(df, mrna_genome):
     """
-    Calculate number and fraction of overlaps by genes for a set of intervals.
+    Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
 
     Parameters
     ----------
-    bintable : set of intervals
-    mrna: str
+    df : pd.DataFrame
+        Set of genomic intervals stored as a dataframe.
+
+    mrna_genome: str
         Name of genome.
 
     Returns
     -------
-    XXXX
+    df_gene_coverage : pd.DataFrame
 
     """
 
     raise ValueError("implementation currently broken!")
 
     if isinstance(mrna, six.string_types):
-        from .resources import UCSCClient
+        from .io.resources import UCSCClient
 
         mrna = (
-            UCSCClient(mrna)
+            UCSCClient(mrna_genome)
             .fetch_mrna()
             .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
         )
-
-    #### currently broken ####
-    bintable = ops.coverage(
-        bintable,
-        mrna,
-        out={"input": "input", "count": "gene_count", "coverage": "gene_coverage"},
-    )
-
-    return bintable
+    df_gene_coverage = ops.coverage(df, mrna)
+    df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
+    return df_gene_coverage
