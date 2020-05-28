@@ -1171,3 +1171,68 @@ def split(
         df_split.drop(columns=["index_2"])
 
     return df_split
+
+
+def count_overlaps(
+    df1, df2, cols1=None, cols2=None, on=None,
+):
+
+    """
+    Count number of overlapping genomic intervals.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+    
+    how : {'left', 'right', 'outer', 'inner'}, default 'left'
+    
+    return_input : bool
+        If True, return columns from input dfs. Default True.
+
+    suffixes : (str, str)
+        The suffixes for the columns of the two overlapped sets.
+
+    keep_order : bool
+        << to be documented >>
+    
+    cols1, cols2 : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    on : list
+        List of column names to check overlap on indepdendently, passed as an argument
+        to df.groupby when considering overlaps. Default is None. Examples for additional columns include 'strand'. 
+
+    Returns
+    -------
+    df_counts : pandas.DataFrame
+        
+    """
+
+    df_counts = overlap(
+        df1,
+        df2,
+        how="left",
+        return_input=False,
+        keep_order=True,
+        return_index=True,
+        on=on,
+        cols1=cols1,
+        cols2=cols2,
+    )
+    print(df_counts.groupby(["index_1"])["index_2"].count().values)
+    df_counts = pd.concat(
+        [
+            df1,
+            pd.DataFrame(
+                df_counts.groupby(["index_1"])["index_2"].count().values,
+                columns=["count"],
+            ),
+        ],
+        axis=1,
+        names=["count"],
+    )
+
+    return df_counts
