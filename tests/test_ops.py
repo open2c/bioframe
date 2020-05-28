@@ -108,6 +108,9 @@ def test_expand():
 
 
 def test_overlap():
+
+
+    ### test consistency of overlap(how='inner') with pyranges.join ###
     ### note does not test overlap_start or overlap_end columns of bioframe.overlap
     df1 = mock_bioframe()
     df2 = mock_bioframe()
@@ -123,9 +126,81 @@ def test_overlap():
     pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
     print("overlap elements agree")
 
-    ### TO DO ####
-    ### test overlap 'left', 'outer', and 'right'
 
+    ### test overlap on= [] ###
+    df1 = pd.DataFrame([
+        ['chr1', 8, 12,'+','cat'],
+        ['chr1', 8, 12,'-','cat'],
+        ['chrX', 1, 8, '+','cat']],
+        columns=['chrom1', 'start', 'end', 'strand','animal'])
+
+    df2 = pd.DataFrame([
+        ['chr1', 6, 10,'+','dog'] ,
+        ['chrX', 7, 10,'-','dog']  ],
+        columns=['chrom2', 'start2', 'end2', 'strand','animal'] )
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['animal'],
+                         how = 'left', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'), 
+                         return_index=True,  return_input=False)
+    assert (np.sum(pd.isna( b['index_2'].values))==3)
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['strand'],
+                         how = 'left', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'), 
+                         return_index=True,  return_input=False)
+    assert (np.sum(pd.isna( b['index_2'].values))==2)
+
+    b = bioframe.overlap(df1,df2, 
+                         on=None,
+                         how = 'left', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'), 
+                         return_index=True,  return_input=False)
+    assert (np.sum(pd.isna( b['index_2'].values))==0)
+
+
+    ### test overlap 'left', 'outer', and 'right'
+    b = bioframe.overlap(df1,df2, 
+                         on=None,
+                         how = 'outer', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'))
+    assert (len(b) == 3)
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['animal'],
+                         how = 'outer', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'))
+    assert (len(b) == 5)
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['animal'],
+                         how = 'inner', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'))
+    assert (len(b) == 0)
+
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['animal'],
+                         how = 'right', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'))
+    assert (len(b) == 2)
+
+    b = bioframe.overlap(df1,df2, 
+                         on=['animal'],
+                         how = 'left', 
+                         cols1=('chrom1','start','end'), 
+                         cols2=('chrom2','start2','end2'))
+    assert (len(b) == 3)
+    
 
 def test_cluster():
     df1 = pd.DataFrame(
@@ -426,7 +501,6 @@ def test_setdiff():
         ['chr1', 6, 10, '-', 'cat'] ],
         columns=['chrom2', 'start', 'end', 'strand','animal'] )
 
-
     assert (len( bioframe.setdiff(df1,df2,
                      cols1=('chrom1','start','end'), 
                      cols2=('chrom2','start','end'),
@@ -442,6 +516,9 @@ def test_setdiff():
                      cols2=('chrom2','start','end'),
                      on = ['strand'])) == 2) #one overlaps, two remain
 
+
+#### def test_setdiff():
+    #### NOT IMPLEMENTED ####
 
 
 

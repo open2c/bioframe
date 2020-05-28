@@ -11,6 +11,7 @@ from ._region import parse_region, add_name
 def _get_default_colnames():
     return "chrom", "start", "end"
 
+
 def _verify_columns(df, colnames):
     """
     df: pandas.DataFrame
@@ -19,8 +20,9 @@ def _verify_columns(df, colnames):
     """
     if not set(colnames).issubset(df.columns):
         raise ValueError(
-            'keys '+ ', '.join(set(colnames).difference(set(df.columns)))+' not in df.columns')
-
+            ", ".join(set(colnames).difference(set(df.columns)))
+            + " not in keys of df.columns"
+        )
 
 
 def select(df, region, cols=None):
@@ -133,7 +135,9 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
     return df
 
 
-def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=None, on=None):
+def _overlap_intidxs(
+    df1, df2, how="left", keep_order=False, cols1=None, cols2=None, on=None
+):
     """
     Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
@@ -165,7 +169,6 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     _verify_columns(df1, [ck1, sk1, ek1])
     _verify_columns(df2, [ck2, sk2, ek2])
 
-
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
@@ -174,16 +177,20 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     group_list1 = [ck1]
     group_list2 = [ck2]
     if on is not None:
-        if type(on) is not list: raise ValueError("on=[] must be None or list")
-        if (ck1 in on) or (ck2 in on): raise ValueError("on=[] should not contain chromosome colnames")
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if (ck1 in on) or (ck2 in on):
+            raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df1, on)
         _verify_columns(df2, on)
-        group_list1 +=  on
-        group_list2 +=  on
+        group_list1 += on
+        group_list2 += on
     df1_groups = df1.groupby(group_list1).groups
     df2_groups = df2.groupby(group_list2).groups
-    all_groups = sorted(set.union(set(df1_groups), set(df2_groups))) ### breaks if any of the groupby elements are pd.NA...
-    #all_groups = list(set.union(set(df1_groups), set(df2_groups))) ### disagrees with pyranges order so a test fails... 
+    all_groups = sorted(
+        set.union(set(df1_groups), set(df2_groups))
+    )  ### breaks if any of the groupby elements are pd.NA...
+    # all_groups = list(set.union(set(df1_groups), set(df2_groups))) ### disagrees with pyranges order so a test fails...
 
     overlap_intidxs = []
     for group_keys in all_groups:
@@ -283,7 +290,7 @@ def overlap(
     keep_order=False,
     cols1=None,
     cols2=None,
-    on=None
+    on=None,
 ):
 
     """
@@ -452,7 +459,7 @@ def cluster(
             raise ValueError("min_dist>=0 currently required")
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df,[ck,sk,ek])
+    _verify_columns(df, [ck, sk, ek])
 
     # Switch to integer indices.
     df_index = df.index
@@ -461,8 +468,10 @@ def cluster(
     # Find overlapping intervals for groups specified by ck1 and on=[] (default on=None)
     group_list = [ck]
     if on is not None:
-        if type(on) is not list: raise ValueError("on=[] must be None or list")
-        if (ck in on): raise ValueError("on=[] should not contain chromosome colnames")
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if ck in on:
+            raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df, on)
         group_list += on
     df_groups = df.groupby(group_list).groups
@@ -496,7 +505,8 @@ def cluster(
         clusters_group = {}
         for col in group_list:
             clusters_group[col] = pd.Series(
-                data=np.full(n_clusters, group_keys[group_list.index(col)]), dtype=df[col].dtype
+                data=np.full(n_clusters, group_keys[group_list.index(col)]),
+                dtype=df[col].dtype,
             )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group
@@ -566,13 +576,15 @@ def merge(df, min_dist=0, cols=None, on=None):
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck,sk,ek])
+    _verify_columns(df, [ck, sk, ek])
 
     # Find overlapping intervals for groups specified by on=[] (default on=None)
     group_list = [ck]
     if on is not None:
-        if type(on) is not list: raise ValueError("on=[] must be None or list")
-        if (ck in on): raise ValueError("on=[] should not contain chromosome colnames")
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if ck in on:
+            raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df, on)
         group_list += on
     df_groups = df.groupby(group_list).groups
@@ -601,7 +613,8 @@ def merge(df, min_dist=0, cols=None, on=None):
         clusters_group = {}
         for col in group_list:
             clusters_group[col] = pd.Series(
-                data=np.full(n_clusters, group_keys[group_list.index(col)]), dtype=df[col].dtype
+                data=np.full(n_clusters, group_keys[group_list.index(col)]),
+                dtype=df[col].dtype,
             )
         clusters_group[sk] = cluster_starts_group
         clusters_group[ek] = cluster_ends_group
@@ -1022,7 +1035,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    name_updates = {ck1+"_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
     extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
@@ -1077,13 +1090,22 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    df_overlapped = _overlap_intidxs(df1,df2, how='inner', cols1=cols1,cols2=cols2, on=on)
-    inds_non_overlapped = np.setdiff1d(np.arange(len(df1)),df_overlapped[:,0])
-    df_setdiff = df1.iloc[ inds_non_overlapped]  
+    df_overlapped = _overlap_intidxs(
+        df1, df2, how="inner", cols1=cols1, cols2=cols2, on=on
+    )
+    inds_non_overlapped = np.setdiff1d(np.arange(len(df1)), df_overlapped[:, 0])
+    df_setdiff = df1.iloc[inds_non_overlapped]
     return df_setdiff
 
 
-def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_left','_right']):
+def split(
+    df,
+    points,
+    cols=None,
+    cols_points=None,
+    add_names=False,
+    suffixes=["_left", "_right"],
+):
     """
     Generate a new dataframe of genomic intervals by splitting each interval from the 
     first dataframe that overlaps an interval from the second dataframe.
@@ -1110,9 +1132,9 @@ def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_
     
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    ck2, sk2 = ('chrom','pos') if cols_points is None else cols_points
+    ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
 
-    name_updates = {ck1+"_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
     if add_names:
         name_updates["index_2"] = "index_2"
         return_index = True
@@ -1121,27 +1143,31 @@ def split(df, points, cols=None, cols_points=None, add_names=False, suffixes=['_
     extra_columns_1 = [i for i in list(df.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
-    
+
     if isinstance(points, dict):
-        points = pd.DataFrame.from_dict(points, orient='index',columns = [sk2])
+        points = pd.DataFrame.from_dict(points, orient="index", columns=[sk2])
         points.reset_index(inplace=True)
-        points.rename(columns={'index':'chrom'}, inplace=True)
+        points.rename(columns={"index": "chrom"}, inplace=True)
     elif not isinstance(points, pd.DataFrame):
         raise ValueError("points must be a dict or pd.Dataframe")
 
-
-    points['start'] = points[sk2]
-    points['end'] = points[sk2]
-    df_split = overlap( df, complement(points), how="inner", cols1=cols, cols2=(ck2,'start','end'), 
-        return_overlap=True, return_index=return_index)[list(name_updates)]
+    points["start"] = points[sk2]
+    points["end"] = points[sk2]
+    df_split = overlap(
+        df,
+        complement(points),
+        how="inner",
+        cols1=cols,
+        cols2=(ck2, "start", "end"),
+        return_overlap=True,
+        return_index=return_index,
+    )[list(name_updates)]
     df_split.rename(columns=name_updates, inplace=True)
-    
+
     if add_names:
         df_split = add_name(df_split)
-        sides = np.mod(df_split['index_2'].values,2).astype(int) #.astype(str)
-        df_split['name'] = df_split['name'].values + np.array(suffixes)[sides]
-        df_split.drop(columns=['index_2'])
+        sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
+        df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
+        df_split.drop(columns=["index_2"])
 
     return df_split
-
-
