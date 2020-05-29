@@ -930,10 +930,8 @@ def closest(
 
 
 def subtract(df1, df2, cols1=None, cols2=None):
-
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
-
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -952,29 +950,23 @@ def subtract(df1, df2, cols1=None, cols2=None):
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    
+    all_chroms = sorted(set.union(
+        set(df1.chrom.unique()),
+        set(df1.chrom.unique())))
+    
+    inf_chromsizes = {chrom:np.iinfo(np.int64).max for chrom in all_chroms}
+    
+    
+    df_subtracted = bioframe.overlap(
+        df1, 
+        bioframe.complement(df2, chromsizes=inf_chromsizes), 
+        how="inner", 
+        suffixes=['',''],
+        return_input=1,
+        return_overlap=True
+        ).assign(start=lambda df: df['overlap_start'],
+                 end=lambda df: df['overlap_end'],
+        ).drop(columns=['overlap_start', 'overlap_end'])
 
-    name_updates = {"chrom_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
-    extra_columns_1 = list(np.setdiff1d(df1.columns, [ck1, sk1, ek1]))  # +'_1')
-    for i in extra_columns_1:
-        name_updates[i + "_1"] = i
-
-    ### loop over chromosomes, then either return the same or subtracted intervals.
-    df1_groups = df1.groupby(ck1).groups
-    df2_groups = df2.groupby(ck2).groups
-    df_subtracted = []
-    for group_keys, df1_group_idxs in df1_groups.items():
-        df1_group = df1.loc[df1_group_idxs]
-
-        # if nothing to subtract, add original intervals
-        if group_keys not in df2_groups:
-            df_subtracted.append(df1_group)
-            continue
-
-        df2_group_idxs = df2_groups[group_keys]
-        df2_group = df2.loc[df2_group_idxs]
-        df_subtracted_group = overlap(
-            df1_group, complement(df2_group), how="inner", return_overlap=True
-        )[list(name_updates)]
-        df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
-    df_subtracted = pd.concat(df_subtracted)
     return df_subtracted
