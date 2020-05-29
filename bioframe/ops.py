@@ -958,9 +958,9 @@ def subtract(df1, df2, cols1=None, cols2=None):
     inf_chromsizes = {chrom:np.iinfo(np.int64).max for chrom in all_chroms}
     
     
-    df_subtracted = bioframe.overlap(
+    df_subtracted = overlap(
         df1, 
-        bioframe.complement(df2, chromsizes=inf_chromsizes), 
+        complement(df2, chromsizes=inf_chromsizes), 
         how="inner", 
         suffixes=['',''],
         return_input=1,
