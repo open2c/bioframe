@@ -953,7 +953,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
     
     all_chroms = sorted(set.union(
         set(df1.chrom.unique()),
-        set(df1.chrom.unique())))
+        set(df2.chrom.unique())))
     
     inf_chromsizes = {chrom:np.iinfo(np.int64).max for chrom in all_chroms}
     
