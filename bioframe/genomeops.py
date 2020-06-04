@@ -34,7 +34,7 @@ def make_chromarms(
 
     Returns
     -------
-    df_chromarms 
+    df_chromarms
         4-column BED-like DataFrame (chrom, start, end, name).
         Arm names are chromosome names + suffix.
         Any chromosome not included in ``mids`` will be omitted.
@@ -167,7 +167,7 @@ def digest(fasta_records, enzyme):
 
 def frac_mapped(df, fasta_records, return_input=True):
     """
-    Calculate the fraction of mapped base-pairs for each interval in a dataframe. 
+    Calculate the fraction of mapped base-pairs for each interval in a dataframe.
 
     Parameters
     ----------
@@ -183,7 +183,7 @@ def frac_mapped(df, fasta_records, return_input=True):
 
     Returns
     -------
-    df_mapped : pd.DataFrame 
+    df_mapped : pd.DataFrame
         Original dataframe with new column 'frac_mapped' appended.
 
     """
@@ -211,7 +211,7 @@ def frac_mapped(df, fasta_records, return_input=True):
 
 def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
     """
-    Calculate the fraction of GC basepairs for each interval in a dataframe. 
+    Calculate the fraction of GC basepairs for each interval in a dataframe.
 
     Parameters
     ----------
@@ -223,7 +223,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         Created by: bioframe.load_fasta('/path/to/fasta.fa')
 
     mapped_only: bool
-        if True, ignore 'N' in the fasta_records for calculation. 
+        if True, ignore 'N' in the fasta_records for calculation.
         if True and there are no mapped base-pairs in an interval, return np.nan.
 
     return_input: bool
@@ -231,9 +231,9 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
 
     Returns
     -------
-    df_mapped : pd.DataFrame 
+    df_mapped : pd.DataFrame
         Original dataframe with new column 'frac_mapped' appended.
-    
+
     """
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
         return ValueError(
@@ -286,17 +286,16 @@ def frac_gene_coverage(df, mrna_genome):
     df_gene_coverage : pd.DataFrame
 
     """
+    raise NotImplementedError("implementation currently broken!")
 
-    raise ValueError("implementation currently broken!")
+    # if isinstance(mrna, six.string_types):
+    #     from .io.resources import UCSCClient
 
-    if isinstance(mrna, six.string_types):
-        from .io.resources import UCSCClient
-
-        mrna = (
-            UCSCClient(mrna_genome)
-            .fetch_mrna()
-            .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
-        )
-    df_gene_coverage = ops.coverage(df, mrna)
-    df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
-    return df_gene_coverage
+    #     mrna = (
+    #         UCSCClient(mrna_genome)
+    #         .fetch_mrna()
+    #         .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
+    #     )
+    # df_gene_coverage = ops.coverage(df, mrna)
+    # df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
+    # return df_gene_coverage
