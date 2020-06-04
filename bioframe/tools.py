@@ -1,8 +1,61 @@
-from __future__ import absolute_import, division, print_function
+from io import StringIO
 import subprocess
+import tempfile
+import os
+
 import pandas as pd
 
-from ._process import cmd_exists, run, to_dataframe, tsv
+
+def tsv(df, **kwargs):
+    """
+    Write ``pandas.DataFrame`` to a temporary tab-delimited file.
+    Works in a ``with`` block (file is deleted at context teardown).
+
+    >>> with tsv(df1) as f1, tsv(df2) as f2:
+    ...    # something that requires tsv file input (use f or f.name)
+
+    """
+    fh = tempfile.NamedTemporaryFile(mode='w+t')
+    df.to_csv(fh, sep=str('\t'), index=False, header=False, na_rep='nan', **kwargs)
+    fh.flush()  # DON'T FORGET TO FLUSH!!!
+    fh.seek(0)
+    return fh
+
+
+def run(cmd, input=None, raises=True, print_cmd=False, max_msg_len=1000):
+    if print_cmd:
+        print(subprocess.list2cmdline(cmd))
+
+    if input is not None:
+        p = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        out, err = p.communicate(input.encode('utf-8'))
+    else:
+        p = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        out, err = p.communicate()
+
+
+    if raises and p.returncode != 0:
+        if len(out) > max_msg_len:
+            out = out[:max_msg_len] + b'... [truncated]'
+        raise OSError("process failed: %d\n%s\n%s" % (p.returncode,  out.decode('utf-8'), err.decode('utf-8')))
+
+    return out.decode('utf-8')
+
+
+def cmd_exists(cmd):
+    return any(os.access(os.path.join(path, cmd), os.X_OK)
+               for path in os.environ["PATH"].split(os.pathsep))
+
+def to_dataframe(text, columns=None):
+    # To convert decoded stdout into a dataframe
+    return pd.read_csv(StringIO(text), sep='\t', header=None, names=columns)
 
 
 if cmd_exists("bedtools"):
@@ -81,69 +134,3 @@ class bedtools(object):
     annotate = _register('annotate')
     jaccard = _register('jaccard')
 
-
-def intersect(bed1, bed2, overlap=True, outer_join=False, v=False, sort=False, suffixes=('_x', '_y')):
-
-    # hacky, but we don't want to use suffixes when using -v mode
-    if v:
-        suffixes = ('',)
-
-    bed1_extra = bed1[bed1.columns.difference(['chrom', 'start', 'end'])]
-    bed2_extra = bed2[bed2.columns.difference(['chrom', 'start', 'end'])]
-
-    left = bed1[['chrom', 'start', 'end']].copy()
-    left['index'] = left.index
-
-    right = bed2[['chrom', 'start', 'end']].copy()
-    right['index'] = right.index
-
-    bt_kwargs = {
-        'v': v,
-        'nonamecheck': False,
-    }
-
-    if outer_join:
-        if overlap:
-            bt_kwargs['wao'] = True
-            bt_kwargs['loj'] = False
-        else:
-            bt_kwargs['wao'] = False
-            bt_kwargs['loj'] = True
-    else:
-        if overlap:
-            bt_kwargs['wo'] = True
-
-    with tsv(left) as a, tsv(right) as b:
-        out = bedtools.intersect(a=a.name, b=b.name, **bt_kwargs)
-
-    bed1_extra_out = bed1_extra.iloc[out[3]].reset_index(drop=True)
-
-    if v:
-        out_final = pd.concat([out, bed1_extra_out], axis=1)
-    else:
-        if outer_join:
-            out[4] = out[4].where(out[4] != '.')
-            out[7] = out[7].where(out[7] != '.', -1).astype(int)
-
-            bed2_extra_out = pd.DataFrame.from_items([
-                (name, pd.Series(data=None, index=out.index, dtype=series.dtype))
-                for name, series in bed2_extra.iteritems()])
-            mask = (out[7] != -1)
-            bed2_extra_out.loc[mask, :] = bed2_extra.iloc[out[7][mask]].values
-        else:
-            bed2_extra_out = bed2_extra.iloc[out[7]].reset_index(drop=True)
-        out_final = pd.concat([out, bed1_extra_out, bed2_extra_out], axis=1)
-
-    outcols = [c + suffixes[0] for c in ['chrom', 'start', 'end', 'index']]
-    if not v:
-        outcols += [c + suffixes[1] for c in ['chrom', 'start', 'end', 'index']]
-
-    if overlap and not v:
-        outcols += ['overlap']
-
-    outcols += [c + suffixes[0] for c in bed1_extra_out.columns]
-    if not v:
-        outcols += [c + suffixes[1] for c in bed2_extra_out.columns]
-
-    out_final.columns = outcols
-    return out_final

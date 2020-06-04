@@ -9,6 +9,8 @@ __pycache__
 
 # setup and build
 docs/_*
+docs/Makefile
+docs/make.bat
 *.egg-info/
 dist/
 build/
@@ -22,3 +24,6 @@ ehthumbs.db
 Thumbs.db
 
 tmp/
+docs/notebooks/.ipynb_checkpoints
+.vscode/.ropeproject/config.py
+.vscode/.ropeproject/objectdb

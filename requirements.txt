@@ -1,7 +1,7 @@
 six
 cytoolz
-numpy>=1.9
-pandas>=0.17
+numpy
+pandas
 pysam
 pyfaidx
 pypairix
