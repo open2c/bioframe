@@ -5,11 +5,24 @@ import numpy as np
 import pandas as pd
 
 from . import arrops
-from ._region import parse_region
+from ._region import parse_region, add_name
 
 
 def _get_default_colnames():
     return "chrom", "start", "end"
+
+
+def _verify_columns(df, colnames):
+    """
+    df: pandas.DataFrame
+
+    colnames: list of columns
+    """
+    if not set(colnames).issubset(df.columns):
+        raise ValueError(
+            ", ".join(set(colnames).difference(set(df.columns)))
+            + " not in keys of df.columns"
+        )
 
 
 def select(df, region, cols=None):
@@ -122,7 +135,9 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
     return df
 
 
-def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=None):
+def _overlap_intidxs(
+    df1, df2, how="left", keep_order=False, cols1=None, cols2=None, on=None
+):
     """
     Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
@@ -137,6 +152,9 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
+    on : list or None
+        Additional shared columns to consider as separate groups
+
     Returns
     -------
     overlap_ids : numpy.ndarray
@@ -148,30 +166,53 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
     # Allow users to specify the names of columns containing the interval coordinates.
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    _verify_columns(df1, [ck1, sk1, ek1])
+    _verify_columns(df2, [ck2, sk2, ek2])
 
     # Switch to integer indices.
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
-    df1_groups = df1.groupby(ck1).groups
-    df2_groups = df2.groupby(ck2).groups
-    all_groups = sorted(set.union(set(df1_groups), set(df2_groups)))
+    group_list1 = [ck1]
+    group_list2 = [ck2]
+    if on is not None:
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if (ck1 in on) or (ck2 in on):
+            raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df1, on)
+        _verify_columns(df2, on)
+        group_list1 += on
+        group_list2 += on
+    df1_groups = df1.groupby(group_list1).groups
+    df2_groups = df2.groupby(group_list2).groups
+    all_groups = sorted(
+        set.union(set(df1_groups), set(df2_groups))
+    )  ### breaks if any of the groupby elements are pd.NA...
+    # all_groups = list(set.union(set(df1_groups), set(df2_groups))) ### disagrees with pyranges order so a test fails...
 
     overlap_intidxs = []
-    
     for group_keys in all_groups:
-        df1_group_idxs = df1_groups[group_keys].values if (group_keys in df1_groups) else np.array([])
-        df2_group_idxs = df2_groups[group_keys].values if (group_keys in df2_groups) else np.array([])
+        df1_group_idxs = (
+            df1_groups[group_keys].values
+            if (group_keys in df1_groups)
+            else np.array([])
+        )
+        df2_group_idxs = (
+            df2_groups[group_keys].values
+            if (group_keys in df2_groups)
+            else np.array([])
+        )
         overlap_intidxs_sub = []
-        
+
         both_groups_nonempty = (df1_group_idxs.size > 0) and (df2_group_idxs.size > 0)
-        
+
         if both_groups_nonempty:
             overlap_idxs_loc = arrops.overlap_intervals(
-                df1[sk1].values[df1_group_idxs], 
-                df1[ek1].values[df1_group_idxs], 
-                df2[sk2].values[df2_group_idxs], 
+                df1[sk1].values[df1_group_idxs],
+                df1[ek1].values[df1_group_idxs],
+                df2[sk2].values[df2_group_idxs],
                 df2[ek2].values[df2_group_idxs],
             )
 
@@ -184,38 +225,48 @@ def _overlap_intidxs(df1, df2, how="left", keep_order=False, cols1=None, cols2=N
                 ]
             ]
 
-        if how in ["outer", "left"] and df1_group_idxs.size>0:
+        if how in ["outer", "left"] and df1_group_idxs.size > 0:
             if both_groups_nonempty:
-                no_overlap_ids1 = df1_group_idxs[np.where(
-                    np.bincount(overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)) == 0
-                )[0]]
+                no_overlap_ids1 = df1_group_idxs[
+                    np.where(
+                        np.bincount(
+                            overlap_idxs_loc[:, 0], minlength=len(df1_group_idxs)
+                        )
+                        == 0
+                    )[0]
+                ]
             else:
                 no_overlap_ids1 = df1_group_idxs
-                
+
             overlap_intidxs_sub += [
-                [
-                    no_overlap_ids1,
-                    -1 * np.ones_like(no_overlap_ids1),
-                ]
+                [no_overlap_ids1, -1 * np.ones_like(no_overlap_ids1),]
             ]
 
-        if how in ["outer", "right"] and df2_group_idxs.size>0:
+        if how in ["outer", "right"] and df2_group_idxs.size > 0:
             if both_groups_nonempty:
-                no_overlap_ids2 = df2_group_idxs[np.where(
-                    np.bincount(overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)) == 0
-                )[0]]
+                no_overlap_ids2 = df2_group_idxs[
+                    np.where(
+                        np.bincount(
+                            overlap_idxs_loc[:, 1], minlength=len(df2_group_idxs)
+                        )
+                        == 0
+                    )[0]
+                ]
             else:
                 no_overlap_ids2 = df2_group_idxs
-                
+
             overlap_intidxs_sub += [
-                [
-                    -1 * np.ones_like(no_overlap_ids2),
-                    no_overlap_ids2,
-                ]
+                [-1 * np.ones_like(no_overlap_ids2), no_overlap_ids2,]
             ]
-            
-        overlap_intidxs.append(np.block([[idxs[:,None] for idxs in idxs_pair] 
-                                         for idxs_pair in overlap_intidxs_sub]))
+        if overlap_intidxs_sub:
+            overlap_intidxs.append(
+                np.block(
+                    [
+                        [idxs[:, None] for idxs in idxs_pair]
+                        for idxs_pair in overlap_intidxs_sub
+                    ]
+                )
+            )
 
     if len(overlap_intidxs) == 0:
         return np.ndarray(shape=(0, 2), dtype=np.int)
@@ -239,6 +290,7 @@ def overlap(
     keep_order=False,
     cols1=None,
     cols2=None,
+    on=None,
 ):
 
     """
@@ -251,16 +303,31 @@ def overlap(
     
     how : {'left', 'right', 'outer', 'inner'}, default 'left'
     
-    return
+    return_input : bool
+        If True, return columns from input dfs. Default True.
+
+    return_index : bool
+        If True, return indicies of overlapping pairs. Default False.
+
+    return_overlap
+        If True, return overlapping intervals for the overlapping pairs. Default False.
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
+
+    keep_order : bool
+        << to be documented >>
     
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default 
         values are 'chrom', 'start', 'end'.
-    
+
+    on : list
+        List of column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby when considering overlaps. Default is ['chrom'], which must match the first name 
+        from cols. Examples for additional columns include 'strand'. 
+
     Returns
     -------
     df_overlap : pandas.DataFrame
@@ -272,7 +339,7 @@ def overlap(
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     overlap_df_idxs = _overlap_intidxs(
-        df1, df2, how=how, cols1=cols1, cols2=cols2, keep_order=keep_order
+        df1, df2, how=how, cols1=cols1, cols2=cols2, keep_order=keep_order, on=on,
     )
 
     # Generate output tables.
@@ -339,7 +406,13 @@ def overlap(
 
 
 def cluster(
-    df, min_dist=0, out=["input", "cluster"], return_cluster_df=False, cols=None
+    df,
+    min_dist=0,
+    cols=None,
+    on=None,
+    return_input=True,
+    return_cluster_ids=True,
+    return_cluster_intervals=True,
 ):
     """
     Cluster overlapping intervals.
@@ -360,36 +433,48 @@ def cluster(
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
     
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'cluster', 'cluster_start', 'cluster_end']
-        
+    on : None or list
+        List of column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby before clustering. Default is None. An example use would be on=['strand'].
+
+    return_input : bool
+        If True, return input
+
+    return_cluster_ids : bool
+        If True, return ids for clusters
+
+    return_cluster_invervals : bool
+        If True, return clustered interval the original interval belongs to
+
     return_cluster_df : bool
-        If True, return
+        If True, return df_clusters
 
     Returns
     -------
     df_clustered : pd.DataFrame
 
-    df_clusters : pd.DataFrame, optional
-        A pandas dataframe with coordinates of merged clusters.
-
     """
-
     if min_dist is not None:
         if min_dist < 0:
             raise ValueError("min_dist>=0 currently required")
-
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
 
     # Switch to integer indices.
     df_index = df.index
     df = df.reset_index(drop=True)
 
-    # Find overlapping intervals per chromosome.
-    df_groups = df.groupby(ck).groups
+    # Find overlapping intervals for groups specified by ck1 and on=[] (default on=None)
+    group_list = [ck]
+    if on is not None:
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if ck in on:
+            raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df, on)
+        group_list += on
+    df_groups = df.groupby(group_list).groups
 
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
@@ -399,7 +484,6 @@ def cluster(
         if df_group_idxs.empty:
             continue
         df_group = df.loc[df_group_idxs]
-
         (
             cluster_ids_group,
             cluster_starts_group,
@@ -409,54 +493,53 @@ def cluster(
         )
 
         interval_counts = np.bincount(cluster_ids_group)
-
         cluster_ids_group += max_cluster_id + 1
-
         n_clusters = cluster_starts_group.shape[0]
         max_cluster_id += n_clusters
 
         cluster_ids[df_group_idxs.values] = cluster_ids_group
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        chrom = group_keys
-        clusters_group = {
-            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_group,
-            ek: cluster_ends_group,
-            "n_intervals": interval_counts,
-        }
+        if type(group_keys) is str:
+            group_keys = tuple((group_keys,))
+        clusters_group = {}
+        for col in group_list:
+            clusters_group[col] = pd.Series(
+                data=np.full(n_clusters, group_keys[group_list.index(col)]),
+                dtype=df[col].dtype,
+            )
+        clusters_group[sk] = cluster_starts_group
+        clusters_group[ek] = cluster_ends_group
+        clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
-
         clusters.append(clusters_group)
 
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
-
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
+    # reorder cluster columns to have chrom,start,end first
+    clusters_names = list(clusters.keys())
+    clusters = clusters[
+        [ck, sk, ek] + [col for col in clusters_names if col not in [ck, sk, ek]]
+    ]
 
     out_df = {}
-    if "cluster" in out:
-        out_df[out["cluster"]] = cluster_ids
-    if "cluster_start" in out:
-        out_df[out["cluster_start"]] = clusters[sk].values[cluster_ids]
-    if "cluster_end" in out:
-        out_df[out["cluster_end"]] = clusters[ek].values[cluster_ids]
+    if return_cluster_ids:
+        out_df["cluster"] = cluster_ids
+    if return_cluster_intervals:
+        out_df["cluster_start"] = clusters[sk].values[cluster_ids]
+        out_df["cluster_end"] = clusters[ek].values[cluster_ids]
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         out_df = pd.concat([df, out_df], axis="columns")
 
     out_df.set_index(df_index)
 
-    if return_cluster_df:
-        return out_df, clusters
-    else:
-        return out_df
+    return out_df
 
 
-def merge(df, min_dist=0, cols=None):
+def merge(df, min_dist=0, cols=None, on=None):
     """
     Merge overlapping intervals.
 
@@ -475,6 +558,11 @@ def merge(df, min_dist=0, cols=None):
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    on : list
+        List of column names to consider separately for merging, passed as an argument
+        to df.groupby before merging. Default is ['chrom'], which must match the first name 
+        from cols. Examples for additional columns include 'strand'. 
             
     Returns
     -------
@@ -488,9 +576,18 @@ def merge(df, min_dist=0, cols=None):
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
 
-    # Find overlapping intervals per chromosome.
-    df_groups = df.groupby(ck).groups
+    # Find overlapping intervals for groups specified by on=[] (default on=None)
+    group_list = [ck]
+    if on is not None:
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if ck in on:
+            raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df, on)
+        group_list += on
+    df_groups = df.groupby(group_list).groups
 
     clusters = []
 
@@ -511,18 +608,27 @@ def merge(df, min_dist=0, cols=None):
         n_clusters = cluster_starts_group.shape[0]
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        chrom = group_keys
-        clusters_group = {
-            ck: pd.Series(data=np.full(n_clusters, chrom), dtype=df[ck].dtype),
-            sk: cluster_starts_group,
-            ek: cluster_ends_group,
-            "n_intervals": interval_counts,
-        }
+        if type(group_keys) is str:
+            group_keys = tuple((group_keys,))
+        clusters_group = {}
+        for col in group_list:
+            clusters_group[col] = pd.Series(
+                data=np.full(n_clusters, group_keys[group_list.index(col)]),
+                dtype=df[col].dtype,
+            )
+        clusters_group[sk] = cluster_starts_group
+        clusters_group[ek] = cluster_ends_group
+        clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
 
         clusters.append(clusters_group)
 
     clusters = pd.concat(clusters).reset_index(drop=True)
+    # reorder cluster columns to have chrom,start,end first
+    clusters_names = list(clusters.keys())
+    clusters = clusters[
+        [ck, sk, ek] + [col for col in clusters_names if col not in [ck, sk, ek]]
+    ]
 
     return clusters
 
@@ -615,7 +721,7 @@ def complement(df, chromsizes=None, cols=None):
     return complements
 
 
-def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
+def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
      in set 1 find the number of base pairs covered by intervals in set 2. 
@@ -625,10 +731,8 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
             
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'coverage'].
+    return_input : bool
+        If True, return input as well as computed coverage
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -649,6 +753,7 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
     overlap_idxs = overlap(
         df1,
         df2_merged,
+        how="left",
         return_index=True,
         return_overlap=True,
         cols1=cols1,
@@ -661,27 +766,16 @@ def coverage(df1, df2, out=["input", "coverage"], cols1=None, cols2=None):
 
     coverage_sparse_df = overlap_idxs.groupby("index_1").agg({"overlap": "sum"})
 
-    # Make an output DataFrame.
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
-
     out_df = {}
-
-    if "index" in out:
-        out_df[out["index"]] = df1.index
-
-    if "coverage" in out:
-        out_df[out["coverage"]] = (
-            pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
-            .add(coverage_sparse_df["overlap"], fill_value=0)
-            .astype(df1[sk1].dtype)
-        )
-
+    out_df["coverage"] = (
+        pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
+        .add(coverage_sparse_df["overlap"], fill_value=0)
+        .astype(df1[sk1].dtype)
+    )
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         out_df = pd.concat([df1, out_df], axis="columns")
-
     return out_df
 
 
@@ -797,7 +891,10 @@ def closest(
     ignore_upstream=False,
     ignore_downstream=False,
     tie_breaking_col=None,
-    out=["input", "distance"],
+    return_input=True,
+    return_index=False,
+    return_distance=True,
+    return_overlap=False,
     suffixes=["_1", "_2"],
     cols1=None,
     cols2=None,
@@ -814,13 +911,20 @@ def closest(
         
     k : int
         The number of closest intervals to report.
-    
-    out : list of str or dict
-        A list of requested outputs.
-        Can be provided as a dict of {output:column_name} 
-        Allowed values: ['input', 'index', 'distance', 'have_overlap', 
-        'overlap_start', 'overlap_end'].
 
+    return_input : bool
+        If True, return input
+        
+    return_index : bool
+        If True, return indices
+
+    return_distance : bool
+        If True, return distances. Returns zero for overlaps.
+
+    return_overlap = False,
+        If True, return columns: have_overlap, overlap_start, and overlap_end.
+        Fills df_closest['overlap_start'] and df['overlap_end'] with pd.NA if non-overlapping.
+        
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
     
@@ -866,15 +970,12 @@ def closest(
         return  # case of no closest intervals
 
     # Make an output DataFrame.
-    if not isinstance(out, collections.abc.Mapping):
-        out = {col: col for col in out}
-
     out_df = {}
-    if "index" in out:
-        out_df[out["index"] + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
-        out_df[out["index"] + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+    if return_index:
+        out_df["index" + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
+        out_df["index" + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
 
-    if any([k in out for k in ["have_overlap", "overlap_start", "overlap_end"]]):
+    if return_overlap:
         overlap_start = np.amax(
             np.vstack(
                 [
@@ -895,14 +996,11 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        if "have_overlap" in out:
-            out_df[out["have_overlap"]] = have_overlap
-        if "overlap_start" in out:
-            out_df[out["overlap_start"]] = np.where(have_overlap, overlap_start, -1)
-        if "overlap_end" in out:
-            out_df[out["overlap_end"]] = np.where(have_overlap, overlap_end, -1)
+        out_df["have_overlap"] = have_overlap
+        out_df["overlap_start"] = np.where(have_overlap, overlap_start, pd.NA)  # -1)
+        out_df["overlap_end"] = np.where(have_overlap, overlap_end, pd.NA)
 
-    if "distance" in out:
+    if return_distance:
         distance_left = np.maximum(
             0,
             df1[sk1].values[closest_df_idxs[:, 0]]
@@ -914,11 +1012,11 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        out_df[out["distance"]] = distance
+        out_df["distance"] = distance
 
     out_df = pd.DataFrame(out_df)
 
-    if "input" in out:
+    if return_input:
         df_left = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
         df_left.columns = [c + suffixes[0] for c in df_left.columns]
         df_right = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
@@ -951,22 +1049,204 @@ def subtract(df1, df2, cols1=None, cols2=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
     
-    all_chroms = sorted(set.union(
-        set(df1.chrom.unique()),
-        set(df2.chrom.unique())))
-    
-    inf_chromsizes = {chrom:np.iinfo(np.int64).max for chrom in all_chroms}
-    
-    
-    df_subtracted = overlap(
-        df1, 
-        complement(df2, chromsizes=inf_chromsizes), 
-        how="inner", 
-        suffixes=['',''],
-        return_input=1,
-        return_overlap=True
-        ).assign(start=lambda df: df['overlap_start'],
-                 end=lambda df: df['overlap_end'],
-        ).drop(columns=['overlap_start', 'overlap_end'])
+    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
+    for i in extra_columns_1:
+        name_updates[i + "_1"] = i
 
+    ### loop over chromosomes, then either return the same or subtracted intervals.
+    df1_groups = df1.groupby(ck1).groups
+    df2_groups = df2.groupby(ck2).groups
+    df_subtracted = []
+    for group_keys, df1_group_idxs in df1_groups.items():
+        df1_group = df1.loc[df1_group_idxs]
+
+        # if nothing to subtract, add original intervals
+        if group_keys not in df2_groups:
+            df_subtracted.append(df1_group)
+            continue
+
+        df2_group_idxs = df2_groups[group_keys]
+        df2_group = df2.loc[df2_group_idxs]
+        df_subtracted_group = overlap(
+            df1_group, complement(df2_group), how="inner", return_overlap=True
+        )[list(name_updates)]
+        df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
+    df_subtracted = pd.concat(df_subtracted)
     return df_subtracted
+
+
+def setdiff(df1, df2, cols1=None, cols2=None, on=None):
+    """
+    Generate a new dataframe of genomic intervals by removing any interval from the
+    first dataframe that overlaps an interval from the second dataframe.
+
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as DataFrames.
+    
+    cols1, cols2 : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    on : None or list
+        Additional column names to perform clustering on indepdendently, passed as an argument
+        to df.groupby when considering overlaps and must be present in both dataframes. 
+        Examples for additional columns include 'strand'. 
+
+    Returns
+    -------
+    df_setdiff : pandas.DataFrame
+    
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+
+    df_overlapped = _overlap_intidxs(
+        df1, df2, how="inner", cols1=cols1, cols2=cols2, on=on
+    )
+    inds_non_overlapped = np.setdiff1d(np.arange(len(df1)), df_overlapped[:, 0])
+    df_setdiff = df1.iloc[inds_non_overlapped]
+    return df_setdiff
+
+
+def split(
+    df,
+    points,
+    cols=None,
+    cols_points=None,
+    add_names=False,
+    suffixes=["_left", "_right"],
+):
+    """
+    Generate a new dataframe of genomic intervals by splitting each interval from the 
+    first dataframe that overlaps an interval from the second dataframe.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Genomic intervals stored as a DataFrame.
+    
+    points : pandas.DataFrame or dict
+        If pandas.DataFrame, a set of genomic positions specified in columns 'chrom', 'pos'. 
+        Names of cols can be overwridden by cols_points.
+        If dict, mapping of chromosomes to positions.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+
+    Returns
+    -------
+    df_split : pandas.DataFrame
+    
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
+
+    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    if add_names:
+        name_updates["index_2"] = "index_2"
+        return_index = True
+    else:
+        return_index = False
+    extra_columns_1 = [i for i in list(df.columns) if i not in [ck1, sk1, ek1]]
+    for i in extra_columns_1:
+        name_updates[i + "_1"] = i
+
+    if isinstance(points, dict):
+        points = pd.DataFrame.from_dict(points, orient="index", columns=[sk2])
+        points.reset_index(inplace=True)
+        points.rename(columns={"index": "chrom"}, inplace=True)
+    elif not isinstance(points, pd.DataFrame):
+        raise ValueError("points must be a dict or pd.Dataframe")
+
+    points["start"] = points[sk2]
+    points["end"] = points[sk2]
+    df_split = overlap(
+        df,
+        complement(points),
+        how="inner",
+        cols1=cols,
+        cols2=(ck2, "start", "end"),
+        return_overlap=True,
+        return_index=return_index,
+    )[list(name_updates)]
+    df_split.rename(columns=name_updates, inplace=True)
+
+    if add_names:
+        df_split = add_name(df_split)
+        sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
+        df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
+        df_split.drop(columns=["index_2"])
+
+    return df_split
+
+
+def count_overlaps(
+    df1, df2, cols1=None, cols2=None, on=None,
+):
+
+    """
+    Count number of overlapping genomic intervals.
+    
+    Parameters
+    ----------
+    df1, df2 : pandas.DataFrame
+        Two sets of genomic intervals stored as a DataFrame.
+    
+    how : {'left', 'right', 'outer', 'inner'}, default 'left'
+    
+    return_input : bool
+        If True, return columns from input dfs. Default True.
+
+    suffixes : (str, str)
+        The suffixes for the columns of the two overlapped sets.
+
+    keep_order : bool
+        << to be documented >>
+    
+    cols1, cols2 : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+    on : list
+        List of column names to check overlap on indepdendently, passed as an argument
+        to df.groupby when considering overlaps. Default is None. Examples for additional columns include 'strand'. 
+
+    Returns
+    -------
+    df_counts : pandas.DataFrame
+        
+    """
+
+    df_counts = overlap(
+        df1,
+        df2,
+        how="left",
+        return_input=False,
+        keep_order=True,
+        return_index=True,
+        on=on,
+        cols1=cols1,
+        cols2=cols2,
+    )
+    df_counts = pd.concat(
+        [
+            df1,
+            pd.DataFrame(
+                df_counts.groupby(["index_1"])["index_2"].count().values,
+                columns=["count"],
+            ),
+        ],
+        axis=1,
+        names=["count"],
+    )
+
+    return df_counts
+ 

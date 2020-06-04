@@ -10,47 +10,72 @@ from ._region import parse_region
 import six
 
 
-def make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
+def make_chromarms(
+    chromsizes,
+    midpoints,
+    cols_chroms=("chrom", "length"),
+    cols_mids=("chrom", "mids"),
+    suffixes=("_p", "_q"),
+):
     """
     Split chromosomes into chromosome arms
 
     Parameters
     ----------
-    chromsizes : pandas.Series
-        Series mapping chromosomes to lengths in bp.
-    mids : dict-like
+    chromsizes : pandas.Dataframe or pandas.Series
+        If pandas.Series, a map from chromosomes to lengths in bp.
+        If pandas.Dataframe, a dataframe with columns 'chrom' and 'length'.
+
+    midpoints : pandas.Dataframe or dict-like
         Mapping of chromosomes to midpoint locations.
-    binsize : int, optional
-        Round midpoints to nearest bin edge for compatibility with a given
-        bin grid.
+
     suffixes : tuple, optional
         Suffixes to name chromosome arms. Defaults to p and q.
 
     Returns
     -------
-    4-column BED-like DataFrame (chrom, start, end, name).
-    Arm names are chromosome names + suffix.
-    Any chromosome not included in ``mids`` will be omitted.
+    df_chromarms 
+        4-column BED-like DataFrame (chrom, start, end, name).
+        Arm names are chromosome names + suffix.
+        Any chromosome not included in ``mids`` will be omitted.
 
     """
-    chromosomes = [chrom for chrom in chromsizes.index if chrom in mids]
+    ck1, sk1 = cols_chroms
+    ck2, sk2 = cols_mids
 
-    p_arms = [[chrom, 0, mids[chrom], chrom + suffixes[0]] for chrom in chromosomes]
-    if binsize is not None:
-        for x in p_arms:
-            x[2] = int(round(x[2] / binsize)) * binsize
+    if isinstance(chromsizes, pd.Series):
+        df_chroms = (
+            pd.DataFrame(chromsizes).reset_index().rename(columns={"index": ck1})
+        )
+    elif isinstance(chromsizes, pd.DataFrame):
+        df_chroms = chromsizes.copy()
+    else:
+        raise ValueError("unknown input type for chromsizes")
 
-    q_arms = [
-        [chrom, mids[chrom], chromsizes[chrom], chrom + suffixes[1]]
-        for chrom in chromosomes
-    ]
-    if binsize is not None:
-        for x in q_arms:
-            x[1] = int(round(x[1] / binsize)) * binsize
+    if isinstance(midpoints, dict):
+        df_mids = pd.DataFrame.from_dict(midpoints, orient="index", columns=[sk2])
+        df_mids.reset_index(inplace=True)
+        df_mids.rename(columns={"index": ck2}, inplace=True)
+    elif isinstance(midpoints, pd.DataFrame):
+        df_mids = midpoints.copy()
 
-    interleaved = [*sum(zip(p_arms, q_arms), ())]
+    ops._verify_columns(df_mids, [ck2, sk2])
+    ops._verify_columns(df_chroms, [ck1, sk1])
 
-    return pd.DataFrame(interleaved, columns=["chrom", "start", "end", "name"])
+    df_chroms["start"] = 0
+    df_chroms["end"] = df_chroms[sk1].values
+
+    df_chromarms = ops.split(
+        df_chroms,
+        df_mids,
+        add_names=True,
+        cols=(ck1, "start", "end"),
+        cols_points=(ck2, sk2),
+        suffixes=suffixes,
+    )
+    df_chromarms["name"].replace("[\:\[].*?[\)\_]", "", regex=True, inplace=True)
+    df_chromarms.drop(columns=["index_2", "length"], inplace=True)
+    return df_chromarms
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
@@ -61,6 +86,7 @@ def binnify(chromsizes, binsize, rel_ids=False):
     ----------
     chromsizes : Series
         pandas Series indexed by chromosome name with chromosome lengths in bp.
+
     binsize : int
         size of bins in bp
 
@@ -70,8 +96,8 @@ def binnify(chromsizes, binsize, rel_ids=False):
 
     """
 
-    if type(binsize) is not int: raise ValueError('binsize must be int')
-
+    if type(binsize) is not int:
+        raise ValueError("binsize must be int")
 
     def _each(chrom):
         clen = chromsizes[chrom]
@@ -105,6 +131,8 @@ def digest(fasta_records, enzyme):
     ----------
     fasta_records : OrderedDict
         Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
     enzyme: str
         Name of restriction enzyme.
 
@@ -124,7 +152,7 @@ def digest(fasta_records, enzyme):
         raise ValueError("Unknown enzyme name: {}".format(enzyme))
 
     def _each(chrom):
-        seq = bioseq.Seq(str(fasta_records[chrom]))
+        seq = bioseq.Seq(str(fasta_records[chrom][:]))
         cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
         n_frags = len(cuts) - 1
 
@@ -137,7 +165,34 @@ def digest(fasta_records, enzyme):
     return pd.concat(map(_each, chroms), axis=0, ignore_index=True)
 
 
-def frac_mapped(bintable, fasta_records):
+def frac_mapped(df, fasta_records, return_input=True):
+    """
+    Calculate the fraction of mapped base-pairs for each interval in a dataframe. 
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A sets of genomic intervals stored as a DataFrame.
+
+    fasta_records : OrderedDict
+        Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
+    return_input: bool
+        if False, only return Series named frac_mapped.
+
+    Returns
+    -------
+    df_mapped : pd.DataFrame 
+        Original dataframe with new column 'frac_mapped' appended.
+
+    """
+
+    if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
+        return ValueError(
+            "chrom from intervals not in fasta_records: double-check genome agreement"
+        )
+
     def _each(bin):
         s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
@@ -145,10 +200,46 @@ def frac_mapped(bintable, fasta_records):
         n += s.count("n")
         return (nbases - n) / nbases
 
-    return bintable.apply(_each, axis=1)
+    if return_input:
+        return pd.concat(
+            [df, df.apply(_each, axis=1).rename("frac_mapped", inplace=True)],
+            axis="columns",
+        )
+    else:
+        return df.apply(_each, axis=1).rename("frac_mapped", inplace=True)
 
 
-def frac_gc(bintable, fasta_records, mapped_only=True):
+def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
+    """
+    Calculate the fraction of GC basepairs for each interval in a dataframe. 
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A sets of genomic intervals stored as a DataFrame.
+
+    fasta_records : OrderedDict
+        Dictionary of chromosome names to sequence records.
+        Created by: bioframe.load_fasta('/path/to/fasta.fa')
+
+    mapped_only: bool
+        if True, ignore 'N' in the fasta_records for calculation. 
+        if True and there are no mapped base-pairs in an interval, return np.nan.
+
+    return_input: bool
+        if False, only return Series named frac_mapped.
+
+    Returns
+    -------
+    df_mapped : pd.DataFrame 
+        Original dataframe with new column 'frac_mapped' appended.
+    
+    """
+    if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
+        return ValueError(
+            "chrom from intervals not in fasta_records: double-check genome agreement"
+        )
+
     def _each(chrom_group):
         chrom = chrom_group.name
         seq = fasta_records[chrom]
@@ -167,39 +258,45 @@ def frac_gc(bintable, fasta_records, mapped_only=True):
             gc.append((g + c) / nbases if nbases > 0 else np.nan)
         return gc
 
-    out = bintable.groupby("chrom", sort=False).apply(_each)
-    return pd.Series(data=np.concatenate(out), index=bintable.index)
+    out = df.groupby("chrom", sort=False).apply(_each)
+
+    if return_input:
+        return pd.concat(
+            [df, pd.Series(data=np.concatenate(out), index=df.index).rename("GC")],
+            axis="columns",
+        )
+    else:
+        return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
-def frac_gene_coverage(bintable, mrna):
+def frac_gene_coverage(df, mrna_genome):
     """
-    Calculate number and fraction of overlaps by genes for a set of intervals.
+    Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
 
     Parameters
     ----------
-    bintable : set of intervals
-    mrna: str
+    df : pd.DataFrame
+        Set of genomic intervals stored as a dataframe.
+
+    mrna_genome: str
         Name of genome.
 
     Returns
     -------
-    XXXX
+    df_gene_coverage : pd.DataFrame
 
-    """    
-    
-    raise ValueError('implementation currently broken!')
+    """
+
+    raise ValueError("implementation currently broken!")
 
     if isinstance(mrna, six.string_types):
-        from .resources import UCSCClient
-        mrna=UCSCClient(mrna).fetch_mrna().rename(
-        columns={'tName': 'chrom', 'tStart': 'start', 'tEnd': 'end'})
+        from .io.resources import UCSCClient
 
-
-    #### currently broken ####
-    bintable = ops.coverage(
-        bintable,
-        mrna,
-        out={"input": "input", "count": "gene_count", "coverage": "gene_coverage"},
-    )
-
-    return bintable
+        mrna = (
+            UCSCClient(mrna_genome)
+            .fetch_mrna()
+            .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
+        )
+    df_gene_coverage = ops.coverage(df, mrna)
+    df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
+    return df_gene_coverage

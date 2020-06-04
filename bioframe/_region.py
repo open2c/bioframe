@@ -132,3 +132,35 @@ def parse_region(reg, chromsizes=None):
         raise ValueError("Genomic region out of bounds: [{}, {})".format(start, end))
 
     return chrom, start, end
+
+
+
+def add_name(reg_df, cols=("chrom", "start", "end", "name")):
+    """
+
+    Checks that input dataframe has "name" column
+    If not, auto-creates a UCSC name
+
+    Parameters
+    ----------
+    reg_df : pandas.DataFrame
+        Genomic intervals stored as a DataFrame.
+    
+
+    cols : (str, str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default 
+        values are 'chrom', 'start', 'end'.
+
+
+    Returns
+    -------
+    df_named : pandas.DataFrame
+
+    """
+    if cols[3] in reg_df:
+        return reg_df# [list(cols)] ### commented this out so extra columns can be returned
+    df = reg_df.copy()
+    data = zip(df[cols[0]], df[cols[1]], df[cols[2]])
+    df[cols[3]] = ["{0}:{1}-{2}".format(*i) for i in data]
+    return df #[list(cols)]

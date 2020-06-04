@@ -19,6 +19,7 @@ Bioframe is a library to enable flexible and scalable operations on genomic inte
    api
    ops
    arrops
+   technical-notes
    notebooks
 
 
