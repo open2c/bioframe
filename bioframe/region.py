@@ -1,6 +1,7 @@
 import re
+import pandas as pd 
 
-__all__ = ['parse_region']
+__all__ = ['parse_region','parse_regions']
 
 
 def atoi(s):
