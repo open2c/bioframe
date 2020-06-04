@@ -1,7 +1,8 @@
 # Bioframe: Operations on Genomic Interval Dataframes
 
-<img src="./docs/figs/bioframe-logo.png" width=75%> 
+![Python package](https://github.com/mirnylab/bioframe/workflows/Python%20package/badge.svg)
 
+<img src="./docs/figs/bioframe-logo.png" width=75%> 
 
 Bioframe is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of [pandas](https://pandas.pydata.org/) enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization (e.g. matplotlib, seaborn) and iteration of genomic analyses.
 
@@ -27,8 +28,7 @@ To `overlap` two dataframes, call:
 ```python
 import bioframe as bf
 
-bf.overlap(df1,df2)
-
+bf.overlap(df1, df2)
 ```
 
 For these two input dataframes, with intervals all on the same chromosome:
@@ -48,7 +48,6 @@ To `merge` all overlapping intervals in a dataframe, call:
 import bioframe as bf
 
 bf.merge(df1)
-
 ```
 
 For this input dataframe, with intervals all on the same chromosome:
@@ -67,7 +66,7 @@ See this [jupyter notebook](https://github.com/mirnylab/bioframe/tree/genomic_in
 
 ## Requirements
 The following are required before installing bioframe:
-* Python 3.4+
+* Python 3.6+
 * `numpy`
 * `pandas>=1.0.3`
 
@@ -80,4 +79,3 @@ pip install bioframe
 * [cooler](https://github.com/mirnylab/cooler)
 * [cooltools](https://github.com/mirnylab/cooltools)
 * yours? :)
-

@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from contextlib import closing
 import tempfile
@@ -8,10 +7,24 @@ import io
 import numpy as np
 import pandas as pd
 
-from bioframe.io._process import run
-from bioframe._region import parse_region
-from bioframe.arrops import argnatsort
-from bioframe.io.schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+from ..util import run
+from ..region import parse_region
+from ..arrops import argnatsort
+from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+
+
+__all__ = [
+    "read_table",
+    "read_chromsizes",
+    "read_tabix",
+    "read_pairix",
+    "read_bam",
+    "load_fasta",
+    "to_bigwig",
+    "to_bigbed",
+    "read_parquet",
+    "to_parquet",
+]
 
 
 def read_table(filepath_or, schema=None, **kwargs):
@@ -133,100 +146,6 @@ def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
     if chroms is not None:
         mrna = mrna[mrna.chrom.isin(chroms)]
     return mrna
-
-
-def _read_bigwig_as_wig(filepath, chrom, start=None, end=None, cachedir=None):
-    # https://sebastienvigneau.wordpress.com/2014/01/10/bigwig-to-bedgraph-to-wig/
-    # http://redmine.soe.ucsc.edu/forum/index.php?t=msg&goto=5492&S=2925a24be1c20bb064fc09bd054f862d
-    cmd = ["bigWigToWig", "-chrom={}".format(chrom)]
-    if start is not None:
-        cmd += ["-start={}".format(start)]
-    if end is not None:
-        cmd += ["-end={}".format(end)]
-    if cachedir is not None:
-        cmd += ["-udcDir={}".format(cachedir)]
-
-    with tempfile.NamedTemporaryFile("w+t") as fh:
-        cmd += [filepath, fh.name]
-        run(cmd, raises=True)
-        fh.flush()
-
-        trackline = fh.readline().split()
-        if trackline[0] == "#bedGraph":
-            info = {"type": "bedGraph"}
-            out = pd.read_csv(fh, sep="\t", names=["chrom", "start", "end", "value"])
-        else:
-            tracktype = trackline[0]
-            info = dict([kv.split("=") for kv in trackline[1:]])
-            info["type"] = tracktype
-            for key in ["start", "step", "span"]:
-                if key in info:
-                    info[key] = int(info[key])
-            if tracktype == "fixedStep":
-                out = pd.read_csv(fh, sep="\t", names=["value"])
-            else:
-                out = pd.read_csv(fh, sep="\t", names=["start", "value"])
-
-    return info, out
-
-
-def read_bigwig_binned(
-    filepath, chrom, start, end, nbins=1, aggfunc=None, cachedir=None
-):
-    """
-    Get summary data from bigWig for indicated region, broken into ``nbins`` equal parts.
-
-    Parameters
-    ----------
-    filepath : str
-        Path to bigwig file.
-    chrom : str
-        Chromosome label.
-    start, end : int
-        Coordinates (zero-based).
-    nbins : int, optional
-        Number of bins. Default is to summarize the whole region.
-    aggfunc : str, optional
-        Aggregation method (summary statistic). One of:
-        'mean' - average value in region (default)
-        'std' - standard deviation in region
-        'min' - minimum value in region
-        'max' - maximum value in region
-        'coverage' - % of region that is covered
-
-    """
-    cmd = ["bigWigSummary", filepath, chrom, str(start + 1), str(end), str(nbins)]
-    if aggfunc is not None:
-        cmd += ["-type={}".format(aggfunc)]
-    if cachedir is not None:
-        cmd += ["-udcDir={}".format(cachedir)]
-    out = run(cmd, raises=True)
-    return (
-        pd.read_csv(io.StringIO(out), sep="\t", na_values="n/a", header=None)
-        .iloc[0]
-        .values
-    )
-
-
-def read_bigwig(fp, chrom, start=None, end=None, cachedir=None, as_wiggle=False):
-    if as_wiggle:
-        return _read_bigwig_as_wig(fp, chrom, start, end, cachedir)
-
-    cmd = ["bigWigToBedGraph", "-chrom={}".format(chrom)]
-    if start is not None:
-        cmd += ["-start={}".format(start)]
-    if end is not None:
-        cmd += ["-end={}".format(end)]
-    if cachedir is not None:
-        cmd += ["-udcDir={}".format(cachedir)]
-
-    with tempfile.NamedTemporaryFile("w+t") as fh:
-        cmd += [fp, fh.name]
-        run(cmd, raises=True)
-        fh.flush()
-        bg = pd.read_csv(fh, sep="\t", names=["chrom", "start", "end", "value"])
-
-    return bg
 
 
 def read_tabix(fp, chrom=None, start=None, end=None):
@@ -534,6 +453,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
             stderr=subprocess.PIPE,
         )
     return p
+
 
 def to_parquet(
     pieces,
