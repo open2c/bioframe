@@ -636,13 +636,11 @@ def merge(df, min_dist=0, cols=None, on=None):
 def complement(df, chromsizes=None, cols=None):
     """
     Find genomic regions that are not covered by any interval.
-
     Parameters
     ----------
     df : pandas.DataFrame
     
     chromsizes : dict
-
     cols : (str, str, str)
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
@@ -656,38 +654,56 @@ def complement(df, chromsizes=None, cols=None):
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
-    chromsizes = {} if chromsizes is None else chromsizes
+    infer_chromsizes = (chromsizes is None)
 
     # Find overlapping intervals per chromosome.
     df_groups = df.groupby(ck).groups
+    
+    if infer_chromsizes:
+        all_groups = sorted(set(df_groups))
+    else:
+        if not set(df_groups).issubset(set(chromsizes.keys())):
+            raise ValueError(
+                'Chromsizes are missing some chromosomes from the input interval table.')
+        all_groups = sorted(set(chromsizes.keys()))
 
     complements = []
 
-    for group_keys, df_group_idxs in df_groups.items():
-        if df_group_idxs.empty:
+    for group_keys in all_groups:
+        # this is a stub for potential on argument
+        chrom = group_keys
+
+        if group_keys not in df_groups:
+            complement_group = {
+                ck: pd.Series(
+                    data=[chrom],
+                    dtype=df[ck].dtype,
+                ),
+                sk: 0,
+                ek: chromsizes[chrom],
+            }
+
+            complements.append(pd.DataFrame(complement_group))
             continue
+
+        df_group_idxs = df_groups[group_keys].values 
         df_group = df.loc[df_group_idxs]
 
-        chrom = group_keys
-        if chrom in chromsizes:
-            chromsize = chromsizes[chrom]
-
-            if chromsize < np.max(df_group[ek].values):
-                raise ValueError("one or more intervals exceed provided chromsize")
-            (
-                complement_starts_group,
-                complement_ends_group,
-            ) = arrops.complement_intervals(
-                df_group[sk].values, df_group[ek].values, bounds=(0, chromsize),
-            )
+        if infer_chromsizes:
+            chromsize = np.iinfo(np.int64).max
         else:
-            (
-                complement_starts_group,
-                complement_ends_group,
-            ) = arrops.complement_intervals(df_group[sk].values, df_group[ek].values)
+            chromsize = chromsizes[chrom]
+        
+        if chromsize < np.max(df_group[ek].values):
+            raise ValueError("one or more intervals exceed provided chromsize")
+        (
+            complement_starts_group,
+            complement_ends_group,
+        ) = arrops.complement_intervals(
+            df_group[sk].values, df_group[ek].values, bounds=(0, chromsize),
+        )
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        chrom = group_keys
         complement_group = {
             ck: pd.Series(
                 data=np.full(complement_starts_group.shape[0], chrom),
@@ -1012,10 +1028,8 @@ def closest(
 
 
 def subtract(df1, df2, cols1=None, cols2=None):
-
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
-
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -1034,7 +1048,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
-
+    
     name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
     extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
@@ -1235,3 +1249,4 @@ def count_overlaps(
     )
 
     return df_counts
+ 
