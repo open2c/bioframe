@@ -245,7 +245,7 @@ def parse_regions(
                     raise ValueError(
                         f"Wrong end {ends_orig[i]}; False or None are accepted"
                     )
-                if chromsizes:
+                if chromsizes is not None:
                     if chroms[i] in chromsizes:
                         ends.append(chromsizes[chroms[i]])
                     else:
