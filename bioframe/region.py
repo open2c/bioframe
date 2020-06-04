@@ -101,6 +101,7 @@ def parse_region(reg, chromsizes=None):
     reg : str or tuple
         UCSC-style genomic region string, or
         Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
+        Quadriple (chrom, start, end, name) (name is ignored). 
     chromsizes : mapping, optional
         Lookup table of scaffold lengths to check against ``chrom`` and the
         ``end`` coordinate. Required if ``end`` is not supplied.
@@ -113,7 +114,9 @@ def parse_region(reg, chromsizes=None):
     if isinstance(reg, str):
         chrom, start, end = parse_region_string(reg)
     else:
-        chrom, start, end = reg
+        if len(reg) not in [3,4]:
+            raise ValueError("length of a region should be 3 or 4")
+        chrom, start, end = reg[:3]
         start = int(start) if start is not None else start
         end = int(end) if end is not None else end
 
@@ -133,3 +136,129 @@ def parse_region(reg, chromsizes=None):
         raise ValueError("Genomic region out of bounds: [{}, {})".format(start, end))
 
     return chrom, start, end
+
+
+def regions_add_name(reg_df, cols=("chrom", "start", "end", "name")):
+    """
+    Checks that input dataframe has "name" column
+    If not, auto-creates a UCSC name
+    
+    cols are names of columns (unlikely to change)
+    """
+    if cols[3] in reg_df:
+        return reg_df[list(cols)]
+    df = reg_df.copy()
+    data = zip(df[cols[0]], df[cols[1]], df[cols[2]])
+    df[cols[3]] = ["{0}:{1}-{2}".format(*i) for i in data]
+    return df[list(cols)]
+
+
+def parse_regions(
+    regions,
+    chromsizes=None,
+    replace_None=True,
+    force_UCSC_names=False,
+    check_start_end=True,
+    cols=("chrom", "start", "end", "name"),
+):
+    """
+    Parse input and convert it to regions dataframe with name 
+    See this gist for examples
+    https://gist.github.com/mimakaev/9d2eb07dc746c6010304d795c99125ed
+    
+    Paramters
+    ---------
+    regions : dataframe or iterable 
+        Object to convert to regions
+    chromsizes : dict-like (optional):
+        chromsizes to fill Nones if needed
+    replace_None: bool (optional):
+        Try to replace None with 0 or chrom_end 
+        If False, Nones are not checked
+        If True, will raise an error if chromsizes are needed but not provided. 
+    force_name: bool (optional)
+        if True, will force the name to be UCSC style
+    check_start_end: bool, optional (default:True)
+        If True, check that start<=end 
+        Ignored if replace_None is False         
+    cols : tuple (optional) 
+        Names of the columns (unlikely to change)
+    """
+
+    # if dataframe, check and auto-create "name" column
+    if isinstance(regions, pd.DataFrame):
+        in_cols = regions.columns
+        if all([i in in_cols for i in cols[:3]]):
+            new_regions = regions.copy()
+
+        elif "regions" in in_cols:
+            parsed = [parse_region_string(i) for i in regions["regions"].values]
+            new_regions = pd.DataFrame(parsed, columns=cols[:3])
+            new_regions[cols[3]] = regions["regions"]
+        else:
+            raise ValueError(
+                f"regions not found in input dataframe with columns {in_cols}"
+            )
+
+    else:  # checking what did we get
+        try:
+            regions = list(regions)  # it has to be converted to list
+        except:
+            raise ValueError("Input should be a dataframe, or iterable")
+
+        if isinstance(regions[0], str):  # working with a list of strings
+            parsed = [parse_region_string(i) for i in regions]
+            new_regions = pd.DataFrame(parsed, columns=cols[:3])
+            new_regions[cols[3]] = regions
+
+        else:
+            regions = [tuple(i) for i in regions]
+            ulen = list(set([len(i) for i in regions]))
+            if len(ulen) != 1:
+                raise ValueError(f"Different lengths of values in in put data: {ulen}")
+            if ulen[0] in [3, 4]:
+                new_regions = pd.DataFrame(regions, columns=cols[: ulen[0]])
+            else:
+                raise ValueError(f"Wrong number of columns:{ulen[0]}")
+
+    new_regions[cols[0]] = new_regions[cols[0]].astype(str)
+    if replace_None:
+        starts = []
+        for i in new_regions[cols[1]].values:
+            try:
+                starts.append(int(i))
+            except:
+                if not i:
+                    starts.append(0)
+                else:
+                    raise ValueError(f"Wrong start {i}; False or None are accepted")
+        new_regions[cols[1]] = starts
+        ends = []
+        ends_orig = new_regions[cols[2]].values
+        chroms = new_regions[cols[0]].values
+        for i in range(len(new_regions)):
+            try:
+                ends.append(int(ends_orig[i]))
+            except (TypeError, ValueError):
+                if ends_orig[i]:
+                    raise ValueError(
+                        f"Wrong end {ends_orig[i]}; False or None are accepted"
+                    )
+                if chromsizes:
+                    if chroms[i] in chromsizes:
+                        ends.append(chromsizes[chroms[i]])
+                    else:
+                        raise ValueError(f"{chroms[i]} not found in chromsizes")
+                else:
+                    raise ValueError(
+                        f"End {ends_orig[i]} undefined and no chromsizes proviced"
+                    )
+        new_regions[cols[2]] = ends
+    new_regions = regions_add_name(new_regions)
+    if force_UCSC_names:
+        new_regions.pop("name")
+        new_regions = regions_add_name(new_regions)
+    if check_start_end and replace_None:
+        if (new_regions[cols[2]] < new_regions[cols[1]]).any():
+            raise ValueError("Start > end detected")
+    return new_regions
