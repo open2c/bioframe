@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from . import arrops
-from .region import parse_region, add_name
+from .region import parse_region, regions_add_name
 
 
 def _get_default_colnames():
@@ -1175,7 +1175,7 @@ def split(
     df_split.rename(columns=name_updates, inplace=True)
 
     if add_names:
-        df_split = add_name(df_split)
+        df_split = regions_add_name(df_split)
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"])

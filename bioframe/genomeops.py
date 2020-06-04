@@ -1,13 +1,7 @@
-import collections
-
 import numpy as np
 import pandas as pd
 
-from . import arrops
 from . import ops
-from ._region import parse_region
-
-import six
 
 
 def make_chromarms(

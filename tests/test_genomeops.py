@@ -4,6 +4,8 @@ import numpy as np
 from io import StringIO
 import os.path as op
 
+import pytest
+
 testdir = op.realpath(op.dirname(__file__))
 
 ### todo: test make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
@@ -22,6 +24,7 @@ def test_binnify():
 
 
 def test_digest():
+    pytest.importorskip("Bio")
     fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
     assert len(fasta_records) == 2
     ### no HindIII sites in the test.fa fasta records, so shouldn't change shape[0]
@@ -33,6 +36,7 @@ def test_digest():
 
 
 def test_frac_mapped():
+    pytest.importorskip("pysam")
     chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
     fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
@@ -62,6 +66,7 @@ def test_frac_mapped():
 
 
 def test_frac_gc():
+    pytest.importorskip("pysam")
     chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
     fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
