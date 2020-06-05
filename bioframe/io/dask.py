@@ -1,47 +1,46 @@
 from collections import OrderedDict
-from contextlib import closing
 
 import numpy as np
 import pandas as pd
 import numba
 
 import pypairix
-import pysam
 from dask.base import tokenize
 import dask.dataframe as dd
-import dask.array as da
-import dask
+# import dask.array as da
+# import dask
 
 
 def bin2start(k):
-    lev = np.floor(np.log2(7*k + 1)/3).astype(int)
-    sl = 2**(29 - 3*lev)
-    ol = (2**(3*lev) - 1)//7
+    lev = np.floor(np.log2(7 * k + 1) / 3).astype(int)
+    sl = 2 ** (29 - 3 * lev)
+    ol = (2 ** (3 * lev) - 1) // 7
     start = (k - ol) * sl
-    end = (k - ol+1) * sl
+    end = (k - ol + 1) * sl
     return start
+
 
 LEVEL = {}
 LEVEL[0] = bin2start(np.arange(1, 9))
 LEVEL[1] = bin2start(np.arange(9, 73))
-LEVEL[2] = bin2start(np.arange(73,585))
-LEVEL[3] = bin2start(np.arange(585,4681))
-LEVEL[4] = bin2start(np.arange(4681,37449))
+LEVEL[2] = bin2start(np.arange(73, 585))
+LEVEL[3] = bin2start(np.arange(585, 4681))
+LEVEL[4] = bin2start(np.arange(4681, 37449))
 
 
 @numba.jit("int32(int32, int32)")
 def reg2bin(beg, end):
     end -= 1
     if beg >> 14 == end >> 14:
-        return ((1 << 15)-1) // 7 + (beg >> 14)
+        return ((1 << 15) - 1) // 7 + (beg >> 14)
     if beg >> 17 == end >> 17:
-        return ((1 << 12)-1) // 7 + (beg >> 17)
+        return ((1 << 12) - 1) // 7 + (beg >> 17)
     if beg >> 20 == end >> 20:
-        return ((1 << 9)-1) // 7 + (beg >> 20)
+        return ((1 << 9) - 1) // 7 + (beg >> 20)
     if beg >> 23 == end >> 23:
-        return ((1 << 6)-1) // 7 + (beg >> 23)
+        return ((1 << 6) - 1) // 7 + (beg >> 23)
     if beg >> 26 == end >> 26:
-        return ((1 << 3)-1) // 7 + (beg >> 26)
+        return ((1 << 3) - 1) // 7 + (beg >> 26)
     return 0
 
 
@@ -81,12 +80,12 @@ def reg2bins(rbeg, rend):
 
 
 def range_partition(start, stop, step):
-    return ((i, min(i+step, stop))
-                for i in range(start, stop, step))
+    return ((i, min(i + step, stop)) for i in range(start, stop, step))
 
 
-def _fetch_region(filepath, chromsizes, slc, block, columns=None,
-                  usecols=None, meta=None):
+def _fetch_region(
+    filepath, chromsizes, slc, block, columns=None, usecols=None, meta=None
+):
     chrom1, chrom2 = block
     if chrom2 is None:
         chrom2 = chrom1
@@ -95,12 +94,10 @@ def _fetch_region(filepath, chromsizes, slc, block, columns=None,
     else:
         start, end = slc.start, slc.stop
 
-    f = pypairix.open(filepath, 'r')
+    f = pypairix.open(filepath, "r")
     it = f.query2D(chrom1, start, end, chrom2, 0, chromsizes[chrom2])
     if usecols is not None:
-        records = [
-            (record[i] for i in usecols) for record in it
-        ]
+        records = [(record[i] for i in usecols) for record in it]
     else:
         records = it
 
@@ -117,51 +114,71 @@ def _fetch_region(filepath, chromsizes, slc, block, columns=None,
     return df
 
 
-def read_pairix_block(filepath, block, names=None, dtypes=None,
-                      usecols=None, chromsizes=None, chunk_level=0):
+def read_pairix_block(
+    filepath,
+    block,
+    names=None,
+    dtypes=None,
+    usecols=None,
+    chromsizes=None,
+    chunk_level=0,
+):
     if chromsizes is None:
         f = pypairix.open(filepath)
         cs = f.get_chromsize()
         if not len(cs):
-            raise ValueError("No chromsize headers found in file. "
-                             "They must be provided explicitly.")
+            raise ValueError(
+                "No chromsize headers found in file. "
+                "They must be provided explicitly."
+            )
         chromsizes = pd.Series(dict([(c, int(s)) for c, s in cs]))
         del f
 
     chrom1, chrom2 = block
     nrows = chromsizes[chrom1]
 
-    meta = pd.read_csv(
-        filepath,
-        sep='\t',
-        comment='#',
-        header=None,
-        names=names,
-        dtype=dtypes,
-        usecols=usecols,
-        iterator=True).read(1024).iloc[0:0]
+    meta = (
+        pd.read_csv(
+            filepath,
+            sep="\t",
+            comment="#",
+            header=None,
+            names=names,
+            dtype=dtypes,
+            usecols=usecols,
+            iterator=True,
+        )
+        .read(1024)
+        .iloc[0:0]
+    )
 
     # Make a unique task name
-    token = tokenize(filepath, chromsizes, block,
-                     names, dtypes, usecols, chunk_level)
-    task_name = 'read-pairix-block-' + token
+    token = tokenize(filepath, chromsizes, block, names, dtypes, usecols, chunk_level)
+    task_name = "read-pairix-block-" + token
 
     # Build the task graph
     divisions = []
     dsk = {}
     edges = LEVEL[chunk_level]
-    edges = edges[:np.searchsorted(edges, nrows)]
+    edges = edges[: np.searchsorted(edges, nrows)]
     if edges[-1] != nrows:
         edges = np.r_[edges, nrows]
     spans = zip(edges[:-1], edges[1:])
     for i, (lo, hi) in enumerate(spans):
         if i == 0:
             divisions.append(lo)
-        divisions.append(hi-1)
+        divisions.append(hi - 1)
         slc = slice(lo, hi)
-        dsk[task_name, i] = (_fetch_region,
-                             filepath, chromsizes, slc,
-                             block, names, usecols, meta)
+        dsk[task_name, i] = (
+            _fetch_region,
+            filepath,
+            chromsizes,
+            slc,
+            block,
+            names,
+            usecols,
+            meta,
+        )
 
     # Generate ddf from dask graph
     return dd.DataFrame(dsk, task_name, meta, tuple(divisions))
@@ -198,12 +215,14 @@ def read_pairix(filepath, names, blocks=None, chromsizes=None, **kwargs):
     if chromsizes is None:
         cs = f.get_chromsize()
         if not len(cs):
-            raise ValueError("No chromsize headers found in file. "
-                             "They must be provided explicitly.")
+            raise ValueError(
+                "No chromsize headers found in file. "
+                "They must be provided explicitly."
+            )
         chromsizes = pd.Series(dict([(c, int(s)) for c, s in cs]))
 
     if blocks is None:
-        blocks = [s.split('|') for s in f.get_blocknames()]
+        blocks = [s.split("|") for s in f.get_blocknames()]
     elif isinstance(blocks[0], str):
         blocks = [(ci, cj) for ci in blocks for cj in blocks]
 
@@ -211,6 +230,6 @@ def read_pairix(filepath, names, blocks=None, chromsizes=None, **kwargs):
     for chrom1, chrom2 in blocks:
         if chrom1 in chromsizes and chrom2 in chromsizes:
             dct[chrom1, chrom2] = read_pairix_block(
-                filepath, (chrom1, chrom2), names,
-                chromsizes=chromsizes, **kwargs)
+                filepath, (chrom1, chrom2), names, chromsizes=chromsizes, **kwargs
+            )
     return dct

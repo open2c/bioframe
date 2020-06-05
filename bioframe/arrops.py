@@ -133,7 +133,7 @@ def _size_overlap(starts1, ends1, starts2, ends2):
     """
 
     overlap_size = np.minimum(ends1, ends2) - np.maximum(starts1, starts2)
-    overlap_size[overlap_size<0] = -1
+    overlap_size[overlap_size < 0] = -1
     return overlap_size
 
 

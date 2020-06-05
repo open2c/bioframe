@@ -7,9 +7,9 @@ import io
 import numpy as np
 import pandas as pd
 
-from .tools import run
-from .region import parse_region
-from .arrops import argnatsort
+from ..util import run
+from ..region import parse_region
+from ..arrops import argnatsort
 from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 

@@ -2,7 +2,7 @@
 Field names for various genomic tabular files
 
 """
-__all__ = ['SCHEMAS']
+__all__ = ["SCHEMAS"]
 
 
 # UCSC File Formats
@@ -116,6 +116,8 @@ GAPPEDPEAK_FIELDS = [
     "-log10q",
 ]
 
+JASPAR_FIELDS = ["chrom", "start", "end", "name", "score", "pval", "strand"]
+
 GAP_FIELDS = ["bin", "chrom", "start", "end", "ix", "n", "length", "type", "bridge"]
 
 CENTROMERES_FIELDS = ["bin", "chrom", "start", "end", "name"]
@@ -187,6 +189,7 @@ SCHEMAS = {
     "cytoband": CYTOBAND_FIELDS,
     "sam": BAM_FIELDS,
     "vcf": VCF_FIELDS,
+    "jaspar": JASPAR_FIELDS,
 }
 
 

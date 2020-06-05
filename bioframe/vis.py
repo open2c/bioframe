@@ -10,7 +10,7 @@ from . import arrops
 DEFAULT_FACECOLOR = "skyblue"
 DEFAULT_EDGECOLOR = "dimgray"
 
-__all__ = ['plot_intervals']
+__all__ = ["plot_intervals"]
 
 
 def _plot_interval(
@@ -33,8 +33,14 @@ def _plot_interval(
 
 
 def plot_intervals_arr(
-    starts, ends, levels=None, labels=None, colors=None, xlim=None, show_coords=False,
-    figsize=(10,2)
+    starts,
+    ends,
+    levels=None,
+    labels=None,
+    colors=None,
+    xlim=None,
+    show_coords=False,
+    figsize=(10, 2),
 ):
     """
     Plot a collection of intervals.
@@ -116,7 +122,13 @@ def plot_intervals_arr(
 
 
 def plot_intervals(
-    df, levels=None, labels=None, colors=None, xlim=None, show_coords=False, figsize=(10,2)
+    df,
+    levels=None,
+    labels=None,
+    colors=None,
+    xlim=None,
+    show_coords=False,
+    figsize=(10, 2),
 ):
     """
     Plot a collection of intervals, one plot per chromosome.
@@ -178,6 +190,6 @@ def plot_intervals(
             colors=chrom_colors,
             xlim=xlim,
             show_coords=show_coords,
-            figsize=figsize
+            figsize=figsize,
         )
         plt.title(chrom)

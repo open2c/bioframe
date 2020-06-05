@@ -1,7 +1,7 @@
 import re
-import pandas as pd 
+import pandas as pd
 
-__all__ = ['parse_region','parse_regions']
+__all__ = ["parse_region", "parse_regions"]
 
 
 def atoi(s):
@@ -102,7 +102,7 @@ def parse_region(reg, chromsizes=None):
     reg : str or tuple
         UCSC-style genomic region string, or
         Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
-        Quadriple (chrom, start, end, name) (name is ignored). 
+        Quadriple (chrom, start, end, name) (name is ignored).
     chromsizes : mapping, optional
         Lookup table of scaffold lengths to check against ``chrom`` and the
         ``end`` coordinate. Required if ``end`` is not supplied.
@@ -115,7 +115,7 @@ def parse_region(reg, chromsizes=None):
     if isinstance(reg, str):
         chrom, start, end = parse_region_string(reg)
     else:
-        if len(reg) not in [3,4]:
+        if len(reg) not in [3, 4]:
             raise ValueError("length of a region should be 3 or 4")
         chrom, start, end = reg[:3]
         start = int(start) if start is not None else start
@@ -143,7 +143,7 @@ def regions_add_name(reg_df, cols=("chrom", "start", "end", "name")):
     """
     Checks that input dataframe has "name" column
     If not, auto-creates a UCSC name
-    
+
     cols are names of columns (unlikely to change)
     """
     if cols[3] in reg_df:
@@ -163,26 +163,26 @@ def parse_regions(
     cols=("chrom", "start", "end", "name"),
 ):
     """
-    Parse input and convert it to regions dataframe with name 
+    Parse input and convert it to regions dataframe with name
     See this gist for examples
     https://gist.github.com/mimakaev/9d2eb07dc746c6010304d795c99125ed
-    
+
     Paramters
     ---------
-    regions : dataframe or iterable 
+    regions : dataframe or iterable
         Object to convert to regions
     chromsizes : dict-like (optional):
         chromsizes to fill Nones if needed
     replace_None: bool (optional):
-        Try to replace None with 0 or chrom_end 
+        Try to replace None with 0 or chrom_end
         If False, Nones are not checked
-        If True, will raise an error if chromsizes are needed but not provided. 
+        If True, will raise an error if chromsizes are needed but not provided.
     force_name: bool (optional)
         if True, will force the name to be UCSC style
     check_start_end: bool, optional (default:True)
-        If True, check that start<=end 
-        Ignored if replace_None is False         
-    cols : tuple (optional) 
+        If True, check that start<=end
+        Ignored if replace_None is False
+    cols : tuple (optional)
         Names of the columns (unlikely to change)
     """
 
@@ -255,11 +255,15 @@ def parse_regions(
                         f"End {ends_orig[i]} undefined and no chromsizes proviced"
                     )
         new_regions[cols[2]] = ends
+
     new_regions = regions_add_name(new_regions)
+
     if force_UCSC_names:
         new_regions.pop("name")
         new_regions = regions_add_name(new_regions)
+
     if check_start_end and replace_None:
         if (new_regions[cols[2]] < new_regions[cols[1]]).any():
             raise ValueError("Start > end detected")
+
     return new_regions

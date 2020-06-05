@@ -1,8 +1,4 @@
-six
-cytoolz
-numpy
-pandas
-pysam
-pyfaidx
-pypairix
+click>=7
+numpy>=1.10
+pandas>=1.0.3
 requests
