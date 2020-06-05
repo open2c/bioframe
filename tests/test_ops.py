@@ -355,7 +355,7 @@ def test_complement():
     df1_chromsizes = {"chr1": 100, "chrX": 100}
 
     df1_complement = pd.DataFrame(
-        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100]],
+        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100], ['chrX', 0, 100]],
         columns=["chrom", "start", "end"],
     )
 
