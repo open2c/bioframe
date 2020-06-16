@@ -1,6 +1,7 @@
 # Bioframe: Operations on Genomic Interval Dataframes
 
 ![Python package](https://github.com/mirnylab/bioframe/workflows/Python%20package/badge.svg)
+[![DOI](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
 
 <img src="./docs/figs/bioframe-logo.png" width=75%> 
 
