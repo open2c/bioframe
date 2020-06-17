@@ -71,7 +71,7 @@ setup(
     keywords=['pandas', 'dataframe', 'genomics', 'epigenomics', 'bioinformatics'],
     packages=find_packages(),
     package_data={
-        'bioframe': ['data/*']
+        'bioframe': ['io/data/*']
     },
     zip_safe=False,
     classifiers=CLASSIFIERS,
