@@ -283,7 +283,7 @@ def overlap(
     return_input=True,
     return_index=False,
     return_overlap=False,
-    suffixes=["_1", "_2"],
+    suffixes=("_1", "_2"),
     keep_order=False,
     cols1=None,
     cols2=None,
@@ -891,13 +891,16 @@ def closest(
     return_index=False,
     return_distance=True,
     return_overlap=False,
-    suffixes=["_1", "_2"],
+    suffixes=("_1", "_2"),
     cols1=None,
     cols2=None,
 ):
 
     """
-    For every interval in set 1 find k closest genomic intervals in set2.
+    For every interval in set 1 find k closest genomic intervals in set 2. 
+    Note that, unless specified otherwise, overlapping intervals are considered 
+    as closest. When multiple intervals are located at the same distance, the 
+    ones with the lowest index in df2 are chosen.
 
     Parameters
     ----------
@@ -907,6 +910,20 @@ def closest(
 
     k : int
         The number of closest intervals to report.
+
+    ignore_overlaps : bool
+        If True, return the closest non-overlapping interval.
+
+    ignore_upstream : bool
+        If True, ignore intervals in df2 that are upstream of intervals in df1.
+
+    ignore_downstream : bool
+        If True, ignore intervals in df2 that are downstream of intervals in df1.
+    
+    tie_breaking_col : str
+        A column in df2 to use for breaking ties when multiple intervals 
+        are located at the same distance. Intervals with *lower* values will 
+        be selected.
 
     return_input : bool
         If True, return input
@@ -965,12 +982,19 @@ def closest(
     if len(closest_df_idxs) == 0:
         return  # case of no closest intervals
 
-    # Make an output DataFrame.
-    out_df = {}
+    # Generate output tables.
+    df_index_1 = None
+    df_index_2 = None
     if return_index:
-        out_df["index" + suffixes[0]] = df1.index[closest_df_idxs[:, 0]]
-        out_df["index" + suffixes[1]] = df2.index[closest_df_idxs[:, 1]]
+        index_col = return_index if isinstance(return_index, str) else "index"
+        df_index_1 = pd.DataFrame(
+            {index_col + suffixes[0]: df1.index[closest_df_idxs[:, 0]]}
+        )
+        df_index_2 = pd.DataFrame(
+            {index_col + suffixes[1]: df2.index[closest_df_idxs[:, 1]]}
+        )
 
+    df_overlap = None
     if return_overlap:
         overlap_start = np.amax(
             np.vstack(
@@ -992,10 +1016,13 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        out_df["have_overlap"] = have_overlap
-        out_df["overlap_start"] = np.where(have_overlap, overlap_start, pd.NA)  # -1)
-        out_df["overlap_end"] = np.where(have_overlap, overlap_end, pd.NA)
+        df_overlap = pd.DataFrame({
+            "have_overlap" : have_overlap,
+            "overlap_start" : np.where(have_overlap, overlap_start, pd.NA),
+            "overlap_end": np.where(have_overlap, overlap_end, pd.NA)
+        })
 
+    df_distance = None
     if return_distance:
         distance_left = np.maximum(
             0,
@@ -1008,17 +1035,27 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        out_df["distance"] = distance
+        df_distance = pd.DataFrame({
+            "distance" : distance
+        })
 
-    out_df = pd.DataFrame(out_df)
 
-    if return_input:
-        df_left = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
-        df_left.columns = [c + suffixes[0] for c in df_left.columns]
-        df_right = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
-        df_right.columns = [c + suffixes[1] for c in df_right.columns]
+    df_input_1 = None
+    df_input_2 = None
+    if return_input is True or str(return_input) == "1" or return_input == "left":
+        df_input_1 = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
+        df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
+    if return_input is True or str(return_input) == "2" or return_input == "right":
+        df_input_2 = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
+        df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
-        out_df = pd.concat([df_left, df_right, out_df], axis="columns")
+    out_df = pd.concat([
+        df_index_1,
+        df_input_1,
+        df_index_2, 
+        df_input_2, 
+        df_overlap,
+        df_distance], axis="columns")
 
     return out_df
 
