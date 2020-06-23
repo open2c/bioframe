@@ -122,6 +122,12 @@ def test_overlap():
     bb = bioframe.overlap(df1, df2, how="inner")[
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
     ]
+    pp = pp.sort_values(
+        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
+        ignore_index=True)
+    bb = bb.sort_values(
+        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
+        ignore_index=True)
     pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
     print("overlap elements agree")
 
@@ -492,7 +498,10 @@ def test_subtract():
         columns=["chrom", "start", "end", "animal"],
     )
     pd.testing.assert_frame_equal(
-        df_result, bioframe.subtract(df1, df2).reset_index(drop=True)
+        df_result, 
+        bioframe.subtract(df1, df2)
+            .sort_values(['chrom','start','end'])
+            .reset_index(drop=True)
     )
 
     df2 = pd.DataFrame(
@@ -507,7 +516,10 @@ def test_subtract():
     )
     print(bioframe.subtract(df1, df2))
     pd.testing.assert_frame_equal(
-        df_result, bioframe.subtract(df1, df2).reset_index(drop=True)
+        df_result, 
+        bioframe.subtract(df1, df2)
+            .sort_values(['chrom','start','end'])
+            .reset_index(drop=True)
     )
 
 
