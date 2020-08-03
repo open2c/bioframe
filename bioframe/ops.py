@@ -1,13 +1,48 @@
 import numpy as np
 import pandas as pd
+import collections
 
 from . import arrops
 from .region import parse_region, regions_add_name
 
+_rc = {
+    'colnames':{
+        'chrom':'chrom',
+        'start':'start',
+        'end':'end'
+    }
+}
+
 
 def _get_default_colnames():
-    return "chrom", "start", "end"
+    return _rc['colnames']['chrom'], _rc['colnames']['start'], _rc['colnames']['end']
 
+
+class update_default_colnames:
+    def __init__(self, new_colnames):
+        self._old_colnames = dict(_rc['colnames'])
+        if isinstance(new_colnames, collections.Iterable):
+            if len(new_colnames) != 3:
+                raise ValueError(
+                    'Please, specify new columns using a list of '
+                    '3 strings or a dict!')
+            (_rc['colnames']['chrom'], 
+            _rc['colnames']['start'],
+            _rc['colnames']['end']) = new_colnames 
+        elif isinstance(new_colnames, collections.Mapping):
+            _rc['colnames'].update({k:v for k,v in new_colnames.items()
+                                    if k in ['chrom', 'start', 'end']})
+        else:
+            raise ValueError(
+                    'Please, specify new columns using a list of '
+                    '3 strings or a dict!')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        _rc['colnames'] = self._old_colnames
+    
 
 def _verify_columns(df, colnames):
     """
