@@ -128,7 +128,7 @@ def test_overlap():
     bb = bb.sort_values(
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
         ignore_index=True)
-    pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=True)
+    pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=False)
     print("overlap elements agree")
 
     ### test overlap on= [] ###
@@ -326,7 +326,7 @@ def test_merge():
         pyranges_to_bioframe(bioframe_to_pyranges(df1).merge(count=True)),
         bioframe.merge(df1),
         check_dtype=False,
-        check_exact=True,
+        check_exact=False,
     )
 
     # test on=['chrom',...] argument
