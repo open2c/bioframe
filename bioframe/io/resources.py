@@ -6,6 +6,7 @@ import posixpath as pp
 import os.path as op
 import pandas as pd
 import requests
+import socket
 import base64
 import glob
 
@@ -49,9 +50,11 @@ LOCAL_CENTROMERES = {
 
 def _check_connectivity(reference="http://www.google.com"):
     try:
-        urllib.request.urlopen(reference, timeout=1)
+        urllib.request.urlopen(reference, timeout=5)
         return True
     except urllib.request.URLError:
+        return False
+    except socket.timeout:
         return False
 
 
@@ -80,7 +83,7 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     if not _check_connectivity("http://www.google.com"):
         raise ConnectionError("No internet connection!")
 
-    if not _check_connectivity("http://hgdownload.cse.ucsc.edu"):
+    if not _check_connectivity("https://hgdownload.cse.ucsc.edu"):
         raise ConnectionError(
             "No connection to the genome database at hgdownload.cse.ucsc.edu!"
         )
