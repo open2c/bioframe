@@ -30,6 +30,52 @@ def _find_block_span(arr, val):
     return lo, hi
 
 
+def interweave(a, b):
+    """
+    Interweave two arrays.
+    
+    Parameters
+    ----------
+    a, b : numpy.ndarray
+        Arrays to interweave, must have the same length/
+        
+    Returns
+    -------
+    out : numpy.ndarray
+        Array of interweaved values from a and b.
+    
+    Notes
+    -----
+    From https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays
+    """
+    out = np.empty((a.size + b.size,), dtype=a.dtype)
+    out[0::2] = a
+    out[1::2] = b
+    return out
+
+
+def sum_slices(arr, starts, ends):
+    """
+    Calculate sums of slices of an array.
+    
+    Parameters
+    ----------
+    arr : numpy.ndarray
+    starts : numpy.ndarray
+        Starts for each slice
+    ends : numpy.ndarray
+        Stops for each slice
+        
+    Returns
+    -------
+    sums : numpy.ndarray
+        Sums of the slices.
+    """
+    sums = np.add.reduceat(arr, interweave(starts, ends))[::2]
+    sums[starts==ends] = 0
+    return sums
+
+
 def arange_multi(starts, stops=None, lengths=None):
     """
     Create concatenated ranges of integers for multiple start/length.
