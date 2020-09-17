@@ -27,3 +27,4 @@ tmp/
 docs/notebooks/.ipynb_checkpoints
 .vscode/.ropeproject/config.py
 .vscode/.ropeproject/objectdb
+docs/notebooks/cgranges-test/*
