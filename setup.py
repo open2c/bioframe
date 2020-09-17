@@ -60,15 +60,15 @@ def get_requirements(path):
 
 setup(
     name=PKG_NAME,
-    author='Nezar Abdennur',
+    author='Open2C',
     author_email='nezar@mit.edu',
     version=get_version(PKG_NAME),
     license='MIT',
     description='Pandas utilities for tab-delimited and other genomic files',
     long_description=get_long_description(README_PATH),
     long_description_content_type="text/markdown",
-    url='https://github.com/mirnylab/bioframe',
-    keywords=['pandas', 'dataframe', 'genomics', 'epigenomics', 'bioinformatics'],
+    url='https://github.com/open2c/bioframe',
+    keywords=['pandas', 'dataframe', 'genomics', 'epigenomics', 'bioinformatics', 'intervals'],
     packages=find_packages(),
     package_data={
         'bioframe': ['io/data/*']

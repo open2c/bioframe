@@ -1,6 +1,6 @@
 # Bioframe: Operations on Genomic Interval Dataframes
 
-![Python package](https://github.com/mirnylab/bioframe/workflows/Python%20package/badge.svg)
+![Python package](https://github.com/open2c/bioframe/workflows/Python%20package/badge.svg)
 [![DOI](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
 
 <img src="./docs/figs/bioframe-logo.png" width=75%> 
@@ -20,7 +20,7 @@ Bioframe additionally has functions that are frequently used for genomic interva
 
 Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
-Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/) and explore the [jupyter notebooks](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/)
+Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/) and explore the [jupyter notebooks](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/)
 
 ## Genomic interval operations
 
@@ -60,9 +60,9 @@ For this input dataframe, with intervals all on the same chromosome:
 <img src="./docs/figs/merge_df1.png" width=60%> 
 
 
-See this [jupyter notebook](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/intervals_tutorials.ipynb) for visualizations of other core bioframe functions.
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/intervals_tutorials.ipynb) for visualizations of other core bioframe functions.
 
-See this [jupyter notebook](https://github.com/mirnylab/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
 
 
 ## Requirements
@@ -77,6 +77,6 @@ pip install bioframe
 ```
 
 ## Projects currently using bioframe:
-* [cooler](https://github.com/mirnylab/cooler)
-* [cooltools](https://github.com/mirnylab/cooltools)
+* [cooler](https://github.com/open2c/cooler)
+* [cooltools](https://github.com/open2c/cooltools)
 * yours? :)
