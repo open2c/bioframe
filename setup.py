@@ -77,6 +77,8 @@ setup(
     classifiers=CLASSIFIERS,
     install_requires=get_requirements(INSTALL_DEPS_PATH),
     tests_require=['pytest'],
+    setup_requires=['wheel'],
+
     # extras_require=extras_require,
     # entry_points={
     # }
