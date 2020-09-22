@@ -7,19 +7,18 @@ on: push
 jobs:
   build-n-publish:
     name: Build and publish Python distributions to PyPI and TestPyPI
-    # runs-on: ubuntu-18.04
-    # steps:
-    # - uses: actions/checkout@master
-    # - name: Set up Python 3.7
-    #   uses: actions/setup-python@v1
-    #   with:
-    #     python-version: 3.7
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.6, 3.7, 3.8]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@master
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    # strategy:
+    #   matrix:
+    #     python-version: [3.6, 3.7, 3.8]
+    # steps:
+    # - uses: actions/checkout@v2
 
     - name: Build a source tarball and a binary wheel 
       run: |
@@ -29,6 +28,7 @@ jobs:
     - name: Publish distribution to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
+        user: __token__
         password: ${{ secrets.TEST_PYPI }}
         repository_url: https://test.pypi.org/legacy/
 
@@ -36,4 +36,5 @@ jobs:
     #   if: startsWith(github.ref, 'refs/tags')
     #   uses: pypa/gh-action-pypi-publish@master
     #   with:
+    #     user: __token__
     #     password: ${{ secrets.pypi_password }}
