@@ -18,16 +18,14 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
-
     steps:
     - uses: actions/checkout@v2
 
-    - name: Build a source tarball 
+    - name: Build a source tarball and a binary wheel 
       run: |
         python setup.py sdist
-    - name: Build a binary wheel 
-      run: |
         python setup.py bdist_wheel
+
 
     # - name: Publish distribution to Test PyPI
     #   uses: pypa/gh-action-pypi-publish@master
