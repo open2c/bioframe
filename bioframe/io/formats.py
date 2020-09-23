@@ -362,13 +362,13 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
     return records
 
 
-def read_bigwig(filepath, chrom, start=None, end=None, engine='auto'):
+def read_bigwig(path, chrom, start=None, end=None, engine="auto"):
     """
     Read intervals from a bigWig file.
 
     Parameters
     ----------
-    filepath : str
+    path : str
         Path or URL to a bigWig file
     chrom : str
     start, end : int, optional
@@ -383,26 +383,26 @@ def read_bigwig(filepath, chrom, start=None, end=None, engine='auto'):
     """
     engine = engine.lower()
 
-    if engine == 'auto':
+    if engine == "auto":
         if bbi is None and pyBigWig is None:
             raise ImportError(
                 "read_bigwig requires either the pybbi or pyBigWig package"
             )
         elif bbi is not None:
-            engine = 'pybbi'
+            engine = "pybbi"
         else:
-            engine = 'pybigwig'
+            engine = "pybigwig"
 
-    if engine in ('pybbi', 'bbi'):
+    if engine in ("pybbi", "bbi"):
         if start is None:
             start = 0
         if end is None:
             end = -1
-        with bbi.open(filepath) as f:
+        with bbi.open(path) as f:
             df = f.fetch_intervals(chrom, start=start, end=end)
 
-    elif engine == 'pybigwig':
-        f = pyBigWig.open(filepath)
+    elif engine == "pybigwig":
+        f = pyBigWig.open(path)
         if start is None:
             start = 0
         if end is None:
@@ -419,13 +419,13 @@ def read_bigwig(filepath, chrom, start=None, end=None, engine='auto'):
     return df
 
 
-def read_bigbed(filepath, chrom, start=None, end=None, engine='auto'):
+def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
     """
     Read intervals from a bigBed file.
 
     Parameters
     ----------
-    filepath : str
+    path : str
         Path or URL to a bigBed file
     chrom : str
     start, end : int, optional
@@ -440,26 +440,26 @@ def read_bigbed(filepath, chrom, start=None, end=None, engine='auto'):
     """
     engine = engine.lower()
 
-    if engine == 'auto':
+    if engine == "auto":
         if bbi is None and pyBigWig is None:
             raise ImportError(
                 "read_bigbed requires either the pybbi or pyBigWig package"
             )
         elif bbi is not None:
-            engine = 'pybbi'
+            engine = "pybbi"
         else:
-            engine = 'pybigwig'
+            engine = "pybigwig"
 
-    if engine in ('pybbi', 'bbi'):
+    if engine in ("pybbi", "bbi"):
         if start is None:
             start = 0
         if end is None:
             end = -1
-        with bbi.open(filepath) as f:
+        with bbi.open(path) as f:
             df = f.fetch_intervals(chrom, start=start, end=end)
 
-    elif engine == 'pybigwig':
-        f = pyBigWig.open(filepath)
+    elif engine == "pybigwig":
+        f = pyBigWig.open(path)
         if start is None:
             start = 0
         if end is None:
