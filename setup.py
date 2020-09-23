@@ -11,7 +11,7 @@ PKG_NAME = 'bioframe'
 README_PATH = 'README.md'
 INSTALL_DEPS_PATH = 'requirements.txt'
 CLASSIFIERS = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
