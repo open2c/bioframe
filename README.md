@@ -20,7 +20,7 @@ Bioframe additionally has functions that are frequently used for genomic interva
 
 Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
-Read the [docs](https://bioframe.readthedocs.io/en/genomic_interval_arithmetic/) and explore the [jupyter notebooks](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/)
+Read the [docs](https://bioframe.readthedocs.io) and explore the [jupyter notebooks](https://github.com/open2c/bioframe/tree/master/docs/notebooks/)
 
 ## Genomic interval operations
 
