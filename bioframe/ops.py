@@ -3,7 +3,7 @@ import pandas as pd
 import collections
 
 from . import arrops
-from .region import parse_region, regions_add_name
+from .region import parse_region, regions_add_name_column
 
 _rc = {
     'colnames':{
@@ -26,9 +26,9 @@ class update_default_colnames:
                 raise ValueError(
                     'Please, specify new columns using a list of '
                     '3 strings or a dict!')
-            (_rc['colnames']['chrom'], 
+            (_rc['colnames']['chrom'],
             _rc['colnames']['start'],
-            _rc['colnames']['end']) = new_colnames 
+            _rc['colnames']['end']) = new_colnames
         elif isinstance(new_colnames, collections.Mapping):
             _rc['colnames'].update({k:v for k,v in new_colnames.items()
                                     if k in ['chrom', 'start', 'end']})
@@ -42,7 +42,7 @@ class update_default_colnames:
 
     def __exit__(self, *args):
         _rc['colnames'] = self._old_colnames
-    
+
 
 def _verify_columns(df, colnames):
     """
@@ -932,9 +932,9 @@ def closest(
 ):
 
     """
-    For every interval in set 1 find k closest genomic intervals in set 2. 
-    Note that, unless specified otherwise, overlapping intervals are considered 
-    as closest. When multiple intervals are located at the same distance, the 
+    For every interval in set 1 find k closest genomic intervals in set 2.
+    Note that, unless specified otherwise, overlapping intervals are considered
+    as closest. When multiple intervals are located at the same distance, the
     ones with the lowest index in df2 are chosen.
 
     Parameters
@@ -954,10 +954,10 @@ def closest(
 
     ignore_downstream : bool
         If True, ignore intervals in df2 that are downstream of intervals in df1.
-    
+
     tie_breaking_col : str
-        A column in df2 to use for breaking ties when multiple intervals 
-        are located at the same distance. Intervals with *lower* values will 
+        A column in df2 to use for breaking ties when multiple intervals
+        are located at the same distance. Intervals with *lower* values will
         be selected.
 
     return_input : bool
@@ -1087,8 +1087,8 @@ def closest(
     out_df = pd.concat([
         df_index_1,
         df_input_1,
-        df_index_2, 
-        df_input_2, 
+        df_index_2,
+        df_input_2,
         df_overlap,
         df_distance], axis="columns")
 
@@ -1247,7 +1247,7 @@ def split(
     df_split.rename(columns=name_updates, inplace=True)
 
     if add_names:
-        df_split = regions_add_name(df_split)
+        df_split = regions_add_name_column(df_split)
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"])

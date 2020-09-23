@@ -7,6 +7,16 @@ import io
 import numpy as np
 import pandas as pd
 
+try:
+    import bbi
+except ImportError:
+    bbi = None
+
+try:
+    import pyBigWig
+except ImportError:
+    pyBigWig = None
+
 from ..util import run
 from ..region import parse_region
 from ..arrops import argnatsort
@@ -20,7 +30,9 @@ __all__ = [
     "read_pairix",
     "read_bam",
     "load_fasta",
+    "read_bigwig",
     "to_bigwig",
+    "read_bigbed",
     "to_bigbed",
     "read_parquet",
     "to_parquet",
@@ -310,6 +322,8 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
     is_multifile = not isinstance(filepath_or, str)
     records = OrderedDict()
 
+    engine = engine.lower()
+
     if engine == "pysam":
         try:
             import pysam
@@ -346,6 +360,120 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
         raise ValueError("engine must be 'pysam' or 'pyfaidx'")
 
     return records
+
+
+def read_bigwig(path, chrom, start=None, end=None, engine="auto"):
+    """
+    Read intervals from a bigWig file.
+
+    Parameters
+    ----------
+    path : str
+        Path or URL to a bigWig file
+    chrom : str
+    start, end : int, optional
+        Start and end coordinates. Defaults to 0 and chromosome length.
+    engine : {"auto", "pybbi", "pybigwig"}
+        Library to use for querying the bigWig file.
+
+    Returns
+    -------
+    DataFrame
+
+    """
+    engine = engine.lower()
+
+    if engine == "auto":
+        if bbi is None and pyBigWig is None:
+            raise ImportError(
+                "read_bigwig requires either the pybbi or pyBigWig package"
+            )
+        elif bbi is not None:
+            engine = "pybbi"
+        else:
+            engine = "pybigwig"
+
+    if engine in ("pybbi", "bbi"):
+        if start is None:
+            start = 0
+        if end is None:
+            end = -1
+        with bbi.open(path) as f:
+            df = f.fetch_intervals(chrom, start=start, end=end)
+
+    elif engine == "pybigwig":
+        f = pyBigWig.open(path)
+        if start is None:
+            start = 0
+        if end is None:
+            end = f.chroms()[chrom]
+        ivals = f.intervals(chrom, start, end)
+        df = pd.DataFrame(ivals, columns=["start", "end", "value"])
+        df.insert(0, "chrom", chrom)
+
+    else:
+        raise ValueError(
+            "engine must be 'auto', 'pybbi' or 'pybigwig'; got {}".format(engine)
+        )
+
+    return df
+
+
+def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
+    """
+    Read intervals from a bigBed file.
+
+    Parameters
+    ----------
+    path : str
+        Path or URL to a bigBed file
+    chrom : str
+    start, end : int, optional
+        Start and end coordinates. Defaults to 0 and chromosome length.
+    engine : {"auto", "pybbi", "pybigwig"}
+        Library to use for querying the bigBed file.
+
+    Returns
+    -------
+    DataFrame
+
+    """
+    engine = engine.lower()
+
+    if engine == "auto":
+        if bbi is None and pyBigWig is None:
+            raise ImportError(
+                "read_bigbed requires either the pybbi or pyBigWig package"
+            )
+        elif bbi is not None:
+            engine = "pybbi"
+        else:
+            engine = "pybigwig"
+
+    if engine in ("pybbi", "bbi"):
+        if start is None:
+            start = 0
+        if end is None:
+            end = -1
+        with bbi.open(path) as f:
+            df = f.fetch_intervals(chrom, start=start, end=end)
+
+    elif engine == "pybigwig":
+        f = pyBigWig.open(path)
+        if start is None:
+            start = 0
+        if end is None:
+            end = f.chroms()[chrom]
+        ivals = f.entries(chrom, start, end)
+        df = pd.DataFrame(ivals, columns=["start", "end", "rest"])
+        df.insert(0, "chrom", chrom)
+
+    else:
+        raise ValueError(
+            "engine must be 'auto', 'pybbi' or 'pybigwig'; got {}".format(engine)
+        )
+
+    return df
 
 
 def to_bigwig(df, chromsizes, outpath, value_field=None):
