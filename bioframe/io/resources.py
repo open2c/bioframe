@@ -58,12 +58,20 @@ def _check_connectivity(reference="http://www.google.com"):
         return False
 
 
-def fetch_chromsizes(db, provider=None, **kwargs):
+def fetch_chromsizes(
+    db,
+    provider=None,
+    filter_chroms=True,
+    chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
+    **kwargs
+):
     if provider == "local" or db in LOCAL_CHROMSIZES:
         pass
 
     if provider == "ucsc" or provider is None:
-        return UCSCClient(db).fetch_chromsizes(**kwargs)
+        return UCSCClient(db).fetch_chromsizes(
+            filter_chroms=filter_chroms, chrom_patterns=chrom_patterns, **kwargs
+        )
     else:
         raise ValueError("Unknown provider '{}'".format(provider))
 
@@ -141,56 +149,58 @@ class UCSCClient:
 
 class EncodeClient:
 
-    BASE_URL = 'http://www.encodeproject.org/'
+    BASE_URL = "http://www.encodeproject.org/"
 
     # 2020-05-15 compatible with ENCODE Metadata at:
-    METADATA_URL = 'https://www.encodeproject.org/metadata/type=Experiment&status=released/metadata.tsv'
+    METADATA_URL = "https://www.encodeproject.org/metadata/type=Experiment&status=released/metadata.tsv"
 
     KNOWN_ASSEMBLIES = [
-        'GRCh38',
-        'GRCh38-minimal',
-        'ce10',
-        'ce11',
-        'dm3',
-        'dm6',
-        'hg19',
-        'mm10',
-        'mm10-minimal',
-        'mm9'
+        "GRCh38",
+        "GRCh38-minimal",
+        "ce10",
+        "ce11",
+        "dm3",
+        "dm6",
+        "hg19",
+        "mm10",
+        "mm10-minimal",
+        "mm9",
     ]
 
     def __init__(self, cachedir, assembly, metadata=None):
         if assembly not in self.KNOWN_ASSEMBLIES:
-            raise ValueError('assembly must be in:', self.KNOWN_ASSEMBLIES)
+            raise ValueError("assembly must be in:", self.KNOWN_ASSEMBLIES)
 
         self.cachedir = op.join(cachedir, assembly)
         if not op.isdir(self.cachedir):
             os.makedirs(self.cachedir, exist_ok=True)
 
         if metadata is None:
-            metadata_path = op.join(cachedir, 'metadata.tsv')
+            metadata_path = op.join(cachedir, "metadata.tsv")
 
             if not op.exists(metadata_path):
 
-                print('getting metadata from ENCODE, please wait while (~240Mb) file downloads')
+                print(
+                    "getting metadata from ENCODE, please wait while (~240Mb) file downloads"
+                )
                 with requests.get(self.METADATA_URL, stream=True) as r:
                     r.raise_for_status()
-                    with open(metadata_path, 'wb') as f:
+                    with open(metadata_path, "wb") as f:
                         for chunk in r.iter_content(chunk_size=8192):
                             f.write(chunk)
 
             self._meta = pd.read_table(metadata_path, low_memory=False)
             table_assemblies = sorted(
-                self._meta['File assembly'].dropna().unique().tolist()
+                self._meta["File assembly"].dropna().unique().tolist()
             )
 
             if table_assemblies != self.KNOWN_ASSEMBLIES:
                 raise ValueError(
-                    'Table assemblies do not match known assemblies, '
-                    'check ENCODE metadata version'
+                    "Table assemblies do not match known assemblies, "
+                    "check ENCODE metadata version"
                 )
-            self._meta = self._meta[self._meta['File assembly'] == assembly].copy()
-            self._meta = self._meta.set_index('File accession')
+            self._meta = self._meta[self._meta["File assembly"] == assembly].copy()
+            self._meta = self._meta.set_index("File accession")
 
         else:
             self._meta = metadata
