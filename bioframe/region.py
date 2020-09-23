@@ -94,6 +94,8 @@ def parse_region_string(s):
 
 def parse_region(reg, chromsizes=None):
     """
+    Coerce a genomic region string or sequence into a triple (chrom, start, end).
+
     Genomic regions are represented as half-open intervals (0-based starts,
     1-based ends) along the length coordinate of a contig/scaffold/chromosome.
 
@@ -139,7 +141,7 @@ def parse_region(reg, chromsizes=None):
     return chrom, start, end
 
 
-def regions_add_name(reg_df, cols=("chrom", "start", "end", "name")):
+def regions_add_name_column(reg_df, cols=("chrom", "start", "end", "name")):
     """
     Checks that input dataframe has "name" column
     If not, auto-creates a UCSC name
@@ -157,37 +159,49 @@ def regions_add_name(reg_df, cols=("chrom", "start", "end", "name")):
 def parse_regions(
     regions,
     chromsizes=None,
-    replace_None=True,
-    force_UCSC_names=False,
-    check_start_end=True,
+    fill_missing=True,
+    check_bounds=True,
+    overwrite_names=False,
     cols=("chrom", "start", "end", "name"),
 ):
     """
-    Parse input and convert it to regions dataframe with name
+    Coerce a sequence of genomic regions to a 4-column regions dataframe.
+
+    Input may be a DataFrame or an iterable of region strings or sequences.
+    DataFrame or list/tuple input may contain a 4th "name" field. If not, the
+    region names will be generated from the coordinates using UCSC-style
+    notation.
+
+    Parameters
+    ---------
+    regions : dataframe or iterable
+        Object to convert to a region dataframe.
+    chromsizes : dict-like, optional
+        Chromsizes used to fill unknown end coordinates, if needed.
+    fill_missing : bool, optional
+        Try to replace unknown coordinates with 0 or the chromosome length.
+        If True, will raise an error if chromsizes are needed but not provided.
+        If False, None coordinates are not checked.
+    check_bounds : bool, optional, default: True
+        If True, check that start <= end. Ignored if ``fill_missing`` is False.
+    overwrite_names : bool, optional
+        If True, will overwrite an exiting name column with UCSC-style region
+        strings.
+    cols : tuple, optional
+        Names of the columns (unlikely to change)
+
+    Returns
+    -------
+    DataFrame with columns - chrom, start, end, name.
+
+    Notes
+    -----
     See this gist for examples
     https://gist.github.com/mimakaev/9d2eb07dc746c6010304d795c99125ed
 
-    Paramters
-    ---------
-    regions : dataframe or iterable
-        Object to convert to regions
-    chromsizes : dict-like (optional):
-        chromsizes to fill Nones if needed
-    replace_None: bool (optional):
-        Try to replace None with 0 or chrom_end
-        If False, Nones are not checked
-        If True, will raise an error if chromsizes are needed but not provided.
-    force_name: bool (optional)
-        if True, will force the name to be UCSC style
-    check_start_end: bool, optional (default:True)
-        If True, check that start<=end
-        Ignored if replace_None is False
-    cols : tuple (optional)
-        Names of the columns (unlikely to change)
     """
-
-    # if dataframe, check and auto-create "name" column
     if isinstance(regions, pd.DataFrame):
+        # DataFrame input
         in_cols = regions.columns
         if all([i in in_cols for i in cols[:3]]):
             new_regions = regions.copy()
@@ -200,30 +214,34 @@ def parse_regions(
             raise ValueError(
                 f"regions not found in input dataframe with columns {in_cols}"
             )
-
-    else:  # checking what did we get
+    else:
         try:
             regions = list(regions)  # it has to be converted to list
         except:
             raise ValueError("Input should be a dataframe, or iterable")
 
-        if isinstance(regions[0], str):  # working with a list of strings
+        if isinstance(regions[0], str):
+            # Sequence of region strings
             parsed = [parse_region_string(i) for i in regions]
             new_regions = pd.DataFrame(parsed, columns=cols[:3])
             new_regions[cols[3]] = regions
 
         else:
+            # Sequence of region tuples/lists
             regions = [tuple(i) for i in regions]
             ulen = list(set([len(i) for i in regions]))
             if len(ulen) != 1:
-                raise ValueError(f"Different lengths of values in in put data: {ulen}")
+                raise ValueError(f"Different lengths of values in input data: {ulen}")
             if ulen[0] in [3, 4]:
                 new_regions = pd.DataFrame(regions, columns=cols[: ulen[0]])
             else:
                 raise ValueError(f"Wrong number of columns:{ulen[0]}")
 
+    # chrom
     new_regions[cols[0]] = new_regions[cols[0]].astype(str)
-    if replace_None:
+
+    # start, end
+    if fill_missing:
         starts = []
         for i in new_regions[cols[1]].values:
             try:
@@ -233,6 +251,7 @@ def parse_regions(
                     starts.append(0)
                 else:
                     raise ValueError(f"Wrong start {i}; False or None are accepted")
+
         new_regions[cols[1]] = starts
         ends = []
         ends_orig = new_regions[cols[2]].values
@@ -256,14 +275,18 @@ def parse_regions(
                     )
         new_regions[cols[2]] = ends
 
-    new_regions = regions_add_name(new_regions)
-
-    if force_UCSC_names:
-        new_regions.pop("name")
-        new_regions = regions_add_name(new_regions)
-
-    if check_start_end and replace_None:
+    if check_bounds and fill_missing:
         if (new_regions[cols[2]] < new_regions[cols[1]]).any():
-            raise ValueError("Start > end detected")
+            raise ValueError("start > end detected")
+
+    # name
+    if cols[3] not in new_regions or overwrite_names:
+        try:
+            new_regions.pop("name")
+        except KeyError:
+            pass
+        new_regions = regions_add_name_column(new_regions)
+    else:
+        new_regions = new_regions[list(cols)].copy()
 
     return new_regions

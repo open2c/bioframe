@@ -43,6 +43,8 @@ def test_parse_region():
 
     with pytest.raises(ValueError):
         parse_region("chr1:2,000-1,000")  # reverse selection
+
+    with pytest.raises(ValueError):
         parse_region("chr1::1000-2000")  # more than one colon
 
 
@@ -70,36 +72,46 @@ def test_parse_regions():
     assert list(p2.values[0]) == ["chr1", 5, 40, "chr1:5-40"]
 
     # We could keep things as None if chromsizes were not proviced
-    p3 = parse_regions(["chr1", "chr2"], replace_None=False)
+    p3 = parse_regions(["chr1", "chr2"], fill_missing=False)
     assert list(p3.values[0]) == ["chr1", None, None, "chr1"]
 
     # we can force CUSC names
-    p4 = parse_regions([("chr1", 0, 5)], force_UCSC_names=True)
+    p4 = parse_regions([("chr1", 0, 5)], overwrite_names=True)
     assert list(p4.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # nothing happens: name was autocompleted
-    p5 = parse_regions([("chr1", 0, 5)], force_UCSC_names=False)
+    p5 = parse_regions([("chr1", 0, 5)], overwrite_names=False)
     assert list(p5.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # "chr1" parsed but interpreted as name
-    p6 = parse_regions([("chr1")], chromsizes={"chr1": 5}, force_UCSC_names=False)
+    p6 = parse_regions([("chr1")], chromsizes={"chr1": 5}, overwrite_names=False)
     assert list(p6.values[0]) == ["chr1", 0, 5, "chr1"]  # "chr1" interpreted as name
 
     # forcing UCSC names
-    p7 = parse_regions([("chr1")], chromsizes={"chr1": 5}, force_UCSC_names=True)
+    p7 = parse_regions([("chr1")], chromsizes={"chr1": 5}, overwrite_names=True)
     assert list(p7.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # kept the strange name
     p8 = parse_regions(["chr1:1,000,000-4M"])
     assert list(p8.values[0]) == ["chr1", 1000000, 4000000, "chr1:1,000,000-4M"]
 
-    p9 = parse_regions(["chr1"], replace_None=False)
+    p9 = parse_regions(["chr1"], fill_missing=False)
     assert list(p9.values[0]) == ["chr1", None, None, "chr1"]
 
     with pytest.raises(ValueError):
         parse_regions([("chr1", "abracadabra", 5)])
+
+    with pytest.raises(ValueError):
         parse_regions([("ch1", 1, 2, "chr1:1-2", "puppies")])  # puppies are not allowed
+
+    with pytest.raises(ValueError):
         parse_regions([("chr1", 3, "abracadabra")])
+
+    with pytest.raises(ValueError):
         parse_regions([("chr1", 5, None)])
+
+    with pytest.raises(ValueError):
         parse_regions([("chr1", 5, None)], chromsizes={"chr2": 40})
+
+    with pytest.raises(ValueError):
         parse_regions([("chr1", 5, 0)])
