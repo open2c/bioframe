@@ -71,9 +71,10 @@ def parse_gtf_attributes(attrs, kv_sep="=", item_sep=";", quotechar='"', **kwarg
 
 def read_chromsizes(
     filepath_or,
-    filter_chroms=False,
+    filter_chroms=True,
     chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
     natsort=True,
+    as_bed=False,
     **kwargs
 ):
     """
@@ -90,13 +91,15 @@ def read_chromsizes(
         Sequence of regular expressions to capture desired sequence names.
     natsort : bool, optional
         Sort each captured group of names in natural order. Default is True.
+    as_bed : bool, optional
+        If True, return chromsizes as an interval dataframe (chrom, start, end).
     **kwargs :
         Passed to :func:`pandas.read_csv`
 
     Returns
     -------
-    Series of integer bp lengths indexed by sequence name.
-
+    Series of integer bp lengths indexed by sequence name or an interval dataframe.
+    
     Notes
     -----
     Mention name patterns
@@ -130,8 +133,13 @@ def read_chromsizes(
             parts.append(part)
         chromtable = pd.concat(parts, axis=0)
 
-    chromtable.index = chromtable["name"].values
-    return chromtable["length"]
+    if as_bed:
+        chromtable['start'] = 0
+        chromtable = chromtable[['name','start','length']].rename({'name':'chrom', 'length':'end'}, axis='columns')
+    else:
+        chromtable.index = chromtable["name"].values
+        chromtable = chromtable["length"]
+    return chromtable
 
 
 def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
