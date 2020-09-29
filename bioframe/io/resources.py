@@ -63,14 +63,44 @@ def fetch_chromsizes(
     provider=None,
     filter_chroms=True,
     chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
+    natsort=True,
+    as_bed=False,
     **kwargs
 ):
+    """
+    Fetch chromsizes from the UCSC database or local storage.
+
+    Parameters
+    ----------
+    provider : str
+        The provider of chromsizes. Currently, only 'ucsc' is implemented.
+    filter_chroms : bool, optional
+        Filter for chromosome names given in ``chrom_patterns``.
+    chrom_patterns : sequence, optional
+        Sequence of regular expressions to capture desired sequence names.
+    natsort : bool, optional
+        Sort each captured group of names in natural order. Default is True.
+    as_bed : bool, optional
+        If True, return chromsizes as an interval dataframe (chrom, start, end).
+    **kwargs :
+        Passed to :func:`pandas.read_csv`
+
+    Returns
+    -------
+    Series of integer bp lengths indexed by sequence name or an interval dataframe.
+
+    """
+
     if provider == "local" or db in LOCAL_CHROMSIZES:
         pass
 
     if provider == "ucsc" or provider is None:
         return UCSCClient(db).fetch_chromsizes(
-            filter_chroms=filter_chroms, chrom_patterns=chrom_patterns, **kwargs
+            filter_chroms=filter_chroms, 
+            chrom_patterns=chrom_patterns, 
+            natsort=natsort,
+            as_bed=as_bed
+            **kwargs
         )
     else:
         raise ValueError("Unknown provider '{}'".format(provider))
@@ -123,7 +153,35 @@ class UCSCClient:
         self._db = db
         self._db_url = urljoin(self.BASE_URL, "goldenPath/{}/database/".format(db))
 
-    def fetch_chromsizes(self, **kwargs):
+    def fetch_chromsizes(
+        self, 
+        filter_chroms=True,
+        chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
+        natsort=True,
+        as_bed=False,
+        **kwargs):
+        """
+        Fetch chromsizes from the UCSC database.
+
+        Parameters
+        ----------
+        filter_chroms : bool, optional
+            Filter for chromosome names given in ``chrom_patterns``.
+        chrom_patterns : sequence, optional
+            Sequence of regular expressions to capture desired sequence names.
+        natsort : bool, optional
+            Sort each captured group of names in natural order. Default is True.
+        as_bed : bool, optional
+            If True, return chromsizes as an interval dataframe (chrom, start, end).
+        **kwargs :
+            Passed to :func:`pandas.read_csv`
+
+        Returns
+        -------
+        Series of integer bp lengths indexed by sequence name or an interval dataframe.
+
+        """
+        
         url = urljoin(self._db_url, "chromInfo.txt.gz")
         return read_chromsizes(url, **kwargs)
 
