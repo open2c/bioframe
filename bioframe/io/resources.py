@@ -99,7 +99,7 @@ def fetch_chromsizes(
             filter_chroms=filter_chroms, 
             chrom_patterns=chrom_patterns, 
             natsort=natsort,
-            as_bed=as_bed
+            as_bed=as_bed,
             **kwargs
         )
     else:
@@ -183,7 +183,13 @@ class UCSCClient:
         """
         
         url = urljoin(self._db_url, "chromInfo.txt.gz")
-        return read_chromsizes(url, **kwargs)
+        return read_chromsizes(
+            url, 
+            filter_chroms=filter_chroms,
+            chrom_patterns=chrom_patterns,
+            natsort=natsort,
+            as_bed=as_bed,
+            **kwargs)
 
     def fetch_centromeres(self, **kwargs):
         url = urljoin(self._db_url, "centromeres.txt.gz")
