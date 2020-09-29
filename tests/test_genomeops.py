@@ -12,7 +12,7 @@ testdir = op.realpath(op.dirname(__file__))
 
 
 def test_binnify():
-    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes", filter_chroms=False)
     assert len(chromsizes) == 2
     assert len(bioframe.binnify(chromsizes, int(np.max(chromsizes.values)))) == len(
         chromsizes
