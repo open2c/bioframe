@@ -37,7 +37,7 @@ def test_digest():
 
 def test_frac_mapped():
     pytest.importorskip("pysam")
-    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes", filter_chroms=False)
     fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
     unmapped = np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0])
@@ -67,7 +67,7 @@ def test_frac_mapped():
 
 def test_frac_gc():
     pytest.importorskip("pysam")
-    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes")
+    chromsizes = bioframe.read_chromsizes(testdir+"/test_data/test.chrom.sizes", filter_chroms=False)
     fasta_records = bioframe.load_fasta(testdir+"/test_data/test.fa")
 
     unmapped_bp = (
