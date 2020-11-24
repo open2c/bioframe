@@ -583,8 +583,94 @@ def test_setdiff():
     )  # one overlaps, two remain
 
 
-#### def test_split():
-#### NOT IMPLEMENTED ####
+def test_split():
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chr1", 4, 7], 
+         ["chrX", 1, 5]
+        ],
+        columns=["chrom", "start", "end"],
+    )
+   
+    df2 = pd.DataFrame(
+        [["chrX", 4], 
+         ["chr1", 5],], 
+         columns=["chrom", "pos"]
+    )
+
+    df_result = pd.DataFrame(
+        [["chrX", 1, 4],
+         ["chrX", 3, 4],
+         ["chrX", 4, 5],
+         ["chrX", 4, 8], 
+         ["chr1", 5, 7],
+         ["chr1", 4, 5]
+        ],
+        columns=["chrom", "start", "end"],
+    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(
+        df_result, 
+        bioframe.split(df1, df2)
+            .sort_values(['chrom','start','end'])
+            .reset_index(drop=True)
+    )
+
+    # Test the case when a chromosome is missing from points.
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chr1", 4, 7], 
+        ],
+        columns=["chrom", "start", "end"],
+    )
+   
+    df2 = pd.DataFrame(
+        [["chrX", 4]], 
+         columns=["chrom", "pos"]
+    )
+
+    df_result = pd.DataFrame(
+        [["chrX", 3, 4],
+         ["chrX", 4, 8],
+         ["chr1", 4, 7],
+        ],
+        columns=["chrom", "start", "end"],
+    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(
+        df_result, 
+        bioframe.split(df1, df2)
+            .sort_values(['chrom','start','end'])
+            .reset_index(drop=True)
+    )
+
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8]],
+        columns=["chromosome", "lo", "hi"],
+    )
+   
+    df2 = pd.DataFrame(
+        [["chrX", 4]], 
+         columns=["chromosome", "loc"]
+    )
+
+    df_result = pd.DataFrame(
+        [["chrX", 3, 4],
+         ["chrX", 4, 8],
+        ],
+        columns=["chrom", "start", "end"],
+    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(
+        df_result, 
+        bioframe.split(
+            df1, df2, 
+            cols=['chromosome', 'lo', 'hi'],
+            cols_points=['chromosome', 'loc'],)
+            .sort_values(['chrom','start','end'])
+            .reset_index(drop=True)
+    )
+
 
 
 def test_count_overlaps():
