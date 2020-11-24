@@ -1216,7 +1216,7 @@ def split(
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
 
-    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    name_updates = {ck1 + "_1": "chrom", "overlap_"+sk1: "start", "overlap_"+ek1: "end"}
     if add_names:
         name_updates["index_2"] = "index_2"
         return_index = True
@@ -1235,9 +1235,11 @@ def split(
 
     points["start"] = points[sk2]
     points["end"] = points[sk2]
+    all_chroms = set(df[ck1].unique()).union(df[ck2].unique()) 
+    all_chroms = {c:np.iinfo(np.int64).max for c in all_chroms}
     df_split = overlap(
         df,
-        complement(points),
+        complement(points, chromsizes=all_chroms, cols=(ck2, 'start', 'end')),
         how="inner",
         cols1=cols,
         cols2=(ck2, "start", "end"),
