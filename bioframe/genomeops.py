@@ -295,3 +295,76 @@ def frac_gene_coverage(df, ucsc_mrna):
     df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
 
     return df_gene_coverage
+
+
+def pair_by_distance(df, min_sep, max_sep, from_ends=False, suffixes=("_1", "_2")):
+    """
+    From a dataframe of genomic intervals, find all unique pairs of intervals
+    that are between ``min_sep`` and ``max_sep`` bp separated from each other.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A BED-like dataframe.
+    min_sep, max_sep : int
+        Minimum and maximum separation between intervals in bp.
+    from_ends : bool, optional, default: False
+        Calculate distances between interval endpoints. If False, distances are
+        calculated between interval midpoints (default).
+    suffixes : (str, str), optional
+        The column name suffixes for the two interval sets in the output.
+        The first interval of each output pair is always upstream of the
+        second.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A BEDPE-like dataframe of paired intervals from ``df``.
+
+    """
+    if min_sep >= max_sep:
+        raise ValueError("min_sep must be less than max_sep")
+
+    mids = (df["start"] + df["end"]) // 2
+
+    # For each interval, generate a probe interval on its right
+    if from_ends:
+        ref = df["end"]
+    else:
+        ref = mids
+    right_probe = df[["chrom"]].copy()
+    right_probe["start"] = ref + min_sep // 2
+    right_probe["end"] = ref + int(np.ceil(max_sep / 2))
+
+    # For each interval, also generate a probe interval on its left
+    if from_ends:
+        ref = df["start"]
+    else:
+        ref = mids
+    left_probe = df[["chrom"]].copy()
+    left_probe["start"] = ref - max_sep // 2
+    left_probe["end"] = ref - int(np.ceil(min_sep / 2))
+
+    # Ignore probes that fall out of bounds
+    mask = (left_probe["start"] > 0) & (right_probe["start"] > 0)
+    right_probe = right_probe[mask].copy()
+    left_probe = left_probe[mask].copy()
+
+    # Intersect right-handed probes (from intervals on the left)
+    # with left-handed probes (from intervals on the right)
+    idxs = ops.overlap(
+        right_probe, left_probe, how="inner", return_index=True, return_input=False
+    )
+
+    left_ivals = (
+        df.iloc[idxs["index_1"].values]
+        .rename(columns=lambda x: x + suffixes[0])
+        .reset_index(drop=True)
+    )
+    right_ivals = (
+        df.iloc[idxs["index_2"].values]
+        .rename(columns=lambda x: x + suffixes[1])
+        .reset_index(drop=True)
+    )
+
+    return pd.concat([left_ivals, right_ivals], axis=1)
