@@ -67,7 +67,7 @@ def make_chromarms(
         cols_points=(ck2, sk2),
         suffixes=suffixes,
     )
-    df_chromarms["name"].replace("[\:\[].*?[\)\_]", "", regex=True, inplace=True)
+    df_chromarms["name"].replace(r"[\:\[].*?[\)\_]", "", regex=True, inplace=True)
     df_chromarms.drop(columns=["index_2", "length"], inplace=True)
     return df_chromarms
 
