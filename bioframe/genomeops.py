@@ -67,7 +67,7 @@ def make_chromarms(
         cols_points=(ck2, sk2),
         suffixes=suffixes,
     )
-    df_chromarms["name"].replace("[\:\[].*?[\)\_]", "", regex=True, inplace=True)
+    df_chromarms["name"].replace(r"[\:\[].*?[\)\_]", "", regex=True, inplace=True)
     df_chromarms.drop(columns=["index_2", "length"], inplace=True)
     return df_chromarms
 
@@ -135,8 +135,11 @@ def digest(fasta_records, enzyme):
     Dataframe with columns: 'chrom', 'start', 'end'.
 
     """
-    import Bio.Restriction as biorst
-    import Bio.Seq as bioseq
+    try:
+        import Bio.Restriction as biorst
+        import Bio.Seq as bioseq
+    except ImportError:
+        raise ImportError("Biopython is required to use digest")
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     chroms = fasta_records.keys()
@@ -192,7 +195,7 @@ def frac_mapped(df, fasta_records, return_input=True):
         nbases = len(s)
         n = s.count("N")
         n += s.count("n")
-        return (nbases - n) / nbases
+        return (nbases - n) / nbases if nbases > 0 else 0
 
     if return_input:
         return pd.concat(
@@ -263,7 +266,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
-def frac_gene_coverage(df, mrna_genome):
+def frac_gene_coverage(df, ucsc_mrna):
     """
     Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
 
@@ -272,24 +275,23 @@ def frac_gene_coverage(df, mrna_genome):
     df : pd.DataFrame
         Set of genomic intervals stored as a dataframe.
 
-    mrna_genome: str
-        Name of genome.
+    ucsc_mrna: str or DataFrame
+        Name of UCSC genome or all_mrna.txt dataframe from UCSC or similar.
 
     Returns
     -------
     df_gene_coverage : pd.DataFrame
 
     """
-    raise NotImplementedError("implementation currently broken!")
+    if isinstance(ucsc_mrna, str):
+        from .io.resources import UCSCClient
 
-    # if isinstance(mrna, six.string_types):
-    #     from .io.resources import UCSCClient
+        mrna = UCSCClient(ucsc_mrna).fetch_mrna()
+    else:
+        mrna = ucsc_mrna
 
-    #     mrna = (
-    #         UCSCClient(mrna_genome)
-    #         .fetch_mrna()
-    #         .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
-    #     )
-    # df_gene_coverage = ops.coverage(df, mrna)
-    # df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
-    # return df_gene_coverage
+    mrna = mrna.rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
+    df_gene_coverage = ops.coverage(df, mrna)
+    df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
+
+    return df_gene_coverage
