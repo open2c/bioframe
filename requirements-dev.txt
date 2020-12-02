@@ -1,4 +1,5 @@
 -r requirements.txt
-pytest
-pyranges
 biopython
+pyranges
+pysam
+pytest
