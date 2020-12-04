@@ -297,7 +297,9 @@ def frac_gene_coverage(df, ucsc_mrna):
     return df_gene_coverage
 
 
-def pair_by_distance(df, min_sep, max_sep, from_ends=False, suffixes=("_1", "_2")):
+def pair_by_distance(
+    df, min_sep, max_sep, from_ends=False, cols=None, suffixes=("_1", "_2")
+):
     """
     From a dataframe of genomic intervals, find all unique pairs of intervals
     that are between ``min_sep`` and ``max_sep`` bp separated from each other.
@@ -311,6 +313,10 @@ def pair_by_distance(df, min_sep, max_sep, from_ends=False, suffixes=("_1", "_2"
     from_ends : bool, optional, default: False
         Calculate distances between interval endpoints. If False, distances are
         calculated between interval midpoints (default).
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
     suffixes : (str, str), optional
         The column name suffixes for the two interval sets in the output.
         The first interval of each output pair is always upstream of the
@@ -322,33 +328,30 @@ def pair_by_distance(df, min_sep, max_sep, from_ends=False, suffixes=("_1", "_2"
         A BEDPE-like dataframe of paired intervals from ``df``.
 
     """
+    ck, sk, ek = ops._get_default_colnames() if cols is None else cols
+
     if min_sep >= max_sep:
         raise ValueError("min_sep must be less than max_sep")
 
-    mids = (df["start"] + df["end"]) // 2
+    mids = (df[sk] + df[ek]) // 2
 
     # For each interval, generate a probe interval on its right
     if from_ends:
-        ref = df["end"]
+        ref = df[ek]
     else:
         ref = mids
-    right_probe = df[["chrom"]].copy()
-    right_probe["start"] = ref + min_sep // 2
-    right_probe["end"] = ref + int(np.ceil(max_sep / 2))
+    right_probe = df[[ck]].copy()
+    right_probe[sk] = ref + min_sep // 2
+    right_probe[ek] = ref + (max_sep + 1) // 2
 
     # For each interval, also generate a probe interval on its left
     if from_ends:
-        ref = df["start"]
+        ref = df[sk]
     else:
         ref = mids
-    left_probe = df[["chrom"]].copy()
-    left_probe["start"] = ref - max_sep // 2
-    left_probe["end"] = ref - int(np.ceil(min_sep / 2))
-
-    # Ignore probes that fall out of bounds
-    mask = (left_probe["start"] > 0) & (right_probe["start"] > 0)
-    right_probe = right_probe[mask].copy()
-    left_probe = left_probe[mask].copy()
+    left_probe = df[[ck]].copy()
+    left_probe[sk] = ref - max_sep // 2
+    left_probe[ek] = ref - (min_sep + 1) // 2
 
     # Intersect right-handed probes (from intervals on the left)
     # with left-handed probes (from intervals on the right)
