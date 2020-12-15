@@ -142,6 +142,10 @@ def digest(fasta_records, enzyme):
         raise ImportError("Biopython is required to use digest")
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
+    if not type(fasta_records) is dict:
+        return ValueError(
+            "fasta records must be provided as a dict, can be created by bioframe.load_fasta"
+        )
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
@@ -189,7 +193,11 @@ def frac_mapped(df, fasta_records, return_input=True):
         return ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-
+    if not type(fasta_records) is dict:
+        return ValueError(
+            "fasta records must be provided as a dict, can be created by bioframe.load_fasta"
+        )
+    
     def _each(bin):
         s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
@@ -236,7 +244,11 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-
+    if not type(fasta_records) is dict:
+        return ValueError(
+            "fasta records must be provided as a dict, can be created by bioframe.load_fasta"
+        )
+    
     def _each(chrom_group):
         chrom = chrom_group.name
         seq = fasta_records[chrom]
