@@ -1249,7 +1249,7 @@ def split(
     df_split.rename(columns=name_updates, inplace=True)
 
     if add_names:
-        df_split = regions_add_name_column(df_split) #Problem with this function, deletes index_2
+        df_split = regions_add_name_column(df_split)
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"], inplace=True)

@@ -9,7 +9,7 @@ def make_chromarms(
     chromsizes,
     midpoints,
     cols_chroms=("chrom", "length"),
-    cols_mids=("chrom", "mid"), #renamed mids to mid
+    cols_mids=("chrom", "mid"),
     suffixes=("_p", "_q"),
 ):
     """
@@ -40,7 +40,7 @@ def make_chromarms(
 
     if isinstance(chromsizes, pd.Series):
         df_chroms = (
-            pd.DataFrame(chromsizes).reset_index().rename(columns={"name": ck1}) #renamed index to name
+            pd.DataFrame(chromsizes).reset_index().rename(columns={"name": ck1})
         )
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
