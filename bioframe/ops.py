@@ -334,15 +334,20 @@ def overlap(
         Two sets of genomic intervals stored as a DataFrame.
 
     how : {'left', 'right', 'outer', 'inner'}, default 'left'
-
+        How to handle the overlaps on the two dataframes. 
+        left: use the set of intervals in df1
+        right: use the set of intervals in df1
+        outer: use the union of the set of intervals from df1 and df2
+        inner: use intersection of the set of intervals from df1 and df2
+  
     return_input : bool
         If True, return columns from input dfs. Default True.
 
     return_index : bool
-        If True, return indicies of overlapping pairs. Default False.
+        If True, return indicies of overlapping pairs as a new column. Default False.
 
-    return_overlap
-        If True, return overlapping intervals for the overlapping pairs. Default False.
+    return_overlap : bool
+        If True, return overlapping intervals for the overlapping pairs as a new column. Default False.
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
