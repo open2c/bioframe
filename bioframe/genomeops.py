@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import collections
 
 from . import ops
 
@@ -67,7 +68,7 @@ def make_chromarms(
         cols_points=(ck2, sk2),
         suffixes=suffixes,
     )
-    df_chromarms["name"].replace("[\:\[].*?[\)\_]", "", regex=True, inplace=True)
+    df_chromarms["name"].replace(r"[\:\[].*?[\)\_]", "", regex=True, inplace=True)
     df_chromarms.drop(columns=["index_2", "length"], inplace=True)
     return df_chromarms
 
@@ -135,10 +136,17 @@ def digest(fasta_records, enzyme):
     Dataframe with columns: 'chrom', 'start', 'end'.
 
     """
-    import Bio.Restriction as biorst
-    import Bio.Seq as bioseq
+    try:
+        import Bio.Restriction as biorst
+        import Bio.Seq as bioseq
+    except ImportError:
+        raise ImportError("Biopython is required to use digest")
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
+    if not type(fasta_records) is collections.OrderedDict:
+        return ValueError(
+            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+        )
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
@@ -186,13 +194,17 @@ def frac_mapped(df, fasta_records, return_input=True):
         return ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-
+    if not type(fasta_records) is collections.OrderedDict:
+        return ValueError(
+            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+        )
+    
     def _each(bin):
         s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
         n = s.count("N")
         n += s.count("n")
-        return (nbases - n) / nbases
+        return (nbases - n) / nbases if nbases > 0 else 0
 
     if return_input:
         return pd.concat(
@@ -233,7 +245,11 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-
+    if not type(fasta_records) is collections.OrderedDict:
+        return ValueError(
+            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+        )
+    
     def _each(chrom_group):
         chrom = chrom_group.name
         seq = str(fasta_records[chrom])
@@ -263,7 +279,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
-def frac_gene_coverage(df, mrna_genome):
+def frac_gene_coverage(df, ucsc_mrna):
     """
     Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
 
@@ -272,24 +288,99 @@ def frac_gene_coverage(df, mrna_genome):
     df : pd.DataFrame
         Set of genomic intervals stored as a dataframe.
 
-    mrna_genome: str
-        Name of genome.
+    ucsc_mrna: str or DataFrame
+        Name of UCSC genome or all_mrna.txt dataframe from UCSC or similar.
 
     Returns
     -------
     df_gene_coverage : pd.DataFrame
 
     """
-    raise NotImplementedError("implementation currently broken!")
+    if isinstance(ucsc_mrna, str):
+        from .io.resources import UCSCClient
 
-    # if isinstance(mrna, six.string_types):
-    #     from .io.resources import UCSCClient
+        mrna = UCSCClient(ucsc_mrna).fetch_mrna()
+    else:
+        mrna = ucsc_mrna
 
-    #     mrna = (
-    #         UCSCClient(mrna_genome)
-    #         .fetch_mrna()
-    #         .rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
-    #     )
-    # df_gene_coverage = ops.coverage(df, mrna)
-    # df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
-    # return df_gene_coverage
+    mrna = mrna.rename(columns={"tName": "chrom", "tStart": "start", "tEnd": "end"})
+    df_gene_coverage = ops.coverage(df, mrna)
+    df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
+
+    return df_gene_coverage
+
+
+def pair_by_distance(
+    df, min_sep, max_sep, from_ends=False, cols=None, suffixes=("_1", "_2")
+):
+    """
+    From a dataframe of genomic intervals, find all unique pairs of intervals
+    that are between ``min_sep`` and ``max_sep`` bp separated from each other.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A BED-like dataframe.
+    min_sep, max_sep : int
+        Minimum and maximum separation between intervals in bp.
+    from_ends : bool, optional, default: False
+        Calculate distances between interval endpoints. If False, distances are
+        calculated between interval midpoints (default).
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+    suffixes : (str, str), optional
+        The column name suffixes for the two interval sets in the output.
+        The first interval of each output pair is always upstream of the
+        second.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A BEDPE-like dataframe of paired intervals from ``df``.
+
+    """
+    ck, sk, ek = ops._get_default_colnames() if cols is None else cols
+
+    if min_sep >= max_sep:
+        raise ValueError("min_sep must be less than max_sep")
+
+    mids = (df[sk] + df[ek]) // 2
+
+    # For each interval, generate a probe interval on its right
+    if from_ends:
+        ref = df[ek]
+    else:
+        ref = mids
+    right_probe = df[[ck]].copy()
+    right_probe[sk] = ref + min_sep // 2
+    right_probe[ek] = ref + (max_sep + 1) // 2
+
+    # For each interval, also generate a probe interval on its left
+    if from_ends:
+        ref = df[sk]
+    else:
+        ref = mids
+    left_probe = df[[ck]].copy()
+    left_probe[sk] = ref - max_sep // 2
+    left_probe[ek] = ref - (min_sep + 1) // 2
+
+    # Intersect right-handed probes (from intervals on the left)
+    # with left-handed probes (from intervals on the right)
+    idxs = ops.overlap(
+        right_probe, left_probe, how="inner", return_index=True, return_input=False
+    )
+
+    left_ivals = (
+        df.iloc[idxs["index_1"].values]
+        .rename(columns=lambda x: x + suffixes[0])
+        .reset_index(drop=True)
+    )
+    right_ivals = (
+        df.iloc[idxs["index_2"].values]
+        .rename(columns=lambda x: x + suffixes[1])
+        .reset_index(drop=True)
+    )
+
+    return pd.concat([left_ivals, right_ivals], axis=1)
