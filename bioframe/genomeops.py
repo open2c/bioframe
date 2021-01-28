@@ -252,7 +252,8 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
     
     def _each(chrom_group):
         chrom = chrom_group.name
-        seq = str(fasta_records[chrom])
+        seq = fasta_records[chrom]
+        seq = str(seq[:])
         gc = []
         for _, bin in chrom_group.iterrows():
             s = seq[bin.start : bin.end]
