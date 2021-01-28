@@ -1257,7 +1257,7 @@ def split(
         df_split = regions_add_name_column(df_split)
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
-        df_split.drop(columns=["index_2"])
+        df_split.drop(columns=["index_2"], inplace=True)
 
     return df_split
 

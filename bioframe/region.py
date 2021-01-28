@@ -149,11 +149,12 @@ def regions_add_name_column(reg_df, cols=("chrom", "start", "end", "name")):
     cols are names of columns (unlikely to change)
     """
     if cols[3] in reg_df:
-        return reg_df[list(cols)]
+        return reg_df
+
     df = reg_df.copy()
     data = zip(df[cols[0]], df[cols[1]], df[cols[2]])
     df[cols[3]] = ["{0}:{1}-{2}".format(*i) for i in data]
-    return df[list(cols)]
+    return df
 
 
 def parse_regions(
