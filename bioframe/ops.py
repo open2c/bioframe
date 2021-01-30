@@ -1378,7 +1378,7 @@ def pair_by_distance(
     if max_interjacent is None:
         max_interjacent = df.index.max()
     if min_interjacent > max_interjacent:
-        raise ValueError("min_interjacent must be less than max_interjacent")
+        raise ValueError("min_interjacent must be less or equal to max_interjacent")
 
     mids = (df[sk] + df[ek]) // 2
 
