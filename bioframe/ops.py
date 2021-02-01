@@ -66,8 +66,11 @@ def select(df, region, cols=None):
     ----------
     df : pandas.DataFrame
 
-    region : UCSC str
-        The genomic region to select from the dataframe.
+    region : str or tuple
+        The genomic region to select from the dataframe. 
+        UCSC-style genomic region string, or
+        Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
+        See parse_region for more information on region formatting.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
