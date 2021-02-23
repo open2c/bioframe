@@ -1327,3 +1327,102 @@ def count_overlaps(
     )
 
     return df_counts
+
+def pair_by_distance(
+        df,
+        min_sep,
+        max_sep,
+        min_interjacent=None,
+        max_interjacent=None,
+        from_ends=False,
+        cols=None,
+        suffixes=("_1", "_2")
+):
+    """
+    From a dataframe of genomic intervals, find all unique pairs of intervals
+    that are between ``min_sep`` and ``max_sep`` bp separated from each other.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A BED-like dataframe.
+    min_sep, max_sep : int
+        Minimum and maximum separation between intervals in bp.
+    min_interjacent, max_interjacent : int
+        Minimum and maximum number of interjacent intervals separating pairs.
+    from_ends : bool, optional, default: False
+        Calculate distances between interval endpoints. If False, distances are
+        calculated between interval midpoints (default).
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+    suffixes : (str, str), optional
+        The column name suffixes for the two interval sets in the output.
+        The first interval of each output pair is always upstream of the
+        second.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A BEDPE-like dataframe of paired intervals from ``df``.
+
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+
+    # Sort intervals by genomic coordinates
+    df = df.sort_values([ck, sk, ek]).reset_index(drop=True)
+
+    if min_sep >= max_sep:
+        raise ValueError("min_sep must be less than max_sep")
+
+    if min_interjacent is None:
+        min_interjacent = 0
+    if max_interjacent is None:
+        max_interjacent = df.index.max()
+    if min_interjacent > max_interjacent:
+        raise ValueError("min_interjacent must be less or equal to max_interjacent")
+
+    mids = (df[sk] + df[ek]) // 2
+
+    # For each interval, generate a probe interval on its right
+    if from_ends:
+        ref = df[ek]
+    else:
+        ref = mids
+    right_probe = df[[ck]].copy()
+    right_probe[sk] = ref + min_sep // 2
+    right_probe[ek] = ref + (max_sep + 1) // 2
+
+    # For each interval, also generate a probe interval on its left
+    if from_ends:
+        ref = df[sk]
+    else:
+        ref = mids
+    left_probe = df[[ck]].copy()
+    left_probe[sk] = ref - max_sep // 2
+    left_probe[ek] = ref - (min_sep + 1) // 2
+
+    # Intersect right-handed probes (from intervals on the left)
+    # with left-handed probes (from intervals on the right)
+    idxs = overlap(
+        right_probe, left_probe, how="inner", return_index=True, return_input=False
+    )
+
+    # Select only the pairs that are separated by
+    # at least min_interjacent intervals and no more than max_interjacent intervals
+    idxs['interjacent'] = np.abs(idxs.index_1 - idxs.index_2)-1
+    idxs = idxs.query(f"interjacent<={max_interjacent} and interjacent>={min_interjacent}")
+
+    left_ivals = (
+        df.iloc[idxs["index_1"].values]
+        .rename(columns=lambda x: x + suffixes[0])
+        .reset_index(drop=True)
+    )
+    right_ivals = (
+        df.iloc[idxs["index_2"].values]
+        .rename(columns=lambda x: x + suffixes[1])
+        .reset_index(drop=True)
+    )
+
+    return pd.concat([left_ivals, right_ivals], axis=1)
