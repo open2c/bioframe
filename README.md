@@ -60,9 +60,9 @@ For this input dataframe, with intervals all on the same chromosome:
 <img src="./docs/figs/merge_df1.png" width=60%> 
 
 
-See this [jupyter notebook](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/intervals_tutorials.ipynb) for visualizations of other core bioframe functions.
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/notebooks/intervals_tutorial.ipynb) for visualizations of other core bioframe functions.
 
-See this [jupyter notebook](https://github.com/open2c/bioframe/tree/genomic_interval_arithmetic/docs/notebooks/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/notebooks/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
 
 
 ## Requirements
