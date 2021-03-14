@@ -84,6 +84,7 @@ def select(df, region, cols=None):
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
     chrom, start, end = parse_region(region)
     if chrom is None:
         raise ValueError("no chromosome detected, check region input")
@@ -110,14 +111,19 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
         The amount by which the intervals are expanded *on each side*.
 
     limits : {str: int} or {str: (int, int)}
-        The limits of interval expansion. If a single number X if provided,
-        the expanded intervals are trimmed to fit into (0, X); if a tuple
-        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
+        Dictionary specifying limits of interval expansion on a region-by-region basis.
+        Dictionary keys are strings specifying regions, and values are either integers 
+        or tuples of integers, e.g. {'chr1':10, 'chr2':20} or {'chr1':(0,10),'chr2':(0,20)}.
+        If a region's limit is specified with a single integer, X, expanded intervals 
+        are trimmed to fit into (0, X); if specified with a tuple (X,Y), expanded 
+        intervals are trimmed to (X, Y). If no limits_region_col is provided, values 
+        in df[cols[0]] are used to specify regions for each interval. If no limits are 
+        provided, intervals can be expanded to have negative starts.
 
     side : str
         Which side to expand, possible values are "left", "right" and "both".
 
-    region_col : str
+    limits_region_col : str
         The column to select the expansion limits for each interval.
         If None, then use the chromosome column.
 
@@ -128,11 +134,12 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
 
     Returns
     -------
-    df : pandas.DataFrame
+    df_expanded : pandas.DataFrame
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     limits_region_col = ck if limits_region_col is None else limits_region_col
+    _verify_columns(df, [ck, sk, ek, limits_region_col])
 
     if limits:
         lower_limits = {}
@@ -146,28 +153,29 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
                 lower_limits[k] = 0
             else:
                 raise ValueError("Unknown limit type: {type(v)}")
-
+    
+    df_expanded = df.copy()
     if side == "both" or side == "left":
         if limits:
-            df[sk] = np.maximum(
+            df_expanded[sk] = np.maximum(
                 df[limits_region_col].apply(lower_limits.__getitem__, 0),
                 df[sk].values - pad,
             )
         else:
-            df[sk] = df[sk].values - pad
+            df_expanded[sk] = df[sk].values - pad
 
     if side == "both" or side == "right":
         if limits:
-            df[ek] = np.minimum(
+            df_expanded[ek] = np.minimum(
                 df[limits_region_col].apply(
                     upper_limits.__getitem__, np.iinfo(np.int64).max
                 ),
                 df[ek] + pad,
             )
         else:
-            df[ek] = df[ek] + pad
+            df_expanded[ek] = df[ek] + pad
 
-    return df
+    return df_expanded
 
 
 def _overlap_intidxs(
@@ -364,7 +372,7 @@ def overlap(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to perform clustering on indepdendently, passed as an argument
+        List of column names to perform clustering on independendently, passed as an argument
         to df.groupby when considering overlaps. Default is ['chrom'], which must match the first name
         from cols. Examples for additional columns include 'strand'.
 
@@ -454,7 +462,9 @@ def cluster(
     return_cluster_intervals=True,
 ):
     """
-    Cluster overlapping intervals.
+    Cluster overlapping intervals into groups. Can return numeric ids for these
+    groups (return_cluster_ids) and/or their genomic coordinates 
+    (return_cluster_intervals). Also see merge(), which discards original intervals.
 
     Parameters
     ----------
@@ -473,7 +483,7 @@ def cluster(
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        List of column names to perform clustering on indepdendently, passed as an argument
+        List of column names to perform clustering on independendently, passed as an argument
         to df.groupby before clustering. Default is None. An example use would be on=['strand'].
 
     return_input : bool
@@ -484,9 +494,6 @@ def cluster(
 
     return_cluster_invervals : bool
         If True, return clustered interval the original interval belongs to
-
-    return_cluster_df : bool
-        If True, return df_clusters
 
     Returns
     -------
@@ -580,7 +587,8 @@ def cluster(
 
 def merge(df, min_dist=0, cols=None, on=None):
     """
-    Merge overlapping intervals.
+    Merge overlapping intervals, returing a dataframe with genomic
+    coordinates of interval cluster groups from the input dataframe. 
 
     Parameters
     ----------
@@ -1168,7 +1176,7 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
         values are 'chrom', 'start', 'end'.
 
     on : None or list
-        Additional column names to perform clustering on indepdendently, passed as an argument
+        Additional column names to perform clustering on independendently, passed as an argument
         to df.groupby when considering overlaps and must be present in both dataframes.
         Examples for additional columns include 'strand'.
 
@@ -1294,7 +1302,7 @@ def count_overlaps(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to check overlap on indepdendently, passed as an argument
+        List of column names to check overlap on independendently, passed as an argument
         to df.groupby when considering overlaps. Default is None. Examples for additional columns include 'strand'.
 
     Returns
