@@ -135,7 +135,11 @@ def read_chromsizes(
 
     if as_bed:
         chromtable['start'] = 0
-        chromtable = chromtable[['name','start','length']].rename({'name':'chrom', 'length':'end'}, axis='columns')
+        chromtable = (
+            chromtable[['name','start','length']]
+            .rename({'name':'chrom', 'length':'end'}, axis='columns')
+            .reset_index(drop=True)
+        )
     else:
         chromtable.index = chromtable["name"].values
         chromtable = chromtable["length"]
