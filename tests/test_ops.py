@@ -130,6 +130,27 @@ def test_expand():
         fake_expanded.iloc[2].start == fake_bioframe.iloc[2].start - expand_bp
     )  # expand start normally
 
+    # expand with negative pad
+    expand_bp = -10
+    fake_expanded = bioframe.expand(fake_bioframe, 
+        expand_bp, fake_chromsizes)
+    d = """chrom  start  end
+         0  chr1      3    3
+         1  chr1     52   52
+         2  chr2    110  190"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    expand_bp = -10
+    fake_expanded = bioframe.expand(fake_bioframe, 
+        expand_bp, fake_chromsizes, side='left')
+    d = """chrom  start  end
+         0  chr1      3    5
+         1  chr1     52   55
+         2  chr2    110  200"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
 
 def test_overlap():
 

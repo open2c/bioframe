@@ -173,7 +173,8 @@ def trim(df, limits, limits_region_col=None, cols=None):
 
 def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
     """
-    Expand each interval by an amount specified with pad.
+    Expand each interval by an amount specified with pad. 
+    Negative values for pad shrink the interval, up to the midpoint.
 
     Parameters
     ----------
@@ -217,6 +218,11 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
         df_expanded = trim(
             df_expanded, limits, limits_region_col=limits_region_col, cols=cols
         )
+
+    if pad<0:
+        mids = df[sk].values+(.5*(df[ek].values- df[sk].values)).astype(int)
+        df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
+        df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
 
     return df_expanded
 
