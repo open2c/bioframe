@@ -524,17 +524,17 @@ def overlap(
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
         if df_input_1 is not None:
-            df_input_1[overlap_df_idxs[:, 0] == -1] = pd.NA
+            df_input_1[overlap_df_idxs[:, 0] == -1] = None 
         if df_input_2 is not None:
-            df_input_2[overlap_df_idxs[:, 1] == -1] = pd.NA
+            df_input_2[overlap_df_idxs[:, 1] == -1] = None 
         if df_index_1 is not None:
-            df_index_1[overlap_df_idxs[:, 0] == -1] = pd.NA
+            df_index_1[overlap_df_idxs[:, 0] == -1] = None 
         if df_index_2 is not None:
-            df_index_2[overlap_df_idxs[:, 1] == -1] = pd.NA
+            df_index_2[overlap_df_idxs[:, 1] == -1] = None 
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
-            ] = pd.NA
+            ] =  None 
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
@@ -1078,7 +1078,7 @@ def closest(
 
     return_overlap = False,
         If True, return columns: have_overlap, overlap_start, and overlap_end.
-        Fills df_closest['overlap_start'] and df['overlap_end'] with pd.NA if non-overlapping.
+        Fills df_closest['overlap_start'] and df['overlap_end'] with None if non-overlapping.
 
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
@@ -1161,8 +1161,8 @@ def closest(
         df_overlap = pd.DataFrame(
             {
                 "have_overlap": have_overlap,
-                "overlap_start": np.where(have_overlap, overlap_start, pd.NA),
-                "overlap_end": np.where(have_overlap, overlap_end, pd.NA),
+                "overlap_start": np.where(have_overlap, overlap_start, None),
+                "overlap_end": np.where(have_overlap, overlap_end, None),
             }
         )
 
