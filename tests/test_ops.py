@@ -132,8 +132,7 @@ def test_expand():
 
     # expand with negative pad
     expand_bp = -10
-    fake_expanded = bioframe.expand(fake_bioframe, 
-        expand_bp, fake_chromsizes)
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp, fake_chromsizes)
     d = """chrom  start  end
          0  chr1      3    3
          1  chr1     52   52
@@ -142,12 +141,36 @@ def test_expand():
     pd.testing.assert_frame_equal(df, fake_expanded)
 
     expand_bp = -10
-    fake_expanded = bioframe.expand(fake_bioframe, 
-        expand_bp, fake_chromsizes, side='left')
+    fake_expanded = bioframe.expand(
+        fake_bioframe, expand_bp, fake_chromsizes, side="left"
+    )
     d = """chrom  start  end
          0  chr1      3    5
          1  chr1     52   55
          2  chr2    110  200"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    # expand with multiplicative pad
+    mult = 0
+    fake_expanded = bioframe.expand(
+        fake_bioframe, mult, limits=fake_chromsizes, pad_as_multipler=True
+    )
+    d = """chrom  start  end
+         0  chr1      3    3
+         1  chr1     52   52
+         2  chr2    150  150"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    mult = 2.0
+    fake_expanded = bioframe.expand(
+        fake_bioframe, mult, limits=fake_chromsizes, pad_as_multipler=True
+    )
+    d = """chrom  start  end
+         0  chr1      0    7
+         1  chr1     47   57
+         2  chr2    50  250"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, fake_expanded)
 

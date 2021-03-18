@@ -171,17 +171,29 @@ def trim(df, limits, limits_region_col=None, cols=None):
     return df_trimmed
 
 
-def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
+def expand(
+    df,
+    pad,
+    limits=None,
+    side="both",
+    pad_as_multipler=False,
+    limits_region_col=None,
+    cols=None,
+):
     """
-    Expand each interval by an amount specified with pad. 
+    Expand each interval by an amount specified with pad.
     Negative values for pad shrink the interval, up to the midpoint.
+    Multiplicative rescaling of intervals enabled with pad_as_multiplier.
 
     Parameters
     ----------
     df : pandas.DataFrame
 
     pad : int
-        The amount by which the intervals are expanded *on each side*.
+        The amount by which the intervals are additively expanded *on each side*.
+        Negative values for pad shrink intervals, but not beyond the interval midpoint.
+        If pad_as_multiplier=True, then floats are accepted and intervals are
+        expanded/shrunk multiplicatively.
 
     limits : {str: int} or {str: (int, int)}
         Dictionary specifying limits of interval expansion on a region-by-region basis,
@@ -189,6 +201,11 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
 
     side : str
         Which side to expand, possible values are "left", "right" and "both".
+
+    pad_as_multipler: bool
+        If True, expand intervals multiplicatively by pad, e.g.
+        pad=2 doubles each interval, pad=0 returns midpoints, and
+        pad=1 returns original intervals. Default False.
 
     limits_region_col : str
         The column to select the expansion limits for each interval.
@@ -208,21 +225,34 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
     limits_region_col = ck if limits_region_col is None else limits_region_col
     _verify_columns(df, [ck, sk, ek, limits_region_col])
 
+    if pad_as_multipler:
+        if pad < 0:
+            raise ValueError("pad must be >=0 when used with pad_as_multiplier=True.")
+        pads = 0.5 * (pad - 1) * (df[ek].values - df[sk].values)
+        types = df.dtypes[[sk, ek]]
+    else:
+        if type(pad) is not int:
+            raise ValueError("additive pad must be integer")
+        pads = pad
+
     df_expanded = df.copy()
     if side == "both" or side == "left":
-        df_expanded[sk] = df[sk].values - pad
+        df_expanded[sk] = df[sk].values - pads
     if side == "both" or side == "right":
-        df_expanded[ek] = df[ek] + pad
+        df_expanded[ek] = df[ek] + pads
 
     if limits:
         df_expanded = trim(
             df_expanded, limits, limits_region_col=limits_region_col, cols=cols
         )
 
-    if pad<0:
-        mids = df[sk].values+(.5*(df[ek].values- df[sk].values)).astype(int)
+    if pad < 0:
+        mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(int)
         df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
         df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
+
+    if pad_as_multipler:
+        df_expanded = df_expanded.astype(types)
 
     return df_expanded
 
