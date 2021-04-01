@@ -161,9 +161,7 @@ def test_expand():
     pd.testing.assert_frame_equal(df, fake_expanded)
 
     expand_bp = -10
-    fake_expanded = bioframe.expand(
-        fake_bioframe, expand_bp, side="left"
-    )
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp, side="left")
     d = """chrom  start  end
          0  chr1      3    5
          1  chr1     52   55
@@ -173,7 +171,7 @@ def test_expand():
 
     # expand with multiplicative pad
     mult = 0
-    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale= mult)
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
     d = """chrom  start  end
          0  chr1      3    3
          1  chr1     52   52
@@ -182,7 +180,7 @@ def test_expand():
     pd.testing.assert_frame_equal(df, fake_expanded)
 
     mult = 2.0
-    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale= mult)
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
     d = """chrom  start  end
          0  chr1      -1    7
          1  chr1     47   57

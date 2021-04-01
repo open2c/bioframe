@@ -117,7 +117,7 @@ def trim(df, limits=0, limits_region_col=None, cols=None):
         a single integer, X, expanded intervals are trimmed to fit into (0, X);
         if specified with a tuple (X,Y), expanded intervals are trimmed to (X, Y).
         If no limits_region_col is provided, values in df[cols[0]] are used to
-        specify regions for each interval. 
+        specify regions for each interval.
 
         If no limits are provided, intervals are truncated at zero to avoid
         negative values.
@@ -142,7 +142,7 @@ def trim(df, limits=0, limits_region_col=None, cols=None):
     _verify_columns(df, [ck, sk, ek, limits_region_col])
 
     if limits is 0:
-        limits = { i:np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
+        limits = {i: np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
 
     if not set(df[limits_region_col].values).issubset(set(limits.keys())):
         raise ValueError(
@@ -181,7 +181,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     """
     Expand each interval by an amount specified with pad.
     Negative values for pad shrink the interval, up to the midpoint.
-    Multiplicative rescaling of intervals enabled with scale. 
+    Multiplicative rescaling of intervals enabled with scale.
     Only one of pad or scale can be provided.
     Often followed by `trim()`.
 
@@ -512,17 +512,17 @@ def overlap(
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
         if df_input_1 is not None:
-            df_input_1[overlap_df_idxs[:, 0] == -1] = None 
+            df_input_1[overlap_df_idxs[:, 0] == -1] = None
         if df_input_2 is not None:
-            df_input_2[overlap_df_idxs[:, 1] == -1] = None 
+            df_input_2[overlap_df_idxs[:, 1] == -1] = None
         if df_index_1 is not None:
-            df_index_1[overlap_df_idxs[:, 0] == -1] = None 
+            df_index_1[overlap_df_idxs[:, 0] == -1] = None
         if df_index_2 is not None:
-            df_index_2[overlap_df_idxs[:, 1] == -1] = None 
+            df_index_2[overlap_df_idxs[:, 1] == -1] = None
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
-            ] =  None 
+            ] = None
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
