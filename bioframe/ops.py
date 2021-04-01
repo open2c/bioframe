@@ -101,7 +101,7 @@ def select(df, region, cols=None):
     return df.iloc[np.where(inds)[0]]
 
 
-def trim(df, limits, limits_region_col=None, cols=None):
+def trim(df, limits=0, limits_region_col=None, cols=None):
     """
     Trim each interval to fall within regions specified in limits.
 
@@ -109,7 +109,7 @@ def trim(df, limits, limits_region_col=None, cols=None):
     ----------
     df : pandas.DataFrame
 
-    limits : {str: int} or {str: (int, int)}
+    limits : 0 or {str: int} or {str: (int, int)}
         Dictionary specifying limits for trimming on a region-by-region basis.
         Dictionary keys are strings specifying regions, and values are either
         integers or tuples of integers, e.g. {'chr1':10, 'chr2':20} or
@@ -117,8 +117,10 @@ def trim(df, limits, limits_region_col=None, cols=None):
         a single integer, X, expanded intervals are trimmed to fit into (0, X);
         if specified with a tuple (X,Y), expanded intervals are trimmed to (X, Y).
         If no limits_region_col is provided, values in df[cols[0]] are used to
-        specify regions for each interval. If no limits are provided, intervals
-        can be expanded to have negative starts.
+        specify regions for each interval. 
+
+        If no limits are provided, intervals are truncated at zero to avoid
+        negative values.
 
     limits_region_col : str
         The column to select the expansion limits for each interval.
@@ -138,9 +140,13 @@ def trim(df, limits, limits_region_col=None, cols=None):
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     limits_region_col = ck if limits_region_col is None else limits_region_col
     _verify_columns(df, [ck, sk, ek, limits_region_col])
+
+    if limits is 0:
+        limits = { i:np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
+
     if not set(df[limits_region_col].values).issubset(set(limits.keys())):
         raise ValueError(
-            "\n The following regions found in df[limits_region_col] not found in limits.keys: \n"
+            "\n The following regions in df[limits_region_col] not in limits.keys: \n"
             + "{}".format(
                 set(df[limits_region_col].values).difference(set(limits.keys()))
             )
@@ -171,19 +177,13 @@ def trim(df, limits, limits_region_col=None, cols=None):
     return df_trimmed
 
 
-def expand(
-    df,
-    pad,
-    limits=None,
-    side="both",
-    pad_as_multipler=False,
-    limits_region_col=None,
-    cols=None,
-):
+def expand(df, pad=None, scale=None, side="both", cols=None):
     """
     Expand each interval by an amount specified with pad.
     Negative values for pad shrink the interval, up to the midpoint.
-    Multiplicative rescaling of intervals enabled with pad_as_multiplier.
+    Multiplicative rescaling of intervals enabled with scale. 
+    Only one of pad or scale can be provided.
+    Often followed by `trim()`.
 
     Parameters
     ----------
@@ -195,21 +195,13 @@ def expand(
         If pad_as_multiplier=True, then floats are accepted and intervals are
         expanded/shrunk multiplicatively.
 
-    limits : {str: int} or {str: (int, int)}
-        Dictionary specifying limits of interval expansion on a region-by-region basis,
-        used as input for trim.
-
     side : str
         Which side to expand, possible values are "left", "right" and "both".
 
-    pad_as_multipler: bool
-        If True, expand intervals multiplicatively by pad, e.g.
-        pad=2 doubles each interval, pad=0 returns midpoints, and
-        pad=1 returns original intervals. Default False.
-
-    limits_region_col : str
-        The column to select the expansion limits for each interval.
-        If None, then use the chromosome column.
+    scale: float
+        The factor by which to scale intervals multiplicatively on each side, e.g
+        scale=2 doubles each interval, scale=0 returns midpoints, and
+        scale=1 returns original intervals. Default False.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -222,18 +214,19 @@ def expand(
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    limits_region_col = ck if limits_region_col is None else limits_region_col
-    _verify_columns(df, [ck, sk, ek, limits_region_col])
+    _verify_columns(df, [ck, sk, ek])
 
-    if pad_as_multipler:
-        if pad < 0:
-            raise ValueError("pad must be >=0 when used with pad_as_multiplier=True.")
-        pads = 0.5 * (pad - 1) * (df[ek].values - df[sk].values)
+    if scale is not None:
+        if scale < 0:
+            raise ValueError("multiplicative scale must be >=0")
+        pads = 0.5 * (scale - 1) * (df[ek].values - df[sk].values)
         types = df.dtypes[[sk, ek]]
-    else:
+    elif pad is not None:
         if type(pad) is not int:
             raise ValueError("additive pad must be integer")
         pads = pad
+    else:
+        raise ValueError("either pad or scale must be supplied")
 
     df_expanded = df.copy()
     if side == "both" or side == "left":
@@ -241,18 +234,13 @@ def expand(
     if side == "both" or side == "right":
         df_expanded[ek] = df[ek] + pads
 
-    if limits:
-        df_expanded = trim(
-            df_expanded, limits, limits_region_col=limits_region_col, cols=cols
-        )
-
-    if pad < 0:
-        mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(int)
-        df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
-        df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
-
-    if pad_as_multipler:
-        df_expanded = df_expanded.astype(types)
+    if pad is not None:
+        if pad < 0:
+            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(int)
+            df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
+            df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
+    if scale is not None:
+        df_expanded[[sk, ek]] = df_expanded[[sk, ek]].astype(types)
 
     return df_expanded
 
@@ -457,7 +445,7 @@ def overlap(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to perform clustering on independendently, passed as an argument
+        List of column names to perform clustering on independently, passed as an argument
         to df.groupby when considering overlaps. Default is ['chrom'], which must match the first name
         from cols. Examples for additional columns include 'strand'.
 
@@ -574,7 +562,7 @@ def cluster(
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        List of column names to perform clustering on independendently, passed as an argument
+        List of column names to perform clustering on independently, passed as an argument
         to df.groupby before clustering. Default is None. An example use would be on=['strand'].
 
     return_input : bool
@@ -1263,7 +1251,7 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
         values are 'chrom', 'start', 'end'.
 
     on : None or list
-        Additional column names to perform clustering on independendently, passed as an argument
+        Additional column names to perform clustering on independently, passed as an argument
         to df.groupby when considering overlaps and must be present in both dataframes.
         Examples for additional columns include 'strand'.
 
@@ -1397,7 +1385,7 @@ def count_overlaps(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to check overlap on independendently, passed as an argument
+        List of column names to check overlap on independently, passed as an argument
         to df.groupby when considering overlaps. Default is None. Examples for additional columns include 'strand'.
 
     Returns

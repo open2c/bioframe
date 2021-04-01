@@ -111,28 +111,48 @@ def test_trim():
         df_trimmed, bioframe.trim(df, chromsizes, limits_region_col="region")
     )
 
+    ### trim with limits=0 and negative values
+    df = pd.DataFrame(
+        [
+            ["chr1", -4, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 0, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    )
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 0, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    )
+    pd.testing.assert_frame_equal(
+        df_trimmed, bioframe.trim(df, limits=0, limits_region_col="region")
+    )
+
 
 def test_expand():
-    fake_bioframe = pd.DataFrame(
-        {"chrom": ["chr1", "chr1", "chr2"], "start": [1, 50, 100], "end": [5, 55, 200]}
-    )
-    fake_chromsizes = {"chr1": 60, "chr2": 300}
+
+    d = """chrom  start  end
+         0  chr1      1    5
+         1  chr1     50   55
+         2  chr2    100  200"""
+    fake_bioframe = pd.read_csv(StringIO(d), sep=r"\s+")
+
     expand_bp = 10
-    fake_expanded = bioframe.expand(fake_bioframe, expand_bp, fake_chromsizes)
-    assert fake_expanded.iloc[0].start == 0  # don't expand below zero
-    assert (
-        fake_expanded.iloc[1].end == fake_chromsizes["chr1"]
-    )  # don't expand above chromsize
-    assert (
-        fake_expanded.iloc[2].end == fake_bioframe.iloc[2].end + expand_bp
-    )  # expand end normally
-    assert (
-        fake_expanded.iloc[2].start == fake_bioframe.iloc[2].start - expand_bp
-    )  # expand start normally
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp)
+    d = """chrom  start  end
+         0  chr1      -9    15
+         1  chr1     40   65
+         2  chr2    90  210"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
 
     # expand with negative pad
     expand_bp = -10
-    fake_expanded = bioframe.expand(fake_bioframe, expand_bp, fake_chromsizes)
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp)
     d = """chrom  start  end
          0  chr1      3    3
          1  chr1     52   52
@@ -142,7 +162,7 @@ def test_expand():
 
     expand_bp = -10
     fake_expanded = bioframe.expand(
-        fake_bioframe, expand_bp, fake_chromsizes, side="left"
+        fake_bioframe, expand_bp, side="left"
     )
     d = """chrom  start  end
          0  chr1      3    5
@@ -153,9 +173,7 @@ def test_expand():
 
     # expand with multiplicative pad
     mult = 0
-    fake_expanded = bioframe.expand(
-        fake_bioframe, mult, limits=fake_chromsizes, pad_as_multipler=True
-    )
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale= mult)
     d = """chrom  start  end
          0  chr1      3    3
          1  chr1     52   52
@@ -164,11 +182,9 @@ def test_expand():
     pd.testing.assert_frame_equal(df, fake_expanded)
 
     mult = 2.0
-    fake_expanded = bioframe.expand(
-        fake_bioframe, mult, limits=fake_chromsizes, pad_as_multipler=True
-    )
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale= mult)
     d = """chrom  start  end
-         0  chr1      0    7
+         0  chr1      -1    7
          1  chr1     47   57
          2  chr2    50  250"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
