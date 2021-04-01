@@ -101,7 +101,7 @@ def select(df, region, cols=None):
     return df.iloc[np.where(inds)[0]]
 
 
-def trim(df, limits=0, limits_region_col=None, cols=None):
+def trim(df, limits=None, limits_region_col=None, cols=None):
     """
     Trim each interval to fall within regions specified in limits.
 
@@ -141,7 +141,7 @@ def trim(df, limits=0, limits_region_col=None, cols=None):
     limits_region_col = ck if limits_region_col is None else limits_region_col
     _verify_columns(df, [ck, sk, ek, limits_region_col])
 
-    if limits is 0:
+    if limits is None:
         limits = {i: np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
 
     if not set(df[limits_region_col].values).issubset(set(limits.keys())):
