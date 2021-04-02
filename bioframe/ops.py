@@ -109,7 +109,7 @@ def trim(df, limits=None, limits_region_col=None, cols=None):
     ----------
     df : pandas.DataFrame
 
-    limits : 0 or {str: int} or {str: (int, int)}
+    limits : None or {str: int} or {str: (int, int)}
         Dictionary specifying limits for trimming on a region-by-region basis.
         Dictionary keys are strings specifying regions, and values are either
         integers or tuples of integers, e.g. {'chr1':10, 'chr2':20} or
@@ -146,11 +146,11 @@ def trim(df, limits=None, limits_region_col=None, cols=None):
 
     if not set(df[limits_region_col].values).issubset(set(limits.keys())):
         raise ValueError(
-            "\n The following regions in df[limits_region_col] not in limits.keys: \n"
+            "\n Must provide limits for all regions. "
+            + "The following regions in df[limits_region_col] not in limits.keys: \n"
             + "{}".format(
                 set(df[limits_region_col].values).difference(set(limits.keys()))
             )
-            + "\n Must provide limits for all regions."
         )
 
     df_trimmed = df.copy()
@@ -171,8 +171,8 @@ def trim(df, limits=None, limits_region_col=None, cols=None):
         upper_limits.__getitem__, np.iinfo(np.int64).max
     )
 
-    df_trimmed[sk].clip(lower=lower_vector, inplace=True)
-    df_trimmed[ek].clip(upper=upper_vector, inplace=True)
+    df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+    df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
 
     return df_trimmed
 

@@ -111,12 +111,12 @@ def test_trim():
         df_trimmed, bioframe.trim(df, chromsizes, limits_region_col="region")
     )
 
-    ### trim with limits=0 and negative values
+    ### trim with default limits=None and negative values
     df = pd.DataFrame(
         [
             ["chr1", -4, 12, "chr1p"],
             ["chr1", 13, 26, "chr1q"],
-            ["chrX", 0, 8, "chrX_0"],
+            ["chrX", -5, -1, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "region"],
     )
@@ -124,13 +124,11 @@ def test_trim():
         [
             ["chr1", 0, 12, "chr1p"],
             ["chr1", 13, 26, "chr1q"],
-            ["chrX", 0, 8, "chrX_0"],
+            ["chrX", 0, 0, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "region"],
     )
-    pd.testing.assert_frame_equal(
-        df_trimmed, bioframe.trim(df, limits=0, limits_region_col="region")
-    )
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
 
 
 def test_expand():
