@@ -5,43 +5,45 @@ import collections
 from . import arrops
 from .region import parse_region, regions_add_name_column
 
-_rc = {
-    'colnames':{
-        'chrom':'chrom',
-        'start':'start',
-        'end':'end'
-    }
-}
+_rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
 
 
 def _get_default_colnames():
-    return _rc['colnames']['chrom'], _rc['colnames']['start'], _rc['colnames']['end']
+    return _rc["colnames"]["chrom"], _rc["colnames"]["start"], _rc["colnames"]["end"]
 
 
 class update_default_colnames:
     def __init__(self, new_colnames):
-        self._old_colnames = dict(_rc['colnames'])
+        self._old_colnames = dict(_rc["colnames"])
         if isinstance(new_colnames, collections.Iterable):
             if len(new_colnames) != 3:
                 raise ValueError(
-                    'Please, specify new columns using a list of '
-                    '3 strings or a dict!')
-            (_rc['colnames']['chrom'],
-            _rc['colnames']['start'],
-            _rc['colnames']['end']) = new_colnames
+                    "Please, specify new columns using a list of "
+                    "3 strings or a dict!"
+                )
+            (
+                _rc["colnames"]["chrom"],
+                _rc["colnames"]["start"],
+                _rc["colnames"]["end"],
+            ) = new_colnames
         elif isinstance(new_colnames, collections.Mapping):
-            _rc['colnames'].update({k:v for k,v in new_colnames.items()
-                                    if k in ['chrom', 'start', 'end']})
+            _rc["colnames"].update(
+                {
+                    k: v
+                    for k, v in new_colnames.items()
+                    if k in ["chrom", "start", "end"]
+                }
+            )
         else:
             raise ValueError(
-                    'Please, specify new columns using a list of '
-                    '3 strings or a dict!')
+                "Please, specify new columns using a list of " "3 strings or a dict!"
+            )
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args):
-        _rc['colnames'] = self._old_colnames
+        _rc["colnames"] = self._old_colnames
 
 
 def _verify_columns(df, colnames):
@@ -67,7 +69,7 @@ def select(df, region, cols=None):
     df : pandas.DataFrame
 
     region : str or tuple
-        The genomic region to select from the dataframe. 
+        The genomic region to select from the dataframe.
         UCSC-style genomic region string, or
         Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
         See parse_region for more information on region formatting.
@@ -84,6 +86,7 @@ def select(df, region, cols=None):
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
     chrom, start, end = parse_region(region)
     if chrom is None:
         raise ValueError("no chromosome detected, check region input")
@@ -98,26 +101,28 @@ def select(df, region, cols=None):
     return df.iloc[np.where(inds)[0]]
 
 
-def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None):
+def trim(df, limits=None, limits_region_col=None, cols=None):
     """
-    Expand each interval by a given amount.
+    Trim each interval to fall within regions specified in limits.
 
     Parameters
     ----------
     df : pandas.DataFrame
 
-    pad : int
-        The amount by which the intervals are expanded *on each side*.
+    limits : None or {str: int} or {str: (int, int)}
+        Dictionary specifying limits for trimming on a region-by-region basis.
+        Dictionary keys are strings specifying regions, and values are either
+        integers or tuples of integers, e.g. {'chr1':10, 'chr2':20} or
+        {'chr1':(0,10),'chr2':(0,20)}. If a region's limit is specified with
+        a single integer, X, expanded intervals are trimmed to fit into (0, X);
+        if specified with a tuple (X,Y), expanded intervals are trimmed to (X, Y).
+        If no limits_region_col is provided, values in df[cols[0]] are used to
+        specify regions for each interval.
 
-    limits : {str: int} or {str: (int, int)}
-        The limits of interval expansion. If a single number X if provided,
-        the expanded intervals are trimmed to fit into (0, X); if a tuple
-        of numbers is provided (X,Y), the new intervals are trimmed to (X, Y).
+        If no limits are provided, intervals are truncated at zero to avoid
+        negative values.
 
-    side : str
-        Which side to expand, possible values are "left", "right" and "both".
-
-    region_col : str
+    limits_region_col : str
         The column to select the expansion limits for each interval.
         If None, then use the chromosome column.
 
@@ -128,46 +133,116 @@ def expand(df, pad, limits=None, side="both", limits_region_col=None, cols=None)
 
     Returns
     -------
-    df : pandas.DataFrame
+    df_trimmed : pandas.DataFrame
+
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     limits_region_col = ck if limits_region_col is None else limits_region_col
+    _verify_columns(df, [ck, sk, ek, limits_region_col])
 
-    if limits:
-        lower_limits = {}
-        upper_limits = {}
-        for k, v in dict(limits).items():
-            if isinstance(v, (tuple, list, np.ndarray)):
-                lower_limits[k] = v[0]
-                upper_limits[k] = v[1]
-            elif np.isscalar(v):
-                upper_limits[k] = v
-                lower_limits[k] = 0
-            else:
-                raise ValueError("Unknown limit type: {type(v)}")
+    if limits is None:
+        limits = {i: np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
 
+    if not set(df[limits_region_col].values).issubset(set(limits.keys())):
+        raise ValueError(
+            "\n Must provide limits for all regions. "
+            + "The following regions in df[limits_region_col] not in limits.keys: \n"
+            + "{}".format(
+                set(df[limits_region_col].values).difference(set(limits.keys()))
+            )
+        )
+
+    df_trimmed = df.copy()
+    lower_limits = {}
+    upper_limits = {}
+    for k, v in dict(limits).items():
+        if isinstance(v, (tuple, list, np.ndarray)):
+            lower_limits[k] = v[0]
+            upper_limits[k] = v[1]
+        elif np.isscalar(v):
+            upper_limits[k] = v
+            lower_limits[k] = 0
+        else:
+            raise ValueError("Unknown limit type: {type(v)}")
+
+    lower_vector = df[limits_region_col].apply(lower_limits.__getitem__, 0).astype(int)
+    upper_vector = df[limits_region_col].apply(
+        upper_limits.__getitem__, np.iinfo(np.int64).max
+    )
+
+    df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+    df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+
+    return df_trimmed
+
+
+def expand(df, pad=None, scale=None, side="both", cols=None):
+    """
+    Expand each interval by an amount specified with pad.
+    Negative values for pad shrink the interval, up to the midpoint.
+    Multiplicative rescaling of intervals enabled with scale.
+    Only one of pad or scale can be provided.
+    Often followed by `trim()`.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    pad : int
+        The amount by which the intervals are additively expanded *on each side*.
+        Negative values for pad shrink intervals, but not beyond the interval midpoint.
+        If pad_as_multiplier=True, then floats are accepted and intervals are
+        expanded/shrunk multiplicatively.
+
+    side : str
+        Which side to expand, possible values are "left", "right" and "both".
+
+    scale: float
+        The factor by which to scale intervals multiplicatively on each side, e.g
+        scale=2 doubles each interval, scale=0 returns midpoints, and
+        scale=1 returns original intervals. Default False.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df_expanded : pandas.DataFrame
+    """
+
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
+
+    if scale is not None:
+        if scale < 0:
+            raise ValueError("multiplicative scale must be >=0")
+        pads = 0.5 * (scale - 1) * (df[ek].values - df[sk].values)
+        types = df.dtypes[[sk, ek]]
+    elif pad is not None:
+        if type(pad) is not int:
+            raise ValueError("additive pad must be integer")
+        pads = pad
+    else:
+        raise ValueError("either pad or scale must be supplied")
+
+    df_expanded = df.copy()
     if side == "both" or side == "left":
-        if limits:
-            df[sk] = np.maximum(
-                df[limits_region_col].apply(lower_limits.__getitem__, 0),
-                df[sk].values - pad,
-            )
-        else:
-            df[sk] = df[sk].values - pad
-
+        df_expanded[sk] = df[sk].values - pads
     if side == "both" or side == "right":
-        if limits:
-            df[ek] = np.minimum(
-                df[limits_region_col].apply(
-                    upper_limits.__getitem__, np.iinfo(np.int64).max
-                ),
-                df[ek] + pad,
-            )
-        else:
-            df[ek] = df[ek] + pad
+        df_expanded[ek] = df[ek] + pads
 
-    return df
+    if pad is not None:
+        if pad < 0:
+            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(int)
+            df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
+            df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
+    if scale is not None:
+        df_expanded[[sk, ek]] = df_expanded[[sk, ek]].astype(types)
+
+    return df_expanded
 
 
 def _overlap_intidxs(
@@ -274,7 +349,10 @@ def _overlap_intidxs(
                 no_overlap_ids1 = df1_group_idxs
 
             overlap_intidxs_sub += [
-                [no_overlap_ids1, -1 * np.ones_like(no_overlap_ids1),]
+                [
+                    no_overlap_ids1,
+                    -1 * np.ones_like(no_overlap_ids1),
+                ]
             ]
 
         if how in ["outer", "right"] and df2_group_idxs.size > 0:
@@ -291,7 +369,10 @@ def _overlap_intidxs(
                 no_overlap_ids2 = df2_group_idxs
 
             overlap_intidxs_sub += [
-                [-1 * np.ones_like(no_overlap_ids2), no_overlap_ids2,]
+                [
+                    -1 * np.ones_like(no_overlap_ids2),
+                    no_overlap_ids2,
+                ]
             ]
         if overlap_intidxs_sub:
             overlap_intidxs.append(
@@ -337,12 +418,12 @@ def overlap(
         Two sets of genomic intervals stored as a DataFrame.
 
     how : {'left', 'right', 'outer', 'inner'}, default 'left'
-        How to handle the overlaps on the two dataframes. 
+        How to handle the overlaps on the two dataframes.
         left: use the set of intervals in df1
         right: use the set of intervals in df2
         outer: use the union of the set of intervals from df1 and df2
         inner: use intersection of the set of intervals from df1 and df2
-  
+
     return_input : bool
         If True, return columns from input dfs. Default True.
 
@@ -364,7 +445,7 @@ def overlap(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to perform clustering on indepdendently, passed as an argument
+        List of column names to perform clustering on independently, passed as an argument
         to df.groupby when considering overlaps. Default is ['chrom'], which must match the first name
         from cols. Examples for additional columns include 'strand'.
 
@@ -378,7 +459,13 @@ def overlap(
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
     overlap_df_idxs = _overlap_intidxs(
-        df1, df2, how=how, cols1=cols1, cols2=cols2, keep_order=keep_order, on=on,
+        df1,
+        df2,
+        how=how,
+        cols1=cols1,
+        cols2=cols2,
+        keep_order=keep_order,
+        on=on,
     )
 
     # Generate output tables.
@@ -425,17 +512,17 @@ def overlap(
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
         if df_input_1 is not None:
-            df_input_1[overlap_df_idxs[:, 0] == -1] = pd.NA
+            df_input_1[overlap_df_idxs[:, 0] == -1] = None
         if df_input_2 is not None:
-            df_input_2[overlap_df_idxs[:, 1] == -1] = pd.NA
+            df_input_2[overlap_df_idxs[:, 1] == -1] = None
         if df_index_1 is not None:
-            df_index_1[overlap_df_idxs[:, 0] == -1] = pd.NA
+            df_index_1[overlap_df_idxs[:, 0] == -1] = None
         if df_index_2 is not None:
-            df_index_2[overlap_df_idxs[:, 1] == -1] = pd.NA
+            df_index_2[overlap_df_idxs[:, 1] == -1] = None
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
-            ] = pd.NA
+            ] = None
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
@@ -454,7 +541,9 @@ def cluster(
     return_cluster_intervals=True,
 ):
     """
-    Cluster overlapping intervals.
+    Cluster overlapping intervals into groups. Can return numeric ids for these
+    groups (return_cluster_ids) and/or their genomic coordinates
+    (return_cluster_intervals). Also see merge(), which discards original intervals.
 
     Parameters
     ----------
@@ -473,7 +562,7 @@ def cluster(
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        List of column names to perform clustering on indepdendently, passed as an argument
+        List of column names to perform clustering on independently, passed as an argument
         to df.groupby before clustering. Default is None. An example use would be on=['strand'].
 
     return_input : bool
@@ -484,9 +573,6 @@ def cluster(
 
     return_cluster_invervals : bool
         If True, return clustered interval the original interval belongs to
-
-    return_cluster_df : bool
-        If True, return df_clusters
 
     Returns
     -------
@@ -580,7 +666,8 @@ def cluster(
 
 def merge(df, min_dist=0, cols=None, on=None):
     """
-    Merge overlapping intervals.
+    Merge overlapping intervals, returing a dataframe with genomic
+    coordinates of interval cluster groups from the input dataframe.
 
     Parameters
     ----------
@@ -693,7 +780,7 @@ def complement(df, chromsizes=None, cols=None):
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
-    infer_chromsizes = (chromsizes is None)
+    infer_chromsizes = chromsizes is None
 
     # Find overlapping intervals per chromosome.
     df_groups = df.groupby(ck).groups
@@ -703,7 +790,8 @@ def complement(df, chromsizes=None, cols=None):
     else:
         if not set(df_groups).issubset(set(chromsizes.keys())):
             raise ValueError(
-                'Chromsizes are missing some chromosomes from the input interval table.')
+                "Chromsizes are missing some chromosomes from the input interval table."
+            )
         all_groups = sorted(set(chromsizes.keys()))
 
     complements = []
@@ -735,11 +823,10 @@ def complement(df, chromsizes=None, cols=None):
 
         if chromsize < np.max(df_group[ek].values):
             raise ValueError("one or more intervals exceed provided chromsize")
-        (
-            complement_starts_group,
-            complement_ends_group,
-        ) = arrops.complement_intervals(
-            df_group[sk].values, df_group[ek].values, bounds=(0, chromsize),
+        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
+            df_group[sk].values,
+            df_group[ek].values,
+            bounds=(0, chromsize),
         )
 
         # Storing chromosome names causes a 2x slowdown. :(
@@ -979,7 +1066,7 @@ def closest(
 
     return_overlap = False,
         If True, return columns: have_overlap, overlap_start, and overlap_end.
-        Fills df_closest['overlap_start'] and df['overlap_end'] with pd.NA if non-overlapping.
+        Fills df_closest['overlap_start'] and df['overlap_end'] with None if non-overlapping.
 
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
@@ -1059,11 +1146,13 @@ def closest(
         )
         have_overlap = overlap_start < overlap_end
 
-        df_overlap = pd.DataFrame({
-            "have_overlap" : have_overlap,
-            "overlap_start" : np.where(have_overlap, overlap_start, pd.NA),
-            "overlap_end": np.where(have_overlap, overlap_end, pd.NA)
-        })
+        df_overlap = pd.DataFrame(
+            {
+                "have_overlap": have_overlap,
+                "overlap_start": np.where(have_overlap, overlap_start, None),
+                "overlap_end": np.where(have_overlap, overlap_end, None),
+            }
+        )
 
     df_distance = None
     if return_distance:
@@ -1078,10 +1167,7 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        df_distance = pd.DataFrame({
-            "distance" : distance
-        })
-
+        df_distance = pd.DataFrame({"distance": distance})
 
     df_input_1 = None
     df_input_2 = None
@@ -1092,13 +1178,10 @@ def closest(
         df_input_2 = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
-    out_df = pd.concat([
-        df_index_1,
-        df_input_1,
-        df_index_2,
-        df_input_2,
-        df_overlap,
-        df_distance], axis="columns")
+    out_df = pd.concat(
+        [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap, df_distance],
+        axis="columns",
+    )
 
     return out_df
 
@@ -1168,7 +1251,7 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
         values are 'chrom', 'start', 'end'.
 
     on : None or list
-        Additional column names to perform clustering on indepdendently, passed as an argument
+        Additional column names to perform clustering on independently, passed as an argument
         to df.groupby when considering overlaps and must be present in both dataframes.
         Examples for additional columns include 'strand'.
 
@@ -1224,7 +1307,11 @@ def split(
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
 
-    name_updates = {ck1 + "_1": "chrom", "overlap_"+sk1: "start", "overlap_"+ek1: "end"}
+    name_updates = {
+        ck1 + "_1": "chrom",
+        "overlap_" + sk1: "start",
+        "overlap_" + ek1: "end",
+    }
     if add_names:
         name_updates["index_2"] = "index_2"
         return_index = True
@@ -1243,11 +1330,11 @@ def split(
 
     points["start"] = points[sk2]
     points["end"] = points[sk2]
-    all_chroms = set(df[ck1].unique()).union(df[ck2].unique()) 
-    all_chroms = {c:np.iinfo(np.int64).max for c in all_chroms}
+    all_chroms = set(df[ck1].unique()).union(df[ck2].unique())
+    all_chroms = {c: np.iinfo(np.int64).max for c in all_chroms}
     df_split = overlap(
         df,
-        complement(points, chromsizes=all_chroms, cols=(ck2, 'start', 'end')),
+        complement(points, chromsizes=all_chroms, cols=(ck2, "start", "end")),
         how="inner",
         cols1=cols,
         cols2=(ck2, "start", "end"),
@@ -1266,7 +1353,11 @@ def split(
 
 
 def count_overlaps(
-    df1, df2, cols1=None, cols2=None, on=None,
+    df1,
+    df2,
+    cols1=None,
+    cols2=None,
+    on=None,
 ):
 
     """
@@ -1294,7 +1385,7 @@ def count_overlaps(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to check overlap on indepdendently, passed as an argument
+        List of column names to check overlap on independently, passed as an argument
         to df.groupby when considering overlaps. Default is None. Examples for additional columns include 'strand'.
 
     Returns
@@ -1328,15 +1419,16 @@ def count_overlaps(
 
     return df_counts
 
+
 def pair_by_distance(
-        df,
-        min_sep,
-        max_sep,
-        min_interjacent=None,
-        max_interjacent=None,
-        from_ends=False,
-        cols=None,
-        suffixes=("_1", "_2")
+    df,
+    min_sep,
+    max_sep,
+    min_interjacent=None,
+    max_interjacent=None,
+    from_ends=False,
+    cols=None,
+    suffixes=("_1", "_2"),
 ):
     """
     From a dataframe of genomic intervals, find all unique pairs of intervals
@@ -1411,8 +1503,10 @@ def pair_by_distance(
 
     # Select only the pairs that are separated by
     # at least min_interjacent intervals and no more than max_interjacent intervals
-    idxs['interjacent'] = np.abs(idxs.index_1 - idxs.index_2)-1
-    idxs = idxs.query(f"interjacent<={max_interjacent} and interjacent>={min_interjacent}")
+    idxs["interjacent"] = np.abs(idxs.index_1 - idxs.index_2) - 1
+    idxs = idxs.query(
+        f"interjacent<={max_interjacent} and interjacent>={min_interjacent}"
+    )
 
     left_ivals = (
         df.iloc[idxs["index_1"].values]

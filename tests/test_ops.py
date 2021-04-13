@@ -87,24 +87,104 @@ def test_select():
     )
 
 
-def test_expand():
-    fake_bioframe = pd.DataFrame(
-        {"chrom": ["chr1", "chr1", "chr2"], "start": [1, 50, 100], "end": [5, 55, 200]}
+def test_trim():
+    chromsizes = {"chr1p": (1, 11), "chr1q": (13, 20), "chrX_0": 5}
+
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
     )
-    fake_chromsizes = {"chr1": 60, "chr2": 300}
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 1, 11, "chr1p"],
+            ["chr1", 13, 20, "chr1q"],
+            ["chrX", 1, 5, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    )
+
+    pd.testing.assert_frame_equal(
+        df_trimmed, bioframe.trim(df, chromsizes, limits_region_col="region")
+    )
+
+    ### trim with default limits=None and negative values
+    df = pd.DataFrame(
+        [
+            ["chr1", -4, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", -5, -1, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    )
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 0, 0, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    )
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
+
+
+def test_expand():
+
+    d = """chrom  start  end
+         0  chr1      1    5
+         1  chr1     50   55
+         2  chr2    100  200"""
+    fake_bioframe = pd.read_csv(StringIO(d), sep=r"\s+")
+
     expand_bp = 10
-    fake_expanded = bioframe.expand(fake_bioframe.copy(), expand_bp, fake_chromsizes)
-    print(fake_expanded)
-    assert fake_expanded.iloc[0].start == 0  # don't expand below zero
-    assert (
-        fake_expanded.iloc[1].end == fake_chromsizes["chr1"]
-    )  # don't expand above chromsize
-    assert (
-        fake_expanded.iloc[2].end == fake_bioframe.iloc[2].end + expand_bp
-    )  # expand end normally
-    assert (
-        fake_expanded.iloc[2].start == fake_bioframe.iloc[2].start - expand_bp
-    )  # expand start normally
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp)
+    d = """chrom  start  end
+         0  chr1      -9    15
+         1  chr1     40   65
+         2  chr2    90  210"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    # expand with negative pad
+    expand_bp = -10
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp)
+    d = """chrom  start  end
+         0  chr1      3    3
+         1  chr1     52   52
+         2  chr2    110  190"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    expand_bp = -10
+    fake_expanded = bioframe.expand(fake_bioframe, expand_bp, side="left")
+    d = """chrom  start  end
+         0  chr1      3    5
+         1  chr1     52   55
+         2  chr2    110  200"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    # expand with multiplicative pad
+    mult = 0
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
+    d = """chrom  start  end
+         0  chr1      3    3
+         1  chr1     52   52
+         2  chr2    150  150"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    mult = 2.0
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
+    d = """chrom  start  end
+         0  chr1      -1    7
+         1  chr1     47   57
+         2  chr2    50  250"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
 
 
 def test_overlap():
@@ -124,10 +204,12 @@ def test_overlap():
     ]
     pp = pp.sort_values(
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
-        ignore_index=True)
+        ignore_index=True,
+    )
     bb = bb.sort_values(
         ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
-        ignore_index=True)
+        ignore_index=True,
+    )
     pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=False)
     print("overlap elements agree")
 
@@ -236,7 +318,12 @@ def test_overlap():
 
 def test_cluster():
     df1 = pd.DataFrame(
-        [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14],],
+        [
+            ["chr1", 1, 5],
+            ["chr1", 3, 8],
+            ["chr1", 8, 10],
+            ["chr1", 12, 14],
+        ],
         columns=["chrom", "start", "end"],
     )
     df_annotated = bioframe.cluster(df1)
@@ -289,7 +376,12 @@ def test_cluster():
 
 def test_merge():
     df1 = pd.DataFrame(
-        [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14],],
+        [
+            ["chr1", 1, 5],
+            ["chr1", 3, 8],
+            ["chr1", 8, 10],
+            ["chr1", 12, 14],
+        ],
         columns=["chrom", "start", "end"],
     )
 
@@ -349,7 +441,9 @@ def test_merge():
         2   chrX    6   10  cat 1"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
-        df, bioframe.merge(df1, on=["animal"]), check_dtype=False,
+        df,
+        bioframe.merge(df1, on=["animal"]),
+        check_dtype=False,
     )
 
 
@@ -361,7 +455,7 @@ def test_complement():
     df1_chromsizes = {"chr1": 100, "chrX": 100}
 
     df1_complement = pd.DataFrame(
-        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100], ['chrX', 0, 100]],
+        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100], ["chrX", 0, 100]],
         columns=["chrom", "start", "end"],
     )
 
@@ -387,7 +481,12 @@ def test_complement():
 
 
 def test_closest():
-    df1 = pd.DataFrame([["chr1", 1, 5],], columns=["chrom", "start", "end"])
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 1, 5],
+        ],
+        columns=["chrom", "start", "end"],
+    )
 
     df2 = pd.DataFrame(
         [["chr1", 4, 8], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
@@ -489,7 +588,11 @@ def test_subtract():
     assert len(bioframe.subtract(df1, df1)) == 0
 
     df2 = pd.DataFrame(
-        [["chrX", 0, 18], ["chr1", 5, 6],], columns=["chrom", "start", "end"]
+        [
+            ["chrX", 0, 18],
+            ["chr1", 5, 6],
+        ],
+        columns=["chrom", "start", "end"],
     )
 
     df1["animal"] = "sea-creature"
@@ -498,10 +601,10 @@ def test_subtract():
         columns=["chrom", "start", "end", "animal"],
     )
     pd.testing.assert_frame_equal(
-        df_result, 
+        df_result,
         bioframe.subtract(df1, df2)
-            .sort_values(['chrom','start','end'])
-            .reset_index(drop=True)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
 
     df2 = pd.DataFrame(
@@ -516,10 +619,10 @@ def test_subtract():
     )
     print(bioframe.subtract(df1, df2))
     pd.testing.assert_frame_equal(
-        df_result, 
+        df_result,
         bioframe.subtract(df1, df2)
-            .sort_values(['chrom','start','end'])
-            .reset_index(drop=True)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
 
 
@@ -585,92 +688,102 @@ def test_setdiff():
 
 def test_split():
     df1 = pd.DataFrame(
-        [["chrX", 3, 8], 
-         ["chr1", 4, 7], 
-         ["chrX", 1, 5]
-        ],
+        [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
-    )
-   
-    df2 = pd.DataFrame(
-        [["chrX", 4], 
-         ["chr1", 5],], 
-         columns=["chrom", "pos"]
     )
 
-    df_result = pd.DataFrame(
-        [["chrX", 1, 4],
-         ["chrX", 3, 4],
-         ["chrX", 4, 5],
-         ["chrX", 4, 8], 
-         ["chr1", 5, 7],
-         ["chr1", 4, 5]
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 4],
+            ["chr1", 5],
         ],
-        columns=["chrom", "start", "end"],
-    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+        columns=["chrom", "pos"],
+    )
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chrX", 1, 4],
+                ["chrX", 3, 4],
+                ["chrX", 4, 5],
+                ["chrX", 4, 8],
+                ["chr1", 5, 7],
+                ["chr1", 4, 5],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
 
     pd.testing.assert_frame_equal(
-        df_result, 
+        df_result,
         bioframe.split(df1, df2)
-            .sort_values(['chrom','start','end'])
-            .reset_index(drop=True)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
 
     # Test the case when a chromosome is missing from points.
     df1 = pd.DataFrame(
-        [["chrX", 3, 8], 
-         ["chr1", 4, 7], 
+        [
+            ["chrX", 3, 8],
+            ["chr1", 4, 7],
         ],
         columns=["chrom", "start", "end"],
-    )
-   
-    df2 = pd.DataFrame(
-        [["chrX", 4]], 
-         columns=["chrom", "pos"]
     )
 
-    df_result = pd.DataFrame(
-        [["chrX", 3, 4],
-         ["chrX", 4, 8],
-         ["chr1", 4, 7],
-        ],
-        columns=["chrom", "start", "end"],
-    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+    df2 = pd.DataFrame([["chrX", 4]], columns=["chrom", "pos"])
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chrX", 3, 4],
+                ["chrX", 4, 8],
+                ["chr1", 4, 7],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
 
     pd.testing.assert_frame_equal(
-        df_result, 
+        df_result,
         bioframe.split(df1, df2)
-            .sort_values(['chrom','start','end'])
-            .reset_index(drop=True)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
 
     df1 = pd.DataFrame(
         [["chrX", 3, 8]],
         columns=["chromosome", "lo", "hi"],
     )
-   
-    df2 = pd.DataFrame(
-        [["chrX", 4]], 
-         columns=["chromosome", "loc"]
-    )
 
-    df_result = pd.DataFrame(
-        [["chrX", 3, 4],
-         ["chrX", 4, 8],
-        ],
-        columns=["chrom", "start", "end"],
-    ).sort_values(['chrom','start','end']).reset_index(drop=True)
+    df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chrX", 3, 4],
+                ["chrX", 4, 8],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
 
     pd.testing.assert_frame_equal(
-        df_result, 
+        df_result,
         bioframe.split(
-            df1, df2, 
-            cols=['chromosome', 'lo', 'hi'],
-            cols_points=['chromosome', 'loc'],)
-            .sort_values(['chrom','start','end'])
-            .reset_index(drop=True)
+            df1,
+            df2,
+            cols=["chromosome", "lo", "hi"],
+            cols_points=["chromosome", "loc"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
-
 
 
 def test_count_overlaps():
@@ -739,82 +852,78 @@ def test_pair_by_distance():
 
     # Distance between midpoints, from_ends=False
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=4,
-                min_interjacent=None,
-                max_interjacent=None,
-                from_ends=False
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[6, 8, 9, 11]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=4,
+            min_interjacent=None,
+            max_interjacent=None,
+            from_ends=False,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[6, 8, 9, 11]])
     ).all()
 
     # Distance between regions ends, from_ends=True
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=4,
-                min_interjacent=None,
-                max_interjacent=None,
-                from_ends=True
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[1, 3, 6, 8]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=4,
+            min_interjacent=None,
+            max_interjacent=None,
+            from_ends=True,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8]])
     ).all()
 
     # Distance between midpoints is large
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=6,
-                min_interjacent=None,
-                max_interjacent=None,
-                from_ends=False
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[1, 3, 6, 8],
-                         [6, 8, 9, 11]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=6,
+            min_interjacent=None,
+            max_interjacent=None,
+            from_ends=False,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
     ).all()
 
     # Distance between midpoints is large
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=9,
-                min_interjacent=None,
-                max_interjacent=None,
-                from_ends=False
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[1, 3, 6, 8],
-                         [1, 3, 9, 11],
-                         [6, 8, 9, 11]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=None,
+            max_interjacent=None,
+            from_ends=False,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [1, 3, 9, 11], [6, 8, 9, 11]])
     ).all()
 
     # Do not allow interjacent regions
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=9,
-                min_interjacent=None,
-                max_interjacent=0,
-                from_ends=False
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[1, 3, 6, 8],
-                         [6, 8, 9, 11]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=None,
+            max_interjacent=0,
+            from_ends=False,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
     ).all()
 
     # Strictly one interjacent region
     assert (
-            bioframe.pair_by_distance(
-                df,
-                min_sep=1,
-                max_sep=9,
-                min_interjacent=1,
-                max_interjacent=None,
-                from_ends=False
-            )[['start_1', 'end_1', 'start_2', 'end_2']].values
-            == np.array([[1, 3, 9, 11]])
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=1,
+            max_interjacent=None,
+            from_ends=False,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 9, 11]])
     ).all()
