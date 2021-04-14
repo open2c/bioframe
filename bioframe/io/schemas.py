@@ -179,6 +179,7 @@ SCHEMAS = {
     "bed6": BED_FIELDS,
     "bed9": BED12_FIELDS[:9],
     "bed12": BED12_FIELDS,
+    "bedpe": BEDPE_FIELDS,
     "gff": GFF_FIELDS,
     "gtf": GFF_FIELDS,
     "bedRnaElements": BEDRNAELEMENTS_FIELDS,
@@ -190,6 +191,9 @@ SCHEMAS = {
     "sam": BAM_FIELDS,
     "vcf": VCF_FIELDS,
     "jaspar": JASPAR_FIELDS,
+    "gap": GAP_FIELDS,
+    "UCSCmRNA": UCSC_MRNA_FIELDS,
+    "pgsnp": PGSNP_FIELDS
 }
 
 
