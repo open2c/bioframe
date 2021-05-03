@@ -15,8 +15,7 @@ The philosophy underlying bioframe is to enable flexible operations: instead of 
 - `complement`: Find genomic intervals that are not covered by any interval from a dataframe.
 - `overlap`: Find pairs of overlapping genomic intervals between two dataframes. 
 
-Bioframe additionally has functions that are frequently used for genomic interval operations and can be expressed as combinations of these core operations and dataframe operations, including: `coverage`, `expand`, `merge`,  
-`select`, and `subtract`.
+Bioframe additionally has functions that are frequently used for genomic interval operations and can be expressed as combinations of these core operations and dataframe operations, including: `coverage`, `expand`, `merge`, `select`, and `subtract`.
 
 Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
