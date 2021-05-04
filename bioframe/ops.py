@@ -52,6 +52,10 @@ def _verify_columns(df, colnames):
 
     colnames: list of columns
     """
+
+    if not type(df) is pd.core.frame.DataFrame:
+        raise ValueError("df is not a dataframe")
+
     if not set(colnames).issubset(df.columns):
         raise ValueError(
             ", ".join(set(colnames).difference(set(df.columns)))
@@ -762,11 +766,13 @@ def merge(df, min_dist=0, cols=None, on=None):
 def complement(df, chromsizes=None, cols=None):
     """
     Find genomic regions that are not covered by any interval.
+    
     Parameters
     ----------
     df : pandas.DataFrame
 
     chromsizes : dict
+
     cols : (str, str, str)
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
