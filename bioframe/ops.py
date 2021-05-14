@@ -478,10 +478,10 @@ def overlap(
             ].astype(pd.Int64Dtype())
         if df_index_1 is not None:
             df_index_1[overlap_df_idxs[:, 0] == -1] = None
-            df_index_1["index_1"] = df_index_1["index_1"].astype(pd.Int64Dtype())
+            df_index_1["index"+suffixes[0]] = df_index_1["index"+suffixes[0]].astype(pd.Int64Dtype())
         if df_index_2 is not None:
             df_index_2[overlap_df_idxs[:, 1] == -1] = None
-            df_index_2["index_2"] = df_index_2["index_2"].astype(pd.Int64Dtype())
+            df_index_2["index"+suffixes[1]] = df_index_2["index"+suffixes[1]].astype(pd.Int64Dtype())
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
@@ -1317,13 +1317,8 @@ def split(
     points["start"] = points[sk2]
     points["end"] = points[sk2]
 
-    print("pionts!")
-    print(points)
-
     all_chroms = set(df[ck1].unique()).union(df[ck2].unique())
     all_chroms = {c: np.iinfo(np.int64).max for c in all_chroms}
-    print("view!")
-    print(core.make_viewframe(all_chroms))
 
     df_split = overlap(
         df,
