@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -8,24 +7,312 @@ import os.path as op
 
 testdir = op.realpath(op.dirname(__file__))
 
-#def test_is_valid():
 
-#def test_sanitize():
+def test_is_cataloged():
+    ### chr2q is not in view
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 5, 15, "chr1p"],
+            ["chr2", 13, 26, "chr2q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    assert not bioframe.core.is_cataloged(df, view_df)
 
-#def test_is_view():
+    ### chr1q is in view, df_view_col and view_name_col have funny labels.
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "funny_name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr2", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "funny_view_region"],
+    )
+    assert bioframe.core.is_cataloged(
+        df, view_df, df_view_col="funny_view_region", view_name_col="funny_name"
+    )
 
-def test_make_view():
+
+def test_is_contained():
+
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+
+    ### not contained because chr2q is not cataloged
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr2", 13, 26, "chr2q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    assert not bioframe.core.is_contained(df, view_df)
+
+    ### not contained because first two intervals fall outside the view regions
+    df = pd.DataFrame(
+        [
+            ["chr1", 14, 15, "chr1p"],
+            ["chr1", -1, 1, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    assert not bioframe.core.is_contained(df, view_df)
+
+    ### is contained
+    df = pd.DataFrame(
+        [
+            ["chr1", 12, 12, "chr1p"],
+            ["chr1", 13, 14, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    assert bioframe.core.is_contained(df, view_df)
+
+
+def test_is_overlapping():
+    ### interval on chr1 overlaps
+    d = """chrom  start  end
+         0  chr1      3    6
+         1  chr1     5   10
+         2  chr2    5  10"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    assert bioframe.core.is_overlapping(df) is True
+
+    ### adjacent intervals do not overlap
+    d = """chrom  start  end
+         0  chr1    3     6
+         1  chr1    6    10
+         2  chr2    5    10"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    assert bioframe.core.is_overlapping(df) is False
+
+
+def test_is_covering():
+    ### test is_covering where an interval from df completely overlaps
+    ### two different regions from view
+    df1 = pd.DataFrame(
+        [
+            ["chr1", -5, 25],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_covering(df1, chromsizes) is True
+
+    ### test is_covering where two intervals from df overlap
+    ### two different regions from view
+    df1 = pd.DataFrame(
+        [
+            ["chr1", -5, 10],
+            ["chr1", 11, 12],
+            ["chr1", 12, 20],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_covering(df1, chromsizes) is True
+
+    ### test is_covering where two intervals from df overlap
+    ### two different regions from view
+    df1 = pd.DataFrame(
+        [
+            ["chr1", -5, 10, "chr1q"],
+            ["chr1", 11, 12, "chr1q"],
+            ["chr1", 12, 20, "chr1q"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_covering(df1, chromsizes) is True
+
+
+def test_is_tiling():
+    ### view region chr1p is tiled by one interval, chr1q is tiled by two
+    df1 = pd.DataFrame([
+        ["chr1", 0, 9, 'chr1p'],
+        ["chr1", 11, 12, 'chr1q'],
+        ["chr1", 12, 20, 'chr1q'],
+        ], 
+        columns=["chrom", "start", "end","view_region"])
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_tiling(df1, chromsizes) is True
+        
+    ### not contained, since (chr1,0,9) is associated with chr1q
+    df1 = pd.DataFrame([
+        ["chr1", 0, 9, 'chr1q'],
+        ["chr1", 11, 12, 'chr1q'],
+        ["chr1", 12, 20, 'chr1q'],
+        ], 
+        columns=["chrom", "start", "end","view_region"])
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_tiling(df1, chromsizes) is False
+    
+    ### not contained, contains overlaps
+    df1 = pd.DataFrame([
+        ["chr1", 0, 9, 'chr1p'],
+        ["chr1", 11, 13, 'chr1q'],
+        ["chr1", 12, 20, 'chr1q'],
+        ], 
+        columns=["chrom", "start", "end","view_region"])
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_tiling(df1, chromsizes) is False
+    
+    ### not covering
+    df1 = pd.DataFrame([
+        ["chr1", 11, 12, 'chr1q'],
+        ["chr1", 12, 20, 'chr1q'],
+        ], 
+        columns=["chrom", "start", "end","view_region"])
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    assert bioframe.core.is_tiling(df1, chromsizes) is False
+
+
+
+def test_is_bedframe():
+    ##missing a column
+    df1 = pd.DataFrame([
+        ["chr1", 11],
+        ["chr1", 12],
+        ], 
+    columns=["chrom", "start"])
+    assert bioframe.core.is_bedframe(df1) is False
+
+    ### end column has invalid dtype
+    df1 = pd.DataFrame([
+    ["chr1", 10, '20'],
+    ["chr1", 10, '12'],
+    ], 
+    columns=["chrom", "start","end"])
+    assert bioframe.core.is_bedframe(df1) is False
+
+    ### second interval start > ends.
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20],
+        ["chr1", 15, 10],
+        ], 
+    columns=["chrom", "start","end"])
+    assert bioframe.core.is_bedframe(df1) is False
+
+def test_sanitize_bedframe():
+    # drop rows with null values
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20],
+        ["chr1", 10, 20],
+        ["chr1", 15, pd.NA],
+        ["chr1", pd.NA, 25],
+        ], 
+    columns=["chrom", "start","end"])
+
+    sanitized_df1 = pd.DataFrame([
+        ["chr1", 10, 20],
+        ["chr1", 10, 20]        ], 
+    columns=["chrom", "start","end"])
+    sanitized_df1 = sanitized_df1.astype({'chrom':str,'start':pd.Int64Dtype(), 'end':pd.Int64Dtype()})
+    sanitized_df1.dtypes
+
+    pd.testing.assert_frame_equal(
+        sanitized_df1,
+        bioframe.core.sanitize_bedframe(df1))
+
+
+    # flip intervals
+
+
+def test_is_viewframe():
+    # not a bedframe
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20, 'chr1p'],
+        ["chr1", 15, 10, 'chr1q'],
+        ], 
+    columns=["chrom", "start", "end", "name"])
+    assert bioframe.core.is_viewframe(df1) is False
+
+    # no column for region name
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20],
+        ["chr1", 30, 40],
+        ], 
+    columns=["chrom", "start", "end"])
+    assert bioframe.core.is_viewframe(df1) is False
+
+    # contains null values
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20, 'chr1p'],
+        ["chr1", pd.NA, np.nan, 'chr1q'],
+        ], 
+    columns=["chrom", "start", "end", "name"])
+    assert bioframe.core.is_viewframe(df1) is False
+
+    # overlapping intervals
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20, 'chr1p'],
+        ["chr1", 15, 25, 'chr1q'],
+        ], 
+    columns=["chrom", "start","end", "name"])
+    assert bioframe.core.is_viewframe(df1) is False
+
+    # valid view
+    df1 = pd.DataFrame([
+        ["chr1", 10, 20, 'chr1p'],
+        ["chr1", 20, 25, 'chr1q'],
+        ["chr2", 20, 25, 'chrTEST_2p'],
+        ], 
+    columns=["chrom", "start","end", "name"])
+    assert bioframe.core.is_viewframe(df1) is True
+
+
+def test_make_viewframe():
+
     # test dict input
+    d = """            chrom  start  end        name
+    0    chrTESTX      0   10    chrTESTX
+    1  chrTESTX_p      1   12  chrTESTX_p"""
+    view_df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(
+        view_df.copy(),
+        bioframe.core.make_viewframe(
+            {"chrTESTX": 10, "chrTESTX_p": (1, 12)}, infer_chroms_from_regions=False
+        ),
+    )
+
+    # todo: if the individual chromosomes are inferred, then this should fail!
 
     # test pd.Series input
-    chromsizes = pd.Series(data=[5,8], index=['chrTESTXq','chrTEST_2p'])
+    chromsizes = pd.Series(data=[5, 8], index=["chrTESTXq", "chrTEST_2p"])
     d = """      chrom  start  end        name
     0  chrTESTX      0    5   chrTESTXq
     1   chrTEST      0    8  chrTEST_2p"""
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
-    pd.testing.assert_frame_equal(view_df.copy(), bioframe.core.make_view(chromsizes))
+    pd.testing.assert_frame_equal(
+        view_df.copy(), bioframe.core.make_viewframe(chromsizes)
+    )
 
     # test pd.DataFrame input
-    pd.testing.assert_frame_equal(view_df.copy(), bioframe.core.make_view(view_df))
-
-
+    pd.testing.assert_frame_equal(view_df.copy(), bioframe.core.make_viewframe(view_df))

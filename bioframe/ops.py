@@ -3,64 +3,9 @@ import pandas as pd
 import collections
 
 from . import arrops
+from . import core
+from .core import _verify_columns, _get_default_colnames
 from .region import parse_region, regions_add_name_column
-
-_rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
-
-
-def _get_default_colnames():
-    return _rc["colnames"]["chrom"], _rc["colnames"]["start"], _rc["colnames"]["end"]
-
-
-class update_default_colnames:
-    def __init__(self, new_colnames):
-        self._old_colnames = dict(_rc["colnames"])
-        if isinstance(new_colnames, collections.Iterable):
-            if len(new_colnames) != 3:
-                raise ValueError(
-                    "Please, specify new columns using a list of "
-                    "3 strings or a dict!"
-                )
-            (
-                _rc["colnames"]["chrom"],
-                _rc["colnames"]["start"],
-                _rc["colnames"]["end"],
-            ) = new_colnames
-        elif isinstance(new_colnames, collections.Mapping):
-            _rc["colnames"].update(
-                {
-                    k: v
-                    for k, v in new_colnames.items()
-                    if k in ["chrom", "start", "end"]
-                }
-            )
-        else:
-            raise ValueError(
-                "Please, specify new columns using a list of " "3 strings or a dict!"
-            )
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        _rc["colnames"] = self._old_colnames
-
-
-def _verify_columns(df, colnames):
-    """
-    df: pandas.DataFrame
-
-    colnames: list of columns
-    """
-
-    if not type(df) is pd.core.frame.DataFrame:
-        raise ValueError("df is not a dataframe")
-
-    if not set(colnames).issubset(df.columns):
-        raise ValueError(
-            ", ".join(set(colnames).difference(set(df.columns)))
-            + " not in keys of df.columns"
-        )
 
 
 def select(df, region, cols=None):
@@ -105,30 +50,36 @@ def select(df, region, cols=None):
     return df.iloc[np.where(inds)[0]]
 
 
-def trim(df, limits=None, limits_region_col=None, cols=None):
+def trim(
+    df,
+    view_df=None,
+    df_view_col="view_region",
+    view_name_col="name",
+    return_view_columns=False,
+    cols=None,
+):
     """
-    Trim each interval to fall within regions specified in limits.
+    Trim each interval to fall within regions specified in view_df.
 
     Parameters
     ----------
     df : pandas.DataFrame
 
-    limits : None or {str: int} or {str: (int, int)}
-        Dictionary specifying limits for trimming on a region-by-region basis.
-        Dictionary keys are strings specifying regions, and values are either
-        integers or tuples of integers, e.g. {'chr1':10, 'chr2':20} or
-        {'chr1':(0,10),'chr2':(0,20)}. If a region's limit is specified with
-        a single integer, X, expanded intervals are trimmed to fit into (0, X);
-        if specified with a tuple (X,Y), expanded intervals are trimmed to (X, Y).
-        If no limits_region_col is provided, values in df[cols[0]] are used to
-        specify regions for each interval.
+    view_df : None or pandas.DataFrame
+        View specifying region start and ends for trimming. Attepts to
+        convert dictionary and pd.Series formats to viewframes with `core.make_view`.
 
-        If no limits are provided, intervals are truncated at zero to avoid
+        If no view_df is provided, intervals are truncated at zero to avoid
         negative values.
 
-    limits_region_col : str
-        The column to select the expansion limits for each interval.
-        If None, then use the chromosome column.
+    df_view_col : str
+        The column of df used to specify view regions.
+        The associated region in view_df is then used for trimming.
+        If no view_df is provided, uses the chrom column, df[cols[0]].
+        Default "view_region".
+
+    view_name_col : str
+        Column of df with region names. Default 'name'.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -142,43 +93,42 @@ def trim(df, limits=None, limits_region_col=None, cols=None):
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    limits_region_col = ck if limits_region_col is None else limits_region_col
-    _verify_columns(df, [ck, sk, ek, limits_region_col])
+    df_columns = df.columns
 
-    if limits is None:
-        limits = {i: np.iinfo(np.int64).max for i in set(df[limits_region_col].values)}
+    if view_df is None:
+        df_view_col = ck
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
 
-    if not set(df[limits_region_col].values).issubset(set(limits.keys())):
-        raise ValueError(
-            "\n Must provide limits for all regions. "
-            + "The following regions in df[limits_region_col] not in limits.keys: \n"
-            + "{}".format(
-                set(df[limits_region_col].values).difference(set(limits.keys()))
-            )
-        )
+    _verify_columns(df, [ck, sk, ek, df_view_col])
+    view_df = core.make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
+
+    core.is_cataloged(
+        df,
+        view_df,
+        raise_errors=True,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+    )
 
     df_trimmed = df.copy()
-    lower_limits = {}
-    upper_limits = {}
-    for k, v in dict(limits).items():
-        if isinstance(v, (tuple, list, np.ndarray)):
-            lower_limits[k] = v[0]
-            upper_limits[k] = v[1]
-        elif np.isscalar(v):
-            upper_limits[k] = v
-            lower_limits[k] = 0
-        else:
-            raise ValueError("Unknown limit type: {type(v)}")
-
-    lower_vector = df[limits_region_col].apply(lower_limits.__getitem__, 0).astype(int)
-    upper_vector = df[limits_region_col].apply(
-        upper_limits.__getitem__, np.iinfo(np.int64).max
+    df_trimmed = df_trimmed.merge(
+        view_df,
+        how="left",
+        left_on=df_view_col,
+        right_on=view_name_col,
+        suffixes=("", "_view"),
     )
+
+    lower_vector = df_trimmed[sk + "_view"].values
+    upper_vector = df_trimmed[ek + "_view"].values
 
     df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
     df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
 
-    return df_trimmed
+    if return_view_columns:
+        return df_trimmed
+    else:
+        return df_trimmed[df_columns]
 
 
 def expand(df, pad=None, scale=None, side="both", cols=None):
@@ -432,10 +382,11 @@ def overlap(
         If True, return columns from input dfs. Default True.
 
     return_index : bool
-        If True, return indicies of overlapping pairs as a new column (index_1 and index_2). Default False.
+        If True, return indicies of overlapping pairs as two new columns (`index_1` and `index_2`). Default False.
 
     return_overlap : bool
-        If True, return overlapping intervals for the overlapping pairs as a new column (overlap_start and overlap_end). Default False.
+        If True, return overlapping intervals for the overlapping pairs
+        as two additional columns (`overlap_start`, `overlap_end`). Default False.
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
@@ -517,16 +468,27 @@ def overlap(
     if how != "inner":
         if df_input_1 is not None:
             df_input_1[overlap_df_idxs[:, 0] == -1] = None
+            df_input_1[[sk1 + suffixes[0], ek1 + suffixes[0]]] = df_input_1[
+                [sk1 + suffixes[0], ek1 + suffixes[0]]
+            ].astype(pd.Int64Dtype())
         if df_input_2 is not None:
             df_input_2[overlap_df_idxs[:, 1] == -1] = None
+            df_input_2[[sk2 + suffixes[1], ek2 + suffixes[1]]] = df_input_2[
+                [sk2 + suffixes[1], ek2 + suffixes[1]]
+            ].astype(pd.Int64Dtype())
         if df_index_1 is not None:
             df_index_1[overlap_df_idxs[:, 0] == -1] = None
+            df_index_1["index_1"] = df_index_1["index_1"].astype(pd.Int64Dtype())
         if df_index_2 is not None:
             df_index_2[overlap_df_idxs[:, 1] == -1] = None
+            df_index_2["index_2"] = df_index_2["index_2"].astype(pd.Int64Dtype())
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
             ] = None
+            df_overlap[["overlap_start", "overlap_end"]] = df_overlap[
+                ["overlap_start", "overlap_end"]
+            ].astype(pd.Int64Dtype())
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
@@ -763,15 +725,20 @@ def merge(df, min_dist=0, cols=None, on=None):
     return clusters
 
 
-def complement(df, chromsizes=None, cols=None):
+def complement(df, view_df=None, view_name_col="name", cols=None):
     """
-    Find genomic regions that are not covered by any interval.
-    
+    Find genomic regions in view_df that are not covered by any interval in df.
+    First assigns intervals in df to region in view_df, splitting df intervals as necessary. 
+
     Parameters
     ----------
     df : pandas.DataFrame
 
-    chromsizes : dict
+    view_df : pandas.Dataframe
+        If none, attempts to infer the view from chroms (i.e. df[cols[0]]).
+
+    view_name_col : str
+        Name of column in view_df with unique reigon names. Default 'name'.
 
     cols : (str, str, str)
         The names of columns containing the chromosome, start and end of the
@@ -779,70 +746,81 @@ def complement(df, chromsizes=None, cols=None):
 
     Returns
     -------
-    df_complement : numpy.ndarray
+    df_complement : pandas.DataFrame
 
     """
 
+    ### TODO add on, so can do strand-specific complements...
+
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
 
-    infer_chromsizes = chromsizes is None
+    if view_df is None:
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].values)}
+    view_df = core.make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
 
-    # Find overlapping intervals per chromosome.
-    df_groups = df.groupby(ck).groups
+    # associate intervals to region, required to enable single interval from df to
+    # overlap multiple intervals in view_df.
+    new_intervals = overlap(
+        view_df,
+        df,
+        return_overlap=True,
+        how="inner",
+        suffixes=("", "_df"),
+        cols1=cols,
+        cols2=cols,
+    )
+    new_intervals = new_intervals[
+        [ck, "overlap_start", "overlap_end", view_name_col]
+    ].copy()
+    new_intervals.rename(
+        columns={"overlap_start": sk, "overlap_end": ek, view_name_col: "view_region"},
+        inplace=True,
+    )
+    df = new_intervals
+    core.is_cataloged(
+        df,
+        view_df,
+        raise_errors=True,
+        df_view_col="view_region",
+        view_name_col=view_name_col,
+    )
 
-    if infer_chromsizes:
-        all_groups = sorted(set(df_groups))
-    else:
-        if not set(df_groups).issubset(set(chromsizes.keys())):
-            raise ValueError(
-                "Chromsizes are missing some chromosomes from the input interval table."
-            )
-        all_groups = sorted(set(chromsizes.keys()))
+    # Find overlapping intervals per region.
+    df_groups = df.groupby("view_region").groups
+    all_groups = sorted(set(view_df[view_name_col]))
 
     complements = []
+    for group_key in all_groups:
+        region_interval = view_df.loc[view_df[view_name_col] == group_key]
+        region_chrom, region_start, region_end = region_interval[[ck, sk, ek]].values[0]
 
-    for group_keys in all_groups:
-        # this is a stub for potential on argument
-        chrom = group_keys
-
-        if group_keys not in df_groups:
-            complement_group = {
-                ck: pd.Series(
-                    data=[chrom],
-                    dtype=df[ck].dtype,
-                ),
-                sk: 0,
-                ek: chromsizes[chrom],
-            }
-
+        if group_key not in df_groups:
+            complement_group = region_interval.copy().rename(
+                columns={view_name_col: "view_region"}
+            )
             complements.append(pd.DataFrame(complement_group))
             continue
 
-        df_group_idxs = df_groups[group_keys].values
+        df_group_idxs = df_groups[group_key].values
         df_group = df.loc[df_group_idxs]
 
-        if infer_chromsizes:
-            chromsize = np.iinfo(np.int64).max
-        else:
-            chromsize = chromsizes[chrom]
-
-        if chromsize < np.max(df_group[ek].values):
-            raise ValueError("one or more intervals exceed provided chromsize")
         (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
             df_group[sk].values,
             df_group[ek].values,
-            bounds=(0, chromsize),
+            bounds=(region_start, region_end),
         )
 
         # Storing chromosome names causes a 2x slowdown. :(
         complement_group = {
             ck: pd.Series(
-                data=np.full(complement_starts_group.shape[0], chrom),
+                data=np.full(complement_starts_group.shape[0], region_chrom),
                 dtype=df[ck].dtype,
             ),
             sk: complement_starts_group,
             ek: complement_ends_group,
+            "view_region": group_key,
         }
         complement_group = pd.DataFrame(complement_group)
 
@@ -855,8 +833,10 @@ def complement(df, chromsizes=None, cols=None):
 
 def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
     """
-    Quantify the coverage of intervals from set 1 by intervals from set2. For every interval
-     in set 1 find the number of base pairs covered by intervals in set 2.
+    Quantify the coverage of intervals from df1 by intervals from df2.
+    For every interval in df1 find the number of base pairs covered by intervals in df2.
+    Note this only quantifies whether a basepair in df1 was covered, not the number
+    of intervals in df2 that cover it.
 
     Parameters
     ----------
@@ -1336,11 +1316,18 @@ def split(
 
     points["start"] = points[sk2]
     points["end"] = points[sk2]
+
+    print("pionts!")
+    print(points)
+
     all_chroms = set(df[ck1].unique()).union(df[ck2].unique())
     all_chroms = {c: np.iinfo(np.int64).max for c in all_chroms}
+    print("view!")
+    print(core.make_viewframe(all_chroms))
+
     df_split = overlap(
         df,
-        complement(points, chromsizes=all_chroms, cols=(ck2, "start", "end")),
+        complement(points, view_df=all_chroms, cols=(ck2, "start", "end")),
         how="inner",
         cols1=cols,
         cols2=(ck2, "start", "end"),

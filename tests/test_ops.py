@@ -88,15 +88,45 @@ def test_select():
 
 
 def test_trim():
-    chromsizes = {"chr1p": (1, 11), "chr1q": (13, 20), "chrX_0": 5}
 
+    ### trim with view_df
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", -6, 12, "chr1p"],
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 32, 36, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 26, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
+
+    ### trim with view_df interpreted from dictionary for chromsizes
+    chromsizes = {"chr1p": (1, 11), "chr1q": (13, 20), "chrX_0": 5}
     df = pd.DataFrame(
         [
             ["chr1", 0, 12, "chr1p"],
             ["chr1", 13, 26, "chr1q"],
             ["chrX", 1, 8, "chrX_0"],
         ],
-        columns=["chrom", "start", "end", "region"],
+        columns=["chrom", "startFunky", "end", "region"],
     )
     df_trimmed = pd.DataFrame(
         [
@@ -104,11 +134,16 @@ def test_trim():
             ["chr1", 13, 20, "chr1q"],
             ["chrX", 1, 5, "chrX_0"],
         ],
-        columns=["chrom", "start", "end", "region"],
+        columns=["chrom", "startFunky", "end", "region"],
     )
-
     pd.testing.assert_frame_equal(
-        df_trimmed, bioframe.trim(df, chromsizes, limits_region_col="region")
+        df_trimmed,
+        bioframe.trim(
+            df,
+            view_df=chromsizes,
+            df_view_col="region",
+            cols=["chrom", "startFunky", "end"],
+        ),
     )
 
     ### trim with default limits=None and negative values
@@ -448,6 +483,7 @@ def test_merge():
 
 
 def test_complement():
+    ### complementing a df with no intervals in chrX by a view with chrX should return entire chrX region
     df1 = pd.DataFrame(
         [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14]],
         columns=["chrom", "start", "end"],
@@ -455,29 +491,69 @@ def test_complement():
     df1_chromsizes = {"chr1": 100, "chrX": 100}
 
     df1_complement = pd.DataFrame(
-        [["chr1", 0, 1], ["chr1", 10, 12], ["chr1", 14, 100], ["chrX", 0, 100]],
-        columns=["chrom", "start", "end"],
+        [
+            ["chr1", 0, 1, "chr1"],
+            ["chr1", 10, 12, "chr1"],
+            ["chr1", 14, 100, "chr1"],
+            ["chrX", 0, 100, "chrX"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
     )
 
     pd.testing.assert_frame_equal(
-        bioframe.complement(df1, chromsizes=df1_chromsizes), df1_complement
+        bioframe.complement(df1, view_df=df1_chromsizes), df1_complement
     )
 
     ### test complement with two chromosomes ###
     df1.iloc[0, 0] = "chrX"
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 3],
-            ["chr1", 10, 12],
-            ["chr1", 14, 100],
-            ["chrX", 0, 1],
-            ["chrX", 5, 100],
+            ["chr1", 0, 3, "chr1"],
+            ["chr1", 10, 12, "chr1"],
+            ["chr1", 14, 100, "chr1"],
+            ["chrX", 0, 1, "chrX"],
+            ["chrX", 5, 100, "chrX"],
         ],
-        columns=["chrom", "start", "end"],
+        columns=["chrom", "start", "end", "view_region"],
     )
     pd.testing.assert_frame_equal(
-        bioframe.complement(df1, chromsizes=df1_chromsizes), df1_complement
+        bioframe.complement(df1, view_df=df1_chromsizes), df1_complement
     )
+
+    ### test complement with no view_df and a negative interval
+    df1 = pd.DataFrame(
+        [["chr1", -5, 5], ["chr1", 10, 20]], columns=["chrom", "start", "end"]
+    )
+    df1_complement = pd.DataFrame(
+        [["chr1", 5, 10, "chr1"], ["chr1", 20, np.iinfo(np.int64).max, "chr1"]],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    pd.testing.assert_frame_equal(bioframe.complement(df1), df1_complement)
+
+    ### test complement with an overhanging interval
+    df1 = pd.DataFrame(
+        [["chr1", -5, 5], ["chr1", 10, 20]], columns=["chrom", "start", "end"]
+    )
+    chromsizes = {"chr1": 15}
+    df1_complement = pd.DataFrame(
+        [
+            ["chr1", 5, 10, "chr1"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    pd.testing.assert_frame_equal(
+        bioframe.complement(df1, view_df=chromsizes, view_name_col="VR"), df1_complement
+    )
+
+    ### test complement where an interval from df overlaps two different regions from view
+    ### test complement with no view_df and a negative interval
+    df1 = pd.DataFrame([["chr1", 5, 15]], columns=["chrom", "start", "end"])
+    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    df1_complement = pd.DataFrame(
+        [["chr1", 0, 5, "chr1p"], ["chr1", 15, 20, "chr1q"]],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
 
 
 def test_closest():
@@ -581,12 +657,16 @@ def test_coverage():
 
 
 def test_subtract():
+    ### no intervals should be left after self-subtraction
     df1 = pd.DataFrame(
         [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
     assert len(bioframe.subtract(df1, df1)) == 0
 
+    ### no intervals on chrX should remain after subtracting a longer interval
+    ### interval on chr1 should be split.
+    ### additional column should be propagated to children.
     df2 = pd.DataFrame(
         [
             ["chrX", 0, 18],
@@ -594,7 +674,6 @@ def test_subtract():
         ],
         columns=["chrom", "start", "end"],
     )
-
     df1["animal"] = "sea-creature"
     df_result = pd.DataFrame(
         [["chr1", 4, 5, "sea-creature"], ["chr1", 6, 7, "sea-creature"]],
@@ -607,6 +686,7 @@ def test_subtract():
         .reset_index(drop=True),
     )
 
+    ### no intervals on chrX should remain after subtracting a longer interval
     df2 = pd.DataFrame(
         [["chrX", 0, 4], ["chr1", 6, 6], ["chrX", 4, 9]],
         columns=["chrom", "start", "end"],
@@ -617,7 +697,6 @@ def test_subtract():
         [["chr1", 4, 6, "sea-creature"], ["chr1", 6, 7, "sea-creature"]],
         columns=["chrom", "start", "end", "animal"],
     )
-    print(bioframe.subtract(df1, df2))
     pd.testing.assert_frame_equal(
         df_result,
         bioframe.subtract(df1, df2)
@@ -754,6 +833,7 @@ def test_split():
         .reset_index(drop=True),
     )
 
+    ### test the case where columns have different names
     df1 = pd.DataFrame(
         [["chrX", 3, 8]],
         columns=["chromosome", "lo", "hi"],
