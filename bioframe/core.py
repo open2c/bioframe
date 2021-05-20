@@ -190,11 +190,11 @@ def is_overlapping(df, cols=None):
 
 def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None):
     """
-    Checks that region_df is a valid view, namely that it:
-    - satisfies requirements for a bedframe, including columns for ('chrom', 'start', 'end')
-    - has an additional column providing a unique name, view_name_col, with default 'name'
-    - does not contain null values
-    - that entries in the view_name_col are unique.
+    Checks that region_df is a valid view, namely:
+    - it satisfies requirements for a bedframe, including columns for ('chrom', 'start', 'end')
+    - it has an additional column, view_name_col, with default 'name'
+    - it does not contain null values
+    - entries in the view_name_col are unique.
     - intervals are non-overlapping
 
     raise_errors:bool
@@ -213,12 +213,12 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
         region_df, [ck1, sk1, ek1, view_name_col], return_as_bool=True
     ):
         if raise_errors:
-            raise TypeError("Invalid view: column names cannot be verified")
+            raise TypeError("Invalid view: invalid column names")
         return False
 
     if not is_bedframe(region_df, cols=cols):
         if raise_errors:
-            raise ValueError("Invalid view: bedframe properties cannot be verified")
+            raise ValueError("Invalid view: not a bedframe")
         return False
 
     if pd.isna(region_df).values.any():
@@ -241,24 +241,85 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
     return True
 
 
-def make_viewframe(
-    regions, infer_chroms_from_regions=True, view_name_col="name", cols=None
-):
+def _bioframe_from_dict(regions, name_col="name", cols=None):
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    data = []
+    for k, v in dict(regions).items():
+        chrom = k
+        name = k
+        if np.isscalar(v):
+            start = 0
+            end = v
+        else:
+            raise ValueError("Unknown dict format: {type(v)}")
+        data.append([chrom, start, end, name])
+    return pd.DataFrame(data, columns=[ck1, sk1, ek1, name_col])
+
+
+def _bioframe_from_series(regions, name_col="name", cols=None):
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    chroms = regions.index.values
+    data = {
+        ck1: chroms,
+        sk1: 0,
+        ek1: regions.values,
+        name_col: regions.index.values,
+    }
+    return pd.DataFrame(data)
+
+
+def _bioframe_from_list(regions, name_col="name", cols=None):
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    df = pd.DataFrame(regions)
+    if df.shape[1] == 3:
+        df.columns = [ck1, sk1, ek1]
+        df[name_col] = df[ck1].values.copy()
+    elif df.shape[1] == 4:
+        df.columns = [ck1, sk1, ek1, name_col]
+    return df
+
+
+def _bioframe_from_any(regions, name_col="name", cols=None):
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    if type(regions) is dict:
+        out_df = _bioframe_from_dict(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+    elif type(regions) is pd.core.series.Series:
+        out_df = _bioframe_from_series(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+    elif type(regions) is list:
+        out_df = _bioframe_from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+    elif type(regions) is pd.core.frame.DataFrame:
+        out_df = regions.copy()
+    else:
+        raise ValueError("Unknown region type: {type(v)}")
+    return out_df
+
+def _overwrite_name_with_UCSC(reg_df, view_name_col="name", cols=None):
+    """
+    Auto-creates a UCSC name for each region, replacing view_name_col.
+
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    df = reg_df.copy()
+    data = zip(df[ck1], df[sk1], df[ek1])
+    df[view_name_col] = ["{0}:{1}-{2}".format(*i) for i in data]
+    return df
+
+def make_viewframe(regions, check_bounds=None, view_names_as_UCSC=False, view_name_col="name", cols=None):
     """
     Makes and validates a dataframe view_df, where supported input types for regions are:
     - a dictionary where keys are strings and values are integers {str:int},
-    specifying regions (chrom, 0, end, name)
-    - a dictionary where keys are strings and values are tuples of integers {str:(int,int)},
-    specifying regions (chrom, start, end, name), e.g. {'chr1':10, 'chr2':20} or {'chr1':(0,10),'chr2':(0,20)}.
+    specifying regions (chrom, 0, end, chrom)
     - a pandas series of chromosomes lengths with index specifying region names
-    - a dataFrame, skips to validation step
+    - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
+    - a pandas DataFrame, skips to validation step
 
-    infer_chroms_from_regions:bool
-        attemps to strip 'p' or 'q' from chrom string. if False, view_name_col specifies chrom as well.
-        default True.
+    check_bounds : None, or chromosome sizes provided as any of valid formats above
+        Optional, if provided checks if regions in the view are contained by regions
+        supplied in check_bounds, typically provided as a series of chromosome sizes.
+        Default None.
 
     view_name_col:str
-        specifies
+        Specifies column name of the view regions. Default 'name'.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -272,47 +333,23 @@ def make_viewframe(
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
-    if type(regions) is dict:
-        data = []
-        for k, v in dict(regions).items():
-            name = k
-            if infer_chroms_from_regions:
-                chrom = k.split("_")[0].replace("p", "").replace("q", "")
-            else:
-                chrom = k
-            if isinstance(v, (tuple, list, np.ndarray)):
-                start = v[0]
-                end = v[1]
-            elif np.isscalar(v):
-                start = 0
-                end = v
-            else:
-                raise ValueError("Unknown dict format: {type(v)}")
-            data.append([chrom, start, end, name])
+    view_df = _bioframe_from_any(regions, name_col=view_name_col, cols=cols)
 
-        view_df = pd.DataFrame(data, columns=[ck1, sk1, ek1, view_name_col])
+    if check_bounds is not None:
+        bounds_df = _bioframe_from_any(check_bounds, name_col="bounds", cols=cols)
+        if not is_contained(
+            view_df,
+            bounds_df,
+            df_view_col=view_name_col,
+            view_name_col="bounds",
+            cols=cols,
+        ):
+            raise ValueError("Invalid input to make a viewFrame, regions not contained by bounds")
 
-    elif type(regions) is pd.core.series.Series:
-        chroms = regions.index.values
-        if infer_chroms_from_regions:
-            chroms = [i.split("_")[0].replace("p", "").replace("q", "") for i in chroms]
-        data = {
-            ck1: chroms,
-            sk1: 0,
-            ek1: regions.values,
-            view_name_col: regions.index.values,
-        }
-        view_df = pd.DataFrame(data)
+    if view_names_as_UCSC:
+        view_df = _overwrite_name_with_UCSC(view_df, view_name_col=view_name_col, cols=cols)
 
-    elif type(regions) is pd.core.frame.DataFrame:
-        view_df = regions.copy()
-
-    else:
-        raise ValueError("Unknown region type: {type(v)}")
-
-    if is_viewframe(
-        view_df, view_name_col=view_name_col, cols=(ck1, sk1, ek1), raise_errors=True
-    ):
+    if is_viewframe(view_df, view_name_col=view_name_col, cols=cols, raise_errors=True):
         return view_df
     else:
         raise ValueError("could not make valid viewFrame, retry with new input")
@@ -322,7 +359,7 @@ def is_cataloged(
     df, view_df, raise_errors=False, df_view_col="view_region", view_name_col="name"
 ):
     """
-    tests if the set of regions names in a bioframe `df` are cataloged in the view `view_df`.
+    tests if all regions names in a bioframe `df` are present in the view `view_df`.
 
     df : pandas.DataFrame
 
@@ -341,11 +378,12 @@ def is_cataloged(
     """
     if not _verify_columns(df, [df_view_col], return_as_bool=True):
         if raise_errors is True:
-            raise ValueError("df_view_col could not be verified in df")
+            raise ValueError(f"Could not find ‘{df_view_col}’ column in df")
         return False
+
     if not _verify_columns(view_df, [view_name_col], return_as_bool=True):
         if raise_errors is True:
-            raise ValueError("view_name_col could not be verified in view_df")
+            raise ValueError(f"Could not find ‘{view_name_col}’ column in view_df")
         return False
 
     if not set(df[df_view_col].values).issubset(set(view_df[view_name_col].values)):
@@ -359,6 +397,7 @@ def is_cataloged(
                 )
             )
         return False
+
     return True
 
 
@@ -371,7 +410,8 @@ def is_contained(
     cols=None,
 ):
     """
-    tests if all genomic intervals in a bioframe `df` are contained in the view `view_df`.
+    tests if all genomic intervals in a bioframe `df` are cataloged and do not extend beyond their
+    associated region in the view `view_df`.
 
     df : pandas.DataFrame
 
@@ -438,7 +478,14 @@ def is_covering(df, view_df, view_name_col="name", cols=None):
         return False
 
 
-def is_tiling(df, view_df, df_view_col="view_region", view_name_col="name", cols=None):
+def is_tiling(
+    df,
+    view_df,
+    raise_errors=False,
+    df_view_col="view_region",
+    view_name_col="name",
+    cols=None,
+):
     """
     tests if a view `view_df` is tiled by the set of genomic intervals in the bedframe `df`
     this is true if:
@@ -455,15 +502,18 @@ def is_tiling(df, view_df, df_view_col="view_region", view_name_col="name", cols
     view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
 
     if is_overlapping(df):
-        print("overlaps")
+        if raise_errors:
+            raise ValueError("overlaps")
         return False
     if not is_covering(df, view_df, view_name_col=view_name_col, cols=None):
-        print("not covered")
+        if raise_errors:
+            raise ValueError("not covered")
         return False
     if not is_contained(
         df, view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=None
     ):
-        print("not contained")
+        if raise_errors:
+            raise ValueError("not contained")
         return False
     return True
 
@@ -487,11 +537,14 @@ def sort_bedframe(
         Valid bedframe.
 
     view_df : pandas.DataFrame
-        Valid input for a viewframe or.
+        Valid input to make a viewframe.
 
     infer_assignment : bool
+        If True, tries to assign df intervals to the view region with the largest overlap.
+        Default True.
 
     reset_index : bool
+        Default True.
 
     df_view_col:
         Column from df used to associate interviews with view regions.
@@ -504,6 +557,10 @@ def sort_bedframe(
     Returns
     -------
     out_df : sorted bedframe
+
+    Notes
+    -------
+        df_view_col is currently returned as an ordered categorical
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
@@ -529,8 +586,14 @@ def sort_bedframe(
                 cols=None,
             )
 
+        if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
+            raise ValueError("no df_view_col not present in df, cannot sort by view")
+
         if not is_cataloged(
-            out_df, view_df, df_view_col=df_view_col, view_name_col=view_name_col
+            out_df[pd.isna(out_df[df_view_col].values) == False],
+            view_df,
+            df_view_col=df_view_col,
+            view_name_col=view_name_col,
         ):
             raise ValueError(
                 "intervals in df not cataloged in view_df, cannot sort by view"
@@ -585,31 +648,30 @@ def is_sorted(
 def sanitize_bedframe(
     df1,
     recast_dtypes=True,
-    drop_null=True,
-    flip_invalid=True,
+    drop_null=False,
+    start_exceed_end_action=None,
     cols=None,
 ):
     """
     Attempts to clean a genomic interval dataframe to be valid.
 
     drop_null : bool
-        Drops rows with pd.NA. Default True.
+        Drops rows with pd.NA. Default False.
 
-    drop_invalid:bool
-        Drops invalid intervals from returned bedframe. Default False.
-
-    flip_invalid:bool
-        Flips intervals where start<end in returned bedframe.
-        Default True.
-
-    ### TODO: 
-    - discuss dropping of intervals based on view_df & df_view_col
-    - whether to include return_sorted, and if so, how.
+    start_exceed_end_action : str or None
+        Options: 'flip' or 'drop' or None. Default None.
+        If 'flip', attempts to sanitize by flipping intervals with start>end.
+        If 'drop' attempts to sanitize dropping intervals with start>end.
+        If None, does not alter these intervals if present.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+
+    Notes
+    -------
+        The option start_exceed_end_action='flip' may be useful for gff files with strand information but starts > ends.
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
@@ -628,11 +690,19 @@ def sanitize_bedframe(
 
     if drop_null:
         out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
+        out_df.reset_index(drop=True, inplace=True)
 
-    if flip_invalid:
+    if start_exceed_end_action is not None:
+        start_exceed_end_action = start_exceed_end_action.lower()
         if ((out_df[ek1] - out_df[sk1]) < 0).any():
             inds = ((out_df[ek1] - out_df[sk1]) < 0).values
-            out_df.loc[inds, [sk1, ek1]] = out_df.loc[inds, [ek1, sk1]].values
+            if start_exceed_end_action == "drop":
+                out_df = out_df.loc[inds == 0]
+            elif start_exceed_end_action == "flip":
+                out_df.loc[inds, [sk1, ek1]] = out_df.loc[inds, [ek1, sk1]].values
+            else:
+                raise ValueError("unknown action for intervals with start>end")
+            out_df.reset_index(drop=True, inplace=True)
 
     if is_bedframe(out_df, cols=cols):
         return out_df
@@ -641,44 +711,60 @@ def sanitize_bedframe(
 
 
 def assign_view(
-    df, view_df, df_view_col="view_region", view_name_col="name", cols=None
+    df,
+    view_df,
+    drop_unassigned=False,
+    df_view_col="view_region",
+    view_name_col="name",
+    cols=None,
 ):
     """
     Associates genomic intervals in bedframe df with regions in viewframe view_df, based on their largest overlap.
-    Currently drops all genomic intervals that are not cataloged in view_df.
+    Note this resets the index of the returned dataframe.
 
-    ## TODO: discuss if we should add a drop_unassigned=True option.
+    drop_unassigned : bool
+        If True, drop intervals in df that are do no Default False.
 
     Returns
     -------
-    out_df:dataframe with view region in view_name_col
+    out_df:dataframe with the associated view region for each interval in out_df[view_name_col]
 
     """
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
+    df = df.copy()
+    df.reset_index(inplace=True, drop=True)
+
     is_bedframe(df, raise_errors=True, cols=cols)
     view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
 
-    overlap_idxs = ops.overlap(
+    overlap_view = ops.overlap(
         df,
         view_df,
         how="left",
         suffixes=("", "_view"),
         return_overlap=True,
-        return_index=True,
         keep_order=True,
+        return_index=True,
     )
-    overlap_idxs["overlap"] = (
-        overlap_idxs["overlap_end"] - overlap_idxs["overlap_start"]
+    overlap_columns = overlap_view.columns
+    overlap_view["overlap_length"] = (
+        overlap_view["overlap_end"] - overlap_view["overlap_start"]
     )
 
     out_df = (
-        overlap_idxs.groupby("index", sort=False).apply(
-            lambda group: group.nlargest(1, columns="overlap")
-        )
-    ).reset_index(drop=True)
+        overlap_view.sort_values("overlap_length", ascending=False)
+        .drop_duplicates("index", keep="first")
+        .sort_index()
+    )
+
     out_df.rename(columns={view_name_col + "_view": df_view_col}, inplace=True)
 
+    if drop_unassigned:
+        out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
+    out_df.reset_index(inplace=True, drop=True)
+
     return_cols = list(df.columns) + [df_view_col]
+
     return out_df[return_cols]

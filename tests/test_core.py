@@ -124,7 +124,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
     ### test is_covering where two intervals from df overlap
@@ -137,7 +137,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
     ### test is_covering where two intervals from df overlap
@@ -150,7 +150,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
 
@@ -164,7 +164,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is True
 
     ### not contained, since (chr1,0,9) is associated with chr1q
@@ -176,7 +176,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
     ### not contained, contains overlaps
@@ -188,7 +188,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1', 0, 9,"chr1p"), ('chr1', 11, 20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
     ### not covering
@@ -199,7 +199,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
 
@@ -253,17 +253,17 @@ def test_sanitize_bedframe():
     sanitized_df1 = sanitized_df1.astype(
         {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
     )
-    pd.testing.assert_frame_equal(sanitized_df1, bioframe.core.sanitize_bedframe(df1))
+    pd.testing.assert_frame_equal(
+        sanitized_df1, bioframe.core.sanitize_bedframe(df1, drop_null=True)
+    )
 
     # keep rows with null, but recast
     sanitized_df1 = df1.astype(
         {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
     )
-    pd.testing.assert_frame_equal(
-        sanitized_df1, bioframe.core.sanitize_bedframe(df1, drop_null=False)
-    )
+    pd.testing.assert_frame_equal(sanitized_df1, bioframe.core.sanitize_bedframe(df1))
 
-    # flip intervals as well as drop
+    # flip intervals as well as drop NA
     df1 = pd.DataFrame(
         [
             ["chr1", 20, 10],
@@ -275,7 +275,28 @@ def test_sanitize_bedframe():
     sanitized_df1 = sanitized_df1.astype(
         {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
     )
-    pd.testing.assert_frame_equal(sanitized_df1, bioframe.core.sanitize_bedframe(df1))
+    pd.testing.assert_frame_equal(
+        sanitized_df1,
+        bioframe.core.sanitize_bedframe(
+            df1, start_exceed_end_action="fLiP", drop_null=True
+        ),
+    )
+
+    # flip intervals as well as drop NA
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 20, 10],
+            ["chr1", pd.NA, 25],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    sanitized_df1 = pd.DataFrame([["chr1", 10, 20]], columns=["chrom", "start", "end"])
+    sanitized_df1 = sanitized_df1.astype(
+        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+    assert bioframe.core.sanitize_bedframe(
+        df1, start_exceed_end_action="drop", drop_null=True
+    ).empty
 
 
 def test_is_viewframe():
@@ -336,25 +357,36 @@ def test_make_viewframe():
     # test dict input
     d = """            chrom  start  end        name
     0    chrTESTX      0   10    chrTESTX
-    1  chrTESTX_p      1   12  chrTESTX_p"""
+    1  chrTESTX_p      0   12  chrTESTX_p"""
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        bioframe.core.make_viewframe(
-            {"chrTESTX": 10, "chrTESTX_p": (1, 12)}, infer_chroms_from_regions=False
-        ),
+        bioframe.core.make_viewframe({"chrTESTX": 10, "chrTESTX_p": 12}),
     )
 
-    # todo: if the individual chromosomes are inferred, then this should fail!
+    # test list input
+    region_list = [("chrTESTX", 0, 10), ("chrTESTX_p", 0, 12)]
+    pd.testing.assert_frame_equal(
+        view_df.copy(),
+        bioframe.core.make_viewframe(region_list),
+    )
 
     # test pd.Series input
     chromsizes = pd.Series(data=[5, 8], index=["chrTESTXq", "chrTEST_2p"])
     d = """      chrom  start  end        name
-    0  chrTESTX      0    5   chrTESTXq
-    1   chrTEST      0    8  chrTEST_2p"""
+    0  chrTESTXq      0    5   chrTESTXq
+    1   chrTEST_2p      0    8  chrTEST_2p"""
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
         view_df.copy(), bioframe.core.make_viewframe(chromsizes)
+    )
+
+    d = """          chrom   start   end name
+    0   chrTESTXq   0   5   chrTESTXq:0-5
+    1   chrTEST_2p  0   8   chrTEST_2p:0-8"""
+    view_df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(
+        view_df.copy(), bioframe.core.make_viewframe(chromsizes, view_names_as_UCSC=True)
     )
 
     # test pd.DataFrame input
@@ -422,7 +454,36 @@ def test_assign_view():
     pd.testing.assert_frame_equal(
         df_assigned,
         bioframe.core.assign_view(
-            df, view_df, view_name_col="fruit", df_view_col="funny_view_region"
+            df,
+            view_df,
+            view_name_col="fruit",
+            df_view_col="funny_view_region",
+            drop_unassigned=True,
+        ),
+    )
+
+    ### keep the interval with NA as its region if drop_unassigned is False
+    df_assigned = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+", "apples"],
+            ["chrX", 5, 10, "+", "oranges"],
+            ["chrX", 0, 5, "+", "oranges"],
+            ["chr2", 5, 10, "+", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "funny_view_region"],
+    )
+    df_assigned = df_assigned.astype(
+        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+
+    pd.testing.assert_frame_equal(
+        df_assigned,
+        bioframe.core.assign_view(
+            df,
+            view_df,
+            view_name_col="fruit",
+            df_view_col="funny_view_region",
+            drop_unassigned=False,
         ),
     )
 
@@ -467,6 +528,8 @@ def test_sort_bedframe():
             ["chrX", 0, 5, "+", "oranges"],
             ["chrX", 5, 10, "+", "oranges"],
             ["chr1", 0, 10, "+", "apples"],
+            ["chr2", 5, 10, "+", pd.NA],
+
         ],
         columns=["chrom", "start", "end", "strand", "view_region"],
     )
