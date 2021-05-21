@@ -124,7 +124,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
     ### test is_covering where two intervals from df overlap
@@ -137,7 +137,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
     ### test is_covering where two intervals from df overlap
@@ -150,7 +150,7 @@ def test_is_covering():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_covering(df1, chromsizes) is True
 
 
@@ -164,7 +164,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is True
 
     ### not contained, since (chr1,0,9) is associated with chr1q
@@ -176,7 +176,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
     ### not contained, contains overlaps
@@ -188,7 +188,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = [ ('chr1', 0, 9,"chr1p"), ('chr1', 11, 20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
     ### not covering
@@ -199,7 +199,7 @@ def test_is_tiling():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    chromsizes = [ ('chr1',0,9,"chr1p"), ('chr1',11,20, "chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert bioframe.core.is_tiling(df1, chromsizes) is False
 
 
@@ -386,12 +386,12 @@ def test_make_viewframe():
     1   chrTEST_2p  0   8   chrTEST_2p:0-8"""
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
-        view_df.copy(), bioframe.core.make_viewframe(chromsizes, view_names_as_UCSC=True)
+        view_df.copy(),
+        bioframe.core.make_viewframe(chromsizes, view_names_as_UCSC=True),
     )
 
     # test pd.DataFrame input
-    pd.testing.assert_frame_equal(view_df.copy(), 
-        bioframe.core.make_viewframe(view_df))
+    pd.testing.assert_frame_equal(view_df.copy(), bioframe.core.make_viewframe(view_df))
 
 
 def test_assign_view():
@@ -530,7 +530,6 @@ def test_sort_bedframe():
             ["chrX", 5, 10, "+", "oranges"],
             ["chr1", 0, 10, "+", "apples"],
             ["chr2", 5, 10, "+", pd.NA],
-
         ],
         columns=["chrom", "start", "end", "strand", "view_region"],
     )

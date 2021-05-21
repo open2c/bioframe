@@ -1,6 +1,7 @@
 import pandas as pd
 import bioframe
-#import pyranges as pr
+
+# import pyranges as pr
 import numpy as np
 from io import StringIO
 
@@ -119,7 +120,7 @@ def test_trim():
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
 
     ### trim with view_df interpreted from dictionary for chromsizes
-    chromsizes = {"chr1":20, "chrX_0": 5}
+    chromsizes = {"chr1": 20, "chrX_0": 5}
     df = pd.DataFrame(
         [
             ["chr1", 0, 12],
@@ -140,7 +141,7 @@ def test_trim():
         df_trimmed,
         bioframe.trim(
             df,
-            view_df= chromsizes,
+            view_df=chromsizes,
             df_view_col="chrom",
             cols=["chrom", "startFunky", "end"],
         ),
@@ -549,7 +550,7 @@ def test_complement():
     ### test complement where an interval from df overlaps two different regions from view
     ### test complement with no view_df and a negative interval
     df1 = pd.DataFrame([["chr1", 5, 15]], columns=["chrom", "start", "end"])
-    chromsizes = [("chr1",0, 9,"chr1p"), ("chr1",11,20,"chr1q")]
+    chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     df1_complement = pd.DataFrame(
         [["chr1", 0, 5, "chr1p"], ["chr1", 15, 20, "chr1q"]],
         columns=["chrom", "start", "end", "view_region"],

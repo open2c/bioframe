@@ -6,6 +6,7 @@ from . import arrops
 from .region import parse_region, add_UCSC_name_column, _get_default_colnames
 from .core import _verify_columns, make_viewframe, is_cataloged
 
+
 def select(df, region, cols=None):
     """
     Return all genomic intervals in a dataframe that overlap
@@ -476,16 +477,20 @@ def overlap(
             ].astype(pd.Int64Dtype())
         if df_index_1 is not None:
             df_index_1[overlap_df_idxs[:, 0] == -1] = None
-            df_index_1["index"+suffixes[0]] = df_index_1["index"+suffixes[0]].astype(pd.Int64Dtype())
+            df_index_1["index" + suffixes[0]] = df_index_1[
+                "index" + suffixes[0]
+            ].astype(pd.Int64Dtype())
         if df_index_2 is not None:
             df_index_2[overlap_df_idxs[:, 1] == -1] = None
-            df_index_2["index"+suffixes[1]] = df_index_2["index"+suffixes[1]].astype(pd.Int64Dtype())
+            df_index_2["index" + suffixes[1]] = df_index_2[
+                "index" + suffixes[1]
+            ].astype(pd.Int64Dtype())
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
             ] = None
-            df_overlap[["overlap_"+sk1, "overlap_"+ek1]] = df_overlap[
-                ["overlap_"+sk1, "overlap_"+ek1]
+            df_overlap[["overlap_" + sk1, "overlap_" + ek1]] = df_overlap[
+                ["overlap_" + sk1, "overlap_" + ek1]
             ].astype(pd.Int64Dtype())
 
     out_df = pd.concat(
@@ -726,7 +731,7 @@ def merge(df, min_dist=0, cols=None, on=None):
 def complement(df, view_df=None, view_name_col="name", cols=None):
     """
     Find genomic regions in view_df that are not covered by any interval in df.
-    First assigns intervals in df to region in view_df, splitting df intervals as necessary. 
+    First assigns intervals in df to region in view_df, splitting df intervals as necessary.
 
     Parameters
     ----------
@@ -1330,7 +1335,7 @@ def split(
     df_split.rename(columns=name_updates, inplace=True)
 
     if add_names:
-        df_split = add_UCSC_name_column(df_split,cols=[ck1,sk1,ek1],name_col="name")
+        df_split = add_UCSC_name_column(df_split, cols=[ck1, sk1, ek1], name_col="name")
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"], inplace=True)

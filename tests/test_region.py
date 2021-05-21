@@ -1,4 +1,3 @@
-
 from bioframe.region import parse_region
 from bioframe.region import from_
 import pandas as pd
@@ -69,7 +68,7 @@ def test_from_():
     assert (from_(parsed) == parsed).all().all()
 
     # None or False will be parsed
-    assert from_([("chr1", None, 5)],fill_null={'chr1':10})["start"].values[0] == 0
+    assert from_([("chr1", None, 5)], fill_null={"chr1": 10})["start"].values[0] == 0
 
     # pull end from chromsizes
     p2 = from_([("chr1", 5, None)], fill_null={"chr1": 40}, names_as_UCSC=True)
@@ -83,7 +82,7 @@ def test_from_():
     p4 = from_([("chr1", 0, 5)], names_as_UCSC=True)
     assert list(p4.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
-    # nothing happens: name was autocompleted    
+    # nothing happens: name was autocompleted
     p5 = from_([("chr1", 0, 5)], names_as_UCSC=False)
     assert list(p5.values[0]) == ["chr1", 0, 5, "chr1"]
 

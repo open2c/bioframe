@@ -4,6 +4,7 @@ import collections
 from . import ops
 from .region import from_, _get_default_colnames, add_UCSC_name_column
 
+
 def _verify_columns(df, colnames, return_as_bool=False):
     """
     Raises ValueError if columns with colnames are not present in dataframe df.
@@ -671,7 +672,7 @@ def assign_view(
 
     overlap_columns = overlap_view.columns
     overlap_view["overlap_length"] = (
-        overlap_view["overlap_"+ek1] - overlap_view["overlap_"+sk1]
+        overlap_view["overlap_" + ek1] - overlap_view["overlap_" + sk1]
     )
 
     out_df = (

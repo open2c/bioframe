@@ -96,8 +96,8 @@ def fetch_chromsizes(
 
     if provider == "ucsc" or provider is None:
         return UCSCClient(db).fetch_chromsizes(
-            filter_chroms=filter_chroms, 
-            chrom_patterns=chrom_patterns, 
+            filter_chroms=filter_chroms,
+            chrom_patterns=chrom_patterns,
             natsort=natsort,
             as_bed=as_bed,
             **kwargs
@@ -154,12 +154,13 @@ class UCSCClient:
         self._db_url = urljoin(self.BASE_URL, "goldenPath/{}/database/".format(db))
 
     def fetch_chromsizes(
-        self, 
+        self,
         filter_chroms=True,
         chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
         natsort=True,
         as_bed=False,
-        **kwargs):
+        **kwargs
+    ):
         """
         Fetch chromsizes from the UCSC database.
 
@@ -181,15 +182,16 @@ class UCSCClient:
         Series of integer bp lengths indexed by sequence name or an interval dataframe.
 
         """
-        
+
         url = urljoin(self._db_url, "chromInfo.txt.gz")
         return read_chromsizes(
-            url, 
+            url,
             filter_chroms=filter_chroms,
             chrom_patterns=chrom_patterns,
             natsort=natsort,
             as_bed=as_bed,
-            **kwargs)
+            **kwargs
+        )
 
     def fetch_centromeres(self, **kwargs):
         url = urljoin(self._db_url, "centromeres.txt.gz")

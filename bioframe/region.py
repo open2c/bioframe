@@ -52,6 +52,7 @@ def atoi(s):
 
 ### manipulating UCSC strings ###
 
+
 def parse_humanized(s):
     _NUMERIC_RE = re.compile("([0-9,.]+)")
     _, value, unit = _NUMERIC_RE.split(s.replace(",", ""))
@@ -135,6 +136,7 @@ def parse_region_string(s):
     start, end = _expect(_tokenize(parts[1]))
     return (chrom, start, end)
 
+
 def is_complete_UCSC_string(mystring):
     """
     Check if a string can be parsed into chrom,start,end format.
@@ -199,6 +201,7 @@ def parse_region(reg, chromsizes=None):
 
 ### conversions from various input formats into dataframes ###
 
+
 def from_dict(regions, name_col="name", cols=None):
     """
     Makes a dataframe from a dictionary of {str,int} pairs, interpreted as chromosome names.
@@ -239,17 +242,19 @@ def from_list(regions, name_col="name", cols=None):
     elif df.shape[1] == 4:
         df.columns = [ck1, sk1, ek1, name_col]
     else:
-        raise ValueError('wrong number of columns for list input format')
+        raise ValueError("wrong number of columns for list input format")
     return df
+
 
 def from_UCSC_string_list(region_list, name_col="name", cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     parsed = [parse_region_string(i) for i in region_list]
-    df = pd.DataFrame(parsed, columns=[ck1,sk1,ek1])
+    df = pd.DataFrame(parsed, columns=[ck1, sk1, ek1])
     df[name_col] = region_list
     return df
 
-def from_(regions, names_as_UCSC=False, fill_null = False, name_col="name", cols=None):
+
+def from_(regions, names_as_UCSC=False, fill_null=False, name_col="name", cols=None):
     """
     Attempts to make a dataframe with columns [chr,start,end,name_col] from a variety of input types.
     Currently supported inputs:
@@ -258,46 +263,52 @@ def from_(regions, names_as_UCSC=False, fill_null = False, name_col="name", cols
     - dictionary of {str:int} key value pairs
     - pandas series where the index is interpreted as chromosomes and values are interpreted as end
     - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
-    
+
     names_as_UCSC : bool
         replaces values in name_col with UCSC strings made from (chrom,start,end).
         Default False.
 
     fill_null : False or dictionary
-        Accepts a dictionary of {str:int} pairs, interpreted as chromosome sizes. 
+        Accepts a dictionary of {str:int} pairs, interpreted as chromosome sizes.
         Kept or backwards compatibility. Default False.
 
     name_col : str
         Column name. Default "name".
 
     cols : (str,str,str)
-        Names for dataframe columns. 
+        Names for dataframe columns.
         Default None sets them with get_default_colnames().
-    
+
     Returns
     -------
-    out_df:dataframe 
+    out_df:dataframe
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
     if type(regions) is pd.core.frame.DataFrame:
-        if set([ck1,sk1,ek1]).issubset(regions.columns):
+        if set([ck1, sk1, ek1]).issubset(regions.columns):
             out_df = regions.copy()
-        elif (len(regions[name_col].values.shape) == 1) and is_complete_UCSC_string(regions[name_col].values[0]): 
-            out_df = from_UCSC_string_list(regions[name_col].values, name_col=name_col, cols=[ck1, sk1, ek1])
+        elif (len(regions[name_col].values.shape) == 1) and is_complete_UCSC_string(
+            regions[name_col].values[0]
+        ):
+            out_df = from_UCSC_string_list(
+                regions[name_col].values, name_col=name_col, cols=[ck1, sk1, ek1]
+            )
         else:
             raise ValueError("Unknown dataFrame format: check column names")
-    
+
     elif type(regions) is dict:
         out_df = from_dict(regions, name_col=name_col, cols=[ck1, sk1, ek1])
-    
+
     elif type(regions) is pd.core.series.Series:
         out_df = from_series(regions, name_col=name_col, cols=[ck1, sk1, ek1])
-    
+
     elif type(regions) is list:
-        if len(np.shape(regions))==1 and type(regions[0]) is str:
-            out_df = from_UCSC_string_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+        if len(np.shape(regions)) == 1 and type(regions[0]) is str:
+            out_df = from_UCSC_string_list(
+                regions, name_col=name_col, cols=[ck1, sk1, ek1]
+            )
         else:
             out_df = from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
     else:
@@ -313,7 +324,7 @@ def from_(regions, names_as_UCSC=False, fill_null = False, name_col="name", cols
                 else:
                     ends.append(out_df[ek1].values[i])
             out_df[ek1] = ends
-        except: 
+        except:
             raise ValueError("could not fill ends with provided chromsizes")
 
     if names_as_UCSC:
@@ -321,8 +332,10 @@ def from_(regions, names_as_UCSC=False, fill_null = False, name_col="name", cols
 
     return out_df
 
+
 def to_UCSC_string(triplet):
     return "{0}:{1}-{2}".format(*triplet)
+
 
 def add_UCSC_name_column(reg_df, name_col="name", cols=None):
     """
@@ -331,6 +344,5 @@ def add_UCSC_name_column(reg_df, name_col="name", cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     df = reg_df.copy()
     data = zip(df[ck1], df[sk1], df[ek1])
-    df[name_col] = [ to_UCSC_string(i) for i in data]
+    df[name_col] = [to_UCSC_string(i) for i in data]
     return df
-
