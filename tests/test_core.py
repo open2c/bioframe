@@ -390,7 +390,8 @@ def test_make_viewframe():
     )
 
     # test pd.DataFrame input
-    pd.testing.assert_frame_equal(view_df.copy(), bioframe.core.make_viewframe(view_df))
+    pd.testing.assert_frame_equal(view_df.copy(), 
+        bioframe.core.make_viewframe(view_df))
 
 
 def test_assign_view():

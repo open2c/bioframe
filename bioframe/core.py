@@ -2,53 +2,19 @@ import pandas as pd
 import numpy as np
 import collections
 from . import ops
-
-_rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
-
-
-def _get_default_colnames():
-    return _rc["colnames"]["chrom"], _rc["colnames"]["start"], _rc["colnames"]["end"]
-
-
-class update_default_colnames:
-    def __init__(self, new_colnames):
-        self._old_colnames = dict(_rc["colnames"])
-        if isinstance(new_colnames, collections.Iterable):
-            if len(new_colnames) != 3:
-                raise ValueError(
-                    "Please, specify new columns using a list of "
-                    "3 strings or a dict!"
-                )
-            (
-                _rc["colnames"]["chrom"],
-                _rc["colnames"]["start"],
-                _rc["colnames"]["end"],
-            ) = new_colnames
-        elif isinstance(new_colnames, collections.Mapping):
-            _rc["colnames"].update(
-                {
-                    k: v
-                    for k, v in new_colnames.items()
-                    if k in ["chrom", "start", "end"]
-                }
-            )
-        else:
-            raise ValueError(
-                "Please, specify new columns using a list of " "3 strings or a dict!"
-            )
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        _rc["colnames"] = self._old_colnames
-
+from .region import from_, _get_default_colnames, add_UCSC_name_column
 
 def _verify_columns(df, colnames, return_as_bool=False):
     """
+    Raises ValueError if columns with colnames are not present in dataframe df.
+
     df: pandas.DataFrame
 
     colnames: list of columns
+
+    return_as_bool : bool
+        If true, returns as a boolean instead of raising errors. Default False.
+
     """
 
     if not type(df) is pd.core.frame.DataFrame:
@@ -76,6 +42,10 @@ def _verify_column_dtypes(df, cols=None, return_as_bool=False):
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+
+    return_as_bool : bool
+        If true, returns as a boolean instead of raising errors. Default False.
+
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
@@ -107,6 +77,9 @@ def _verify_column_dtypes(df, cols=None, return_as_bool=False):
 
 
 def is_chrom_dtype(chrom_dtype):
+    """
+    Returns True if dtype is any of the allowed bioframe chrom dtypes, False otherwise.
+    """
     return np.any(
         [
             pd.api.types.is_string_dtype(chrom_dtype),
@@ -145,7 +118,7 @@ def is_bedframe(
 
     if not _verify_columns(df, [ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
-            raise TypeError("Invalid columns")
+            raise TypeError("Invalid column names")
         return False
 
     if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
@@ -241,70 +214,13 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
     return True
 
 
-def _bioframe_from_dict(regions, name_col="name", cols=None):
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    data = []
-    for k, v in dict(regions).items():
-        chrom = k
-        name = k
-        if np.isscalar(v):
-            start = 0
-            end = v
-        else:
-            raise ValueError("Unknown dict format: {type(v)}")
-        data.append([chrom, start, end, name])
-    return pd.DataFrame(data, columns=[ck1, sk1, ek1, name_col])
-
-
-def _bioframe_from_series(regions, name_col="name", cols=None):
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    chroms = regions.index.values
-    data = {
-        ck1: chroms,
-        sk1: 0,
-        ek1: regions.values,
-        name_col: regions.index.values,
-    }
-    return pd.DataFrame(data)
-
-
-def _bioframe_from_list(regions, name_col="name", cols=None):
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    df = pd.DataFrame(regions)
-    if df.shape[1] == 3:
-        df.columns = [ck1, sk1, ek1]
-        df[name_col] = df[ck1].values.copy()
-    elif df.shape[1] == 4:
-        df.columns = [ck1, sk1, ek1, name_col]
-    return df
-
-
-def _bioframe_from_any(regions, name_col="name", cols=None):
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    if type(regions) is dict:
-        out_df = _bioframe_from_dict(regions, name_col=name_col, cols=[ck1, sk1, ek1])
-    elif type(regions) is pd.core.series.Series:
-        out_df = _bioframe_from_series(regions, name_col=name_col, cols=[ck1, sk1, ek1])
-    elif type(regions) is list:
-        out_df = _bioframe_from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
-    elif type(regions) is pd.core.frame.DataFrame:
-        out_df = regions.copy()
-    else:
-        raise ValueError("Unknown region type: {type(v)}")
-    return out_df
-
-def _overwrite_name_with_UCSC(reg_df, view_name_col="name", cols=None):
-    """
-    Auto-creates a UCSC name for each region, replacing view_name_col.
-
-    """
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    df = reg_df.copy()
-    data = zip(df[ck1], df[sk1], df[ek1])
-    df[view_name_col] = ["{0}:{1}-{2}".format(*i) for i in data]
-    return df
-
-def make_viewframe(regions, check_bounds=None, view_names_as_UCSC=False, view_name_col="name", cols=None):
+def make_viewframe(
+    regions,
+    check_bounds=None,
+    view_names_as_UCSC=False,
+    view_name_col="name",
+    cols=None,
+):
     """
     Makes and validates a dataframe view_df, where supported input types for regions are:
     - a dictionary where keys are strings and values are integers {str:int},
@@ -333,10 +249,10 @@ def make_viewframe(regions, check_bounds=None, view_names_as_UCSC=False, view_na
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
-    view_df = _bioframe_from_any(regions, name_col=view_name_col, cols=cols)
+    view_df = from_(regions, name_col=view_name_col, cols=cols)
 
     if check_bounds is not None:
-        bounds_df = _bioframe_from_any(check_bounds, name_col="bounds", cols=cols)
+        bounds_df = from_(check_bounds, name_col="bounds", cols=cols)
         if not is_contained(
             view_df,
             bounds_df,
@@ -344,10 +260,12 @@ def make_viewframe(regions, check_bounds=None, view_names_as_UCSC=False, view_na
             view_name_col="bounds",
             cols=cols,
         ):
-            raise ValueError("Invalid input to make a viewFrame, regions not contained by bounds")
+            raise ValueError(
+                "Invalid input to make a viewFrame, regions not contained by bounds"
+            )
 
     if view_names_as_UCSC:
-        view_df = _overwrite_name_with_UCSC(view_df, view_name_col=view_name_col, cols=cols)
+        view_df = add_UCSC_name_column(view_df, name_col=view_name_col, cols=cols)
 
     if is_viewframe(view_df, view_name_col=view_name_col, cols=cols, raise_errors=True):
         return view_df
@@ -583,7 +501,7 @@ def sort_bedframe(
                 view_df,
                 df_view_col=df_view_col,
                 view_name_col=view_name_col,
-                cols=None,
+                cols=cols,
             )
 
         if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
@@ -747,10 +665,13 @@ def assign_view(
         return_overlap=True,
         keep_order=True,
         return_index=True,
+        cols1=cols,
+        cols2=cols,
     )
+
     overlap_columns = overlap_view.columns
     overlap_view["overlap_length"] = (
-        overlap_view["overlap_end"] - overlap_view["overlap_start"]
+        overlap_view["overlap_"+ek1] - overlap_view["overlap_"+sk1]
     )
 
     out_df = (

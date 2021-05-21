@@ -3,10 +3,8 @@ import pandas as pd
 import collections
 
 from . import arrops
-from . import core
-from .core import _verify_columns, _get_default_colnames
-from .region import parse_region, regions_add_name_column
-
+from .region import parse_region, add_UCSC_name_column, _get_default_colnames
+from .core import _verify_columns, make_viewframe, is_cataloged
 
 def select(df, region, cols=None):
     """
@@ -67,7 +65,7 @@ def trim(
 
     view_df : None or pandas.DataFrame
         View specifying region start and ends for trimming. Attepts to
-        convert dictionary and pd.Series formats to viewframes with `core.make_view`.
+        convert dictionary and pd.Series formats to viewframes.
 
         If no view_df is provided, intervals are truncated at zero to avoid
         negative values.
@@ -100,9 +98,9 @@ def trim(
         view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
 
     _verify_columns(df, [ck, sk, ek, df_view_col])
-    view_df = core.make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
+    view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
 
-    core.is_cataloged(
+    is_cataloged(
         df,
         view_df,
         raise_errors=True,
@@ -486,8 +484,8 @@ def overlap(
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
             ] = None
-            df_overlap[["overlap_start", "overlap_end"]] = df_overlap[
-                ["overlap_start", "overlap_end"]
+            df_overlap[["overlap_"+sk1, "overlap_"+ek1]] = df_overlap[
+                ["overlap_"+sk1, "overlap_"+ek1]
             ].astype(pd.Int64Dtype())
 
     out_df = pd.concat(
@@ -758,7 +756,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
 
     if view_df is None:
         view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].values)}
-    view_df = core.make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
+    view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
 
     # associate intervals to region, required to enable single interval from df to
     # overlap multiple intervals in view_df.
@@ -779,7 +777,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
         inplace=True,
     )
     df = new_intervals
-    core.is_cataloged(
+    is_cataloged(
         df,
         view_df,
         raise_errors=True,
@@ -1332,7 +1330,7 @@ def split(
     df_split.rename(columns=name_updates, inplace=True)
 
     if add_names:
-        df_split = regions_add_name_column(df_split)
+        df_split = add_UCSC_name_column(df_split,cols=[ck1,sk1,ek1],name_col="name")
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"], inplace=True)

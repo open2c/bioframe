@@ -1,47 +1,47 @@
 import pandas as pd
 import bioframe
-import pyranges as pr
+#import pyranges as pr
 import numpy as np
 from io import StringIO
 
 
-def bioframe_to_pyranges(df):
-    pydf = df.copy()
-    pydf.rename(
-        {"chrom": "Chromosome", "start": "Start", "end": "End"},
-        axis="columns",
-        inplace=True,
-    )
-    return pr.PyRanges(pydf)
+# def bioframe_to_pyranges(df):
+#     pydf = df.copy()
+#     pydf.rename(
+#         {"chrom": "Chromosome", "start": "Start", "end": "End"},
+#         axis="columns",
+#         inplace=True,
+#     )
+#     return pr.PyRanges(pydf)
 
 
-def pyranges_to_bioframe(pydf):
-    df = pydf.df
-    df.rename(
-        {"Chromosome": "chrom", "Start": "start", "End": "end", "Count": "n_intervals"},
-        axis="columns",
-        inplace=True,
-    )
-    return df
+# def pyranges_to_bioframe(pydf):
+#     df = pydf.df
+#     df.rename(
+#         {"Chromosome": "chrom", "Start": "start", "End": "end", "Count": "n_intervals"},
+#         axis="columns",
+#         inplace=True,
+#     )
+#     return df
 
 
-def pyranges_overlap_to_bioframe(pydf):
-    ## convert the df output by pyranges join into a bioframe-compatible format
-    df = pydf.df.copy()
-    df.rename(
-        {
-            "Chromosome": "chrom_1",
-            "Start": "start_1",
-            "End": "end_1",
-            "Start_b": "start_2",
-            "End_b": "end_2",
-        },
-        axis="columns",
-        inplace=True,
-    )
-    df["chrom_1"] = df["chrom_1"].values.astype("object")  # to remove categories
-    df["chrom_2"] = df["chrom_1"].values
-    return df
+# def pyranges_overlap_to_bioframe(pydf):
+#     ## convert the df output by pyranges join into a bioframe-compatible format
+#     df = pydf.df.copy()
+#     df.rename(
+#         {
+#             "Chromosome": "chrom_1",
+#             "Start": "start_1",
+#             "End": "end_1",
+#             "Start_b": "start_2",
+#             "End_b": "end_2",
+#         },
+#         axis="columns",
+#         inplace=True,
+#     )
+#     df["chrom_1"] = df["chrom_1"].values.astype("object")  # to remove categories
+#     df["chrom_2"] = df["chrom_1"].values
+#     return df
 
 
 chroms = ["chr12", "chrX"]
@@ -119,29 +119,29 @@ def test_trim():
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
 
     ### trim with view_df interpreted from dictionary for chromsizes
-    chromsizes = {"chr1p": (1, 11), "chr1q": (13, 20), "chrX_0": 5}
+    chromsizes = {"chr1":20, "chrX_0": 5}
     df = pd.DataFrame(
         [
-            ["chr1", 0, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
-            ["chrX", 1, 8, "chrX_0"],
+            ["chr1", 0, 12],
+            ["chr1", 13, 26],
+            ["chrX_0", 1, 8],
         ],
-        columns=["chrom", "startFunky", "end", "region"],
+        columns=["chrom", "startFunky", "end"],
     )
     df_trimmed = pd.DataFrame(
         [
-            ["chr1", 1, 11, "chr1p"],
-            ["chr1", 13, 20, "chr1q"],
-            ["chrX", 1, 5, "chrX_0"],
+            ["chr1", 0, 12],
+            ["chr1", 13, 20],
+            ["chrX_0", 1, 5],
         ],
-        columns=["chrom", "startFunky", "end", "region"],
+        columns=["chrom", "startFunky", "end"],
     )
     pd.testing.assert_frame_equal(
         df_trimmed,
         bioframe.trim(
             df,
-            view_df=chromsizes,
-            df_view_col="region",
+            view_df= chromsizes,
+            df_view_col="chrom",
             cols=["chrom", "startFunky", "end"],
         ),
     )
@@ -229,24 +229,25 @@ def test_overlap():
     df1 = mock_bioframe()
     df2 = mock_bioframe()
     assert df1.equals(df2) == False
-    p1 = bioframe_to_pyranges(df1)
-    p2 = bioframe_to_pyranges(df2)
-    pp = pyranges_overlap_to_bioframe(p1.join(p2, how=None))[
-        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
-    ]
-    bb = bioframe.overlap(df1, df2, how="inner")[
-        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
-    ]
-    pp = pp.sort_values(
-        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
-        ignore_index=True,
-    )
-    bb = bb.sort_values(
-        ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
-        ignore_index=True,
-    )
-    pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=False)
-    print("overlap elements agree")
+
+    # p1 = bioframe_to_pyranges(df1)
+    # p2 = bioframe_to_pyranges(df2)
+    # pp = pyranges_overlap_to_bioframe(p1.join(p2, how=None))[
+    #     ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
+    # ]
+    # bb = bioframe.overlap(df1, df2, how="inner")[
+    #     ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"]
+    # ]
+    # pp = pp.sort_values(
+    #     ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
+    #     ignore_index=True,
+    # )
+    # bb = bb.sort_values(
+    #     ["chrom_1", "start_1", "end_1", "chrom_2", "start_2", "end_2"],
+    #     ignore_index=True,
+    # )
+    # pd.testing.assert_frame_equal(bb, pp, check_dtype=False, check_exact=False)
+    # print("overlap elements agree")
 
     ### test overlap on= [] ###
     df1 = pd.DataFrame(
@@ -382,10 +383,10 @@ def test_cluster():
     ).all()  # do not cluster intervals across chromosomes
 
     # test consistency with pyranges (which automatically sorts df upon creation and uses 1-based indexing for clusters)
-    assert (
-        (bioframe_to_pyranges(df1).cluster(count=True).df["Cluster"].values - 1)
-        == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
-    ).all()
+    # assert (
+    #     (bioframe_to_pyranges(df1).cluster(count=True).df["Cluster"].values - 1)
+    #     == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
+    # ).all()
 
     # test on=[] argument
     df1 = pd.DataFrame(
@@ -448,13 +449,13 @@ def test_merge():
         mock_df
     )
 
-    # test consistency with pyranges
-    pd.testing.assert_frame_equal(
-        pyranges_to_bioframe(bioframe_to_pyranges(df1).merge(count=True)),
-        bioframe.merge(df1),
-        check_dtype=False,
-        check_exact=False,
-    )
+    # # test consistency with pyranges
+    # pd.testing.assert_frame_equal(
+    #     pyranges_to_bioframe(bioframe_to_pyranges(df1).merge(count=True)),
+    #     bioframe.merge(df1),
+    #     check_dtype=False,
+    #     check_exact=False,
+    # )
 
     # test on=['chrom',...] argument
     df1 = pd.DataFrame(
@@ -548,7 +549,7 @@ def test_complement():
     ### test complement where an interval from df overlaps two different regions from view
     ### test complement with no view_df and a negative interval
     df1 = pd.DataFrame([["chr1", 5, 15]], columns=["chrom", "start", "end"])
-    chromsizes = {"chr1p": (0, 9), "chr1q": (11, 20)}
+    chromsizes = [("chr1",0, 9,"chr1p"), ("chr1",11,20,"chr1q")]
     df1_complement = pd.DataFrame(
         [["chr1", 0, 5, "chr1p"], ["chr1", 15, 20, "chr1q"]],
         columns=["chrom", "start", "end", "view_region"],

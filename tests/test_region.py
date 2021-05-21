@@ -1,4 +1,6 @@
-from bioframe.region import parse_region, parse_regions
+
+from bioframe.region import parse_region
+from bioframe.region import from_
 import pandas as pd
 import pytest
 
@@ -48,70 +50,56 @@ def test_parse_region():
         parse_region("chr1::1000-2000")  # more than one colon
 
 
-def test_parse_regions():
+def test_from_():
+
+    ### tests copied from old parse_regions
     # main functionality: convert to dataframe and create name
     df = pd.DataFrame(
         {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
     )
-    parsed = parse_regions(df)
+    parsed = from_(df, names_as_UCSC=True, name_col="regions")
     assert parsed.iloc[0]["chrom"] == "chr0"
-    assert parsed.iloc[0]["name"] == "chr0:1-4"
+    assert parsed.iloc[0]["regions"] == "chr0:1-4"
 
     # re-create dataframe from UCSC name alone
-    df2 = pd.DataFrame({"regions": parsed["name"].values})
-    assert (parse_regions(df2) == parsed).all().all()
+    df2 = pd.DataFrame({"regions": parsed["regions"].values})
+    assert (from_(df2, names_as_UCSC=True, name_col="regions") == parsed).all().all()
 
     # re-parsing results yields the same
-    assert (parse_regions(parsed) == parsed).all().all()
+    assert (from_(parsed) == parsed).all().all()
 
     # None or False will be parsed
-    assert parse_regions([("chr1", None, 5)])["start"].values[0] == 0
+    assert from_([("chr1", None, 5)],fill_null={'chr1':10})["start"].values[0] == 0
 
     # pull end from chromsizes
-    p2 = parse_regions([("chr1", 5, None)], chromsizes={"chr1": 40})
+    p2 = from_([("chr1", 5, None)], fill_null={"chr1": 40}, names_as_UCSC=True)
     assert list(p2.values[0]) == ["chr1", 5, 40, "chr1:5-40"]
 
     # We could keep things as None if chromsizes were not proviced
-    p3 = parse_regions(["chr1", "chr2"], fill_missing=False)
+    p3 = from_(["chr1", "chr2"], fill_null=False)
     assert list(p3.values[0]) == ["chr1", None, None, "chr1"]
 
     # we can force CUSC names
-    p4 = parse_regions([("chr1", 0, 5)], overwrite_names=True)
+    p4 = from_([("chr1", 0, 5)], names_as_UCSC=True)
     assert list(p4.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
-    # nothing happens: name was autocompleted
-    p5 = parse_regions([("chr1", 0, 5)], overwrite_names=False)
-    assert list(p5.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
-
-    # "chr1" parsed but interpreted as name
-    p6 = parse_regions([("chr1")], chromsizes={"chr1": 5}, overwrite_names=False)
-    assert list(p6.values[0]) == ["chr1", 0, 5, "chr1"]  # "chr1" interpreted as name
+    # nothing happens: name was autocompleted    
+    p5 = from_([("chr1", 0, 5)], names_as_UCSC=False)
+    assert list(p5.values[0]) == ["chr1", 0, 5, "chr1"]
 
     # forcing UCSC names
-    p7 = parse_regions([("chr1")], chromsizes={"chr1": 5}, overwrite_names=True)
+    p7 = from_([("chr1")], fill_null={"chr1": 5}, names_as_UCSC=True)
     assert list(p7.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # kept the strange name
-    p8 = parse_regions(["chr1:1,000,000-4M"])
+    p8 = from_(["chr1:1,000,000-4M"])
     assert list(p8.values[0]) == ["chr1", 1000000, 4000000, "chr1:1,000,000-4M"]
 
-    p9 = parse_regions(["chr1"], fill_missing=False)
+    p9 = from_(["chr1"])
     assert list(p9.values[0]) == ["chr1", None, None, "chr1"]
 
     with pytest.raises(ValueError):
-        parse_regions([("chr1", "abracadabra", 5)])
+        from_([("ch1", 1, 2, "chr1:1-2", "puppies")])  # puppies are not allowed
 
     with pytest.raises(ValueError):
-        parse_regions([("ch1", 1, 2, "chr1:1-2", "puppies")])  # puppies are not allowed
-
-    with pytest.raises(ValueError):
-        parse_regions([("chr1", 3, "abracadabra")])
-
-    with pytest.raises(ValueError):
-        parse_regions([("chr1", 5, None)])
-
-    with pytest.raises(ValueError):
-        parse_regions([("chr1", 5, None)], chromsizes={"chr2": 40})
-
-    with pytest.raises(ValueError):
-        parse_regions([("chr1", 5, 0)])
+        from_([("chr1", 5, None)], fill_null={"chr2": 40})
