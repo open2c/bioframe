@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import collections
 from . import ops
 from .region import from_, _get_default_colnames, add_UCSC_name_column
 

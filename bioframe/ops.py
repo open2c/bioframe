@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import collections
-
 from . import arrops
 from .region import parse_region, add_UCSC_name_column, _get_default_colnames
 from .core import _verify_columns, make_viewframe, is_cataloged
@@ -1014,7 +1012,6 @@ def closest(
     cols1=None,
     cols2=None,
 ):
-
     """
     For every interval in set 1 find k closest genomic intervals in set 2.
     Note that, unless specified otherwise, overlapping intervals are considered
@@ -1053,9 +1050,10 @@ def closest(
     return_distance : bool
         If True, return distances. Returns zero for overlaps.
 
-    return_overlap = False,
+    return_overlap : bool
         If True, return columns: have_overlap, overlap_start, and overlap_end.
-        Fills df_closest['overlap_start'] and df['overlap_end'] with None if non-overlapping.
+        Fills df_closest['overlap_start'] and df['overlap_end'] 
+        with None if non-overlapping. Default False.
 
     suffixes : (str, str)
         The suffixes for the columns of the two sets.
@@ -1064,13 +1062,15 @@ def closest(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+                                        
 
     Returns
     -------
     df_closest : pandas.DataFrame
         If no intervals found, returns none.
-
+                                        
     """
+
     if k < 1:
         raise ValueError("k>=1 required")
 
@@ -1178,6 +1178,7 @@ def closest(
 def subtract(df1, df2, cols1=None, cols2=None):
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
+    
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
