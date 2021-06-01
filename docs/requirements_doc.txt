@@ -5,3 +5,4 @@ mock
 git+https://github.com/golobor/sphinx-click
 sphinx_rtd_theme
 autodocsumm
+nbsphinx
