@@ -43,9 +43,7 @@ def select(df, region, cols=None):
         raise ValueError("no chromosome detected, check region input")
     if (start is not None) and (end is not None):
         inds = (
-            (df[ck].values == chrom)
-            & (df[sk].values < end)
-            & (df[ek].values > start)
+            (df[ck].values == chrom) & (df[sk].values < end) & (df[ek].values > start)
         )
     else:
         inds = df[ck].values == chrom
@@ -170,8 +168,8 @@ def _overlap_intidxs(
         _verify_columns(df2, on)
         group_list1 += on
         group_list2 += on
-    df1_groups = df1.groupby(group_list1).groups
-    df2_groups = df2.groupby(group_list2).groups
+    df1_groups = df1.groupby(group_list1, observed=True).groups
+    df2_groups = df2.groupby(group_list2, observed=True).groups
     all_groups = sorted(
         set.union(set(df1_groups), set(df2_groups))
     )  ### breaks if any of the groupby elements are pd.NA...
@@ -490,7 +488,7 @@ def cluster(
             raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df, on)
         group_list += on
-    df_groups = df.groupby(group_list).groups
+    df_groups = df.groupby(group_list, observed=True).groups
 
     cluster_ids = np.full(df.shape[0], -1)
     clusters = []
@@ -612,7 +610,7 @@ def merge(df, min_dist=0, cols=None, on=None):
             raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df, on)
         group_list += on
-    df_groups = df.groupby(group_list).groups
+    df_groups = df.groupby(group_list, observed=True).groups
 
     clusters = []
 
@@ -761,6 +759,10 @@ def _closest_intidxs(
 
     self_closest = False
     if (df2 is None) or (df2 is df1):
+        if len(df1) == 1:
+            raise ValueError(
+                "df1 must have more than one interval to find closest non-identical interval"
+            )
         df2 = df1
         self_closest = True
 
@@ -769,8 +771,8 @@ def _closest_intidxs(
     df2 = df2.reset_index(drop=True)
 
     # Find overlapping intervals per chromosome.
-    df1_groups = df1.groupby(ck1).groups
-    df2_groups = df2.groupby(ck2).groups
+    df1_groups = df1.groupby(ck1, observed=True).groups
+    df2_groups = df2.groupby(ck2, observed=True).groups
     closest_intidxs = []
     for group_keys, df1_group_idxs in df1_groups.items():
         if group_keys not in df2_groups:
@@ -1030,8 +1032,8 @@ def subtract(df1, df2, cols1=None, cols2=None):
         name_updates[i + "_1"] = i
 
     ### loop over chromosomes, then either return the same or subtracted intervals.
-    df1_groups = df1.groupby(ck1).groups
-    df2_groups = df2.groupby(ck2).groups
+    df1_groups = df1.groupby(ck1, observed=True).groups
+    df2_groups = df2.groupby(ck2, observed=True).groups
     df_subtracted = []
     for group_keys, df1_group_idxs in df1_groups.items():
         df1_group = df1.loc[df1_group_idxs]
@@ -1406,7 +1408,8 @@ def trim(
         df_view_col = ck
         view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
 
-    _verify_columns(df, [ck, sk, ek, df_view_col])
+    _verify_columns(df, [ck, sk, ek])
+    _verify_columns(df, [df_view_col])
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=cols
     )
