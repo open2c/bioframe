@@ -1,10 +1,11 @@
 import pandas as pd
+import numpy as np
+import pytest
+from io import StringIO
+
 import bioframe
 
 # import pyranges as pr
-import numpy as np
-from io import StringIO
-
 
 # def bioframe_to_pyranges(df):
 #     pydf = df.copy()
@@ -706,6 +707,38 @@ def test_subtract():
         .reset_index(drop=True),
     )
 
+    ### subtracting dataframes funny column names
+
+    funny_cols = ["C", "chromStart", "chromStop"]
+
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
+        columns=funny_cols,
+    )
+    df1["strand"] = "+"
+
+    assert len(bioframe.subtract(df1, df1, cols1=funny_cols, cols2=funny_cols)) == 0
+
+    funny_cols2 = ["chr", "st", "e"]
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 0, 18],
+            ["chr1", 5, 6],
+        ],
+        columns=funny_cols2,
+    )
+
+    df_result = pd.DataFrame(
+        [["chr1", 4, 5, "+"], ["chr1", 6, 7, "+"]],
+        columns=funny_cols + ["strand"],
+    )
+    pd.testing.assert_frame_equal(
+        df_result,
+        bioframe.subtract(df1, df2, cols1=funny_cols, cols2=funny_cols2)
+        .sort_values(funny_cols)
+        .reset_index(drop=True),
+    )
+
 
 def test_setdiff():
 
@@ -1009,3 +1042,169 @@ def test_pair_by_distance():
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 9, 11]])
     ).all()
+
+
+def test_assign_view():
+
+    ## default assignment case
+    view_df = pd.DataFrame(
+        [
+            ["chr11", 1, 8, "chr11p"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr11", 0, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+    df_assigned = pd.DataFrame(
+        [
+            ["chr11", 0, 10, "+", "chr11p"],
+        ],
+        columns=["chrom", "start", "end", "strand", "view_region"],
+    )
+    df_assigned = df_assigned.astype(
+        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+    pd.testing.assert_frame_equal(df_assigned, bioframe.assign_view(df, view_df))
+
+    # assignment with funny view_name_col and an interval on chr2 not cataloged in the view_df
+    view_df = pd.DataFrame(
+        [
+            ["chrX", 1, 8, "oranges"],
+            ["chrX", 8, 20, "grapefruit"],
+            ["chr1", 0, 10, "apples"],
+        ],
+        columns=["chrom", "start", "end", "fruit"],
+    )
+
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    df_assigned = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+", "apples"],
+            ["chrX", 5, 10, "+", "oranges"],
+            ["chrX", 0, 5, "+", "oranges"],
+        ],
+        columns=["chrom", "start", "end", "strand", "funny_view_region"],
+    )
+    df_assigned = df_assigned.astype(
+        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+
+    pd.testing.assert_frame_equal(
+        df_assigned,
+        bioframe.assign_view(
+            df,
+            view_df,
+            view_name_col="fruit",
+            df_view_col="funny_view_region",
+            drop_unassigned=True,
+        ),
+    )
+
+    ### keep the interval with NA as its region if drop_unassigned is False
+    df_assigned = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+", "apples"],
+            ["chrX", 5, 10, "+", "oranges"],
+            ["chrX", 0, 5, "+", "oranges"],
+            ["chr2", 5, 10, "+", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "funny_view_region"],
+    )
+    df_assigned = df_assigned.astype(
+        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+
+    pd.testing.assert_frame_equal(
+        df_assigned,
+        bioframe.assign_view(
+            df,
+            view_df,
+            view_name_col="fruit",
+            df_view_col="funny_view_region",
+            drop_unassigned=False,
+        ),
+    )
+
+
+def test_sort_bedframe():
+
+    view_df = pd.DataFrame(
+        [
+            ["chrX", 1, 8, "oranges"],
+            ["chrX", 8, 20, "grapefruit"],
+            ["chr1", 0, 10, "apples"],
+        ],
+        columns=["chrom", "start", "end", "fruit"],
+    )
+
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    ### sorting just by chrom,start,end
+    df_sorted = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chr2", 5, 10, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chrX", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
+
+    ### drops unassigned chromosomes when infer_assignment is true
+    df_sorted = pd.DataFrame(
+        [
+            ["chrX", 0, 5, "+", "oranges"],
+            ["chrX", 5, 10, "+", "oranges"],
+            ["chr1", 0, 10, "+", "apples"],
+            ["chr2", 5, 10, "+", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "view_region"],
+    )
+    df_view_cat = pd.CategoricalDtype(
+        categories=["oranges", "grapefruit", "apples"], ordered=True
+    )
+    df_sorted = df_sorted.astype(
+        {
+            "chrom": str,
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+            "view_region": df_view_cat,
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
+    )
+
+    ### chr2 is not in the view, so if infer_assignment=False this should raise a ValueError
+    assert pytest.raises(
+        ValueError,
+        bioframe.sort_bedframe,
+        df,
+        view_df,
+        view_name_col="fruit",
+        infer_assignment=False,
+    )

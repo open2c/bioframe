@@ -1,8 +1,13 @@
 import numpy as np
 import pandas as pd
 from . import arrops
-from .region import parse_region, add_UCSC_name_column, _get_default_colnames
-from .core import _verify_columns, make_viewframe, is_cataloged
+
+from .core.specs import _get_default_colnames, _verify_columns
+from .core.stringops import parse_region
+
+from .core import specs
+from .core import construction
+from .core import checks
 
 
 def select(df, region, cols=None):
@@ -45,87 +50,6 @@ def select(df, region, cols=None):
     else:
         inds = df.chrom.values == chrom
     return df.iloc[np.where(inds)[0]]
-
-
-def trim(
-    df,
-    view_df=None,
-    df_view_col="view_region",
-    view_name_col="name",
-    return_view_columns=False,
-    cols=None,
-):
-    """
-    Trim each interval to fall within regions specified in view_df.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-
-    view_df : None or pandas.DataFrame
-        View specifying region start and ends for trimming. Attepts to
-        convert dictionary and pd.Series formats to viewframes.
-
-        If no view_df is provided, intervals are truncated at zero to avoid
-        negative values.
-
-    df_view_col : str
-        The column of df used to specify view regions.
-        The associated region in view_df is then used for trimming.
-        If no view_df is provided, uses the chrom column, df[cols[0]].
-        Default "view_region".
-
-    view_name_col : str
-        Column of df with region names. Default 'name'.
-
-    cols : (str, str, str) or None
-        The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
-
-    Returns
-    -------
-    df_trimmed : pandas.DataFrame
-
-    """
-
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    df_columns = df.columns
-
-    if view_df is None:
-        df_view_col = ck
-        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
-
-    _verify_columns(df, [ck, sk, ek, df_view_col])
-    view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
-
-    is_cataloged(
-        df,
-        view_df,
-        raise_errors=True,
-        df_view_col=df_view_col,
-        view_name_col=view_name_col,
-    )
-
-    df_trimmed = df.copy()
-    df_trimmed = df_trimmed.merge(
-        view_df,
-        how="left",
-        left_on=df_view_col,
-        right_on=view_name_col,
-        suffixes=("", "_view"),
-    )
-
-    lower_vector = df_trimmed[sk + "_view"].values
-    upper_vector = df_trimmed[ek + "_view"].values
-
-    df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
-    df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
-
-    if return_view_columns:
-        return df_trimmed
-    else:
-        return df_trimmed[df_columns]
 
 
 def expand(df, pad=None, scale=None, side="both", cols=None):
@@ -726,112 +650,6 @@ def merge(df, min_dist=0, cols=None, on=None):
     return clusters
 
 
-def complement(df, view_df=None, view_name_col="name", cols=None):
-    """
-    Find genomic regions in view_df that are not covered by any interval in df.
-    First assigns intervals in df to region in view_df, splitting df intervals as necessary.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-
-    view_df : pandas.Dataframe
-        If none, attempts to infer the view from chroms (i.e. df[cols[0]]).
-
-    view_name_col : str
-        Name of column in view_df with unique reigon names. Default 'name'.
-
-    cols : (str, str, str)
-        The names of columns containing the chromosome, start and end of the
-        genomic intervals. The default values are 'chrom', 'start', 'end'.
-
-    Returns
-    -------
-    df_complement : pandas.DataFrame
-
-    """
-
-    ### TODO add on, so can do strand-specific complements...
-
-    # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
-
-    if view_df is None:
-        view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].values)}
-    view_df = make_viewframe(view_df, view_name_col=view_name_col, cols=cols)
-
-    # associate intervals to region, required to enable single interval from df to
-    # overlap multiple intervals in view_df.
-    new_intervals = overlap(
-        view_df,
-        df,
-        return_overlap=True,
-        how="inner",
-        suffixes=("", "_df"),
-        cols1=cols,
-        cols2=cols,
-    )
-    new_intervals = new_intervals[
-        [ck, "overlap_start", "overlap_end", view_name_col]
-    ].copy()
-    new_intervals.rename(
-        columns={"overlap_start": sk, "overlap_end": ek, view_name_col: "view_region"},
-        inplace=True,
-    )
-    df = new_intervals
-    is_cataloged(
-        df,
-        view_df,
-        raise_errors=True,
-        df_view_col="view_region",
-        view_name_col=view_name_col,
-    )
-
-    # Find overlapping intervals per region.
-    df_groups = df.groupby("view_region").groups
-    all_groups = sorted(set(view_df[view_name_col]))
-
-    complements = []
-    for group_key in all_groups:
-        region_interval = view_df.loc[view_df[view_name_col] == group_key]
-        region_chrom, region_start, region_end = region_interval[[ck, sk, ek]].values[0]
-
-        if group_key not in df_groups:
-            complement_group = region_interval.copy().rename(
-                columns={view_name_col: "view_region"}
-            )
-            complements.append(pd.DataFrame(complement_group))
-            continue
-
-        df_group_idxs = df_groups[group_key].values
-        df_group = df.loc[df_group_idxs]
-
-        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
-            df_group[sk].values,
-            df_group[ek].values,
-            bounds=(region_start, region_end),
-        )
-
-        # Storing chromosome names causes a 2x slowdown. :(
-        complement_group = {
-            ck: pd.Series(
-                data=np.full(complement_starts_group.shape[0], region_chrom),
-                dtype=df[ck].dtype,
-            ),
-            sk: complement_starts_group,
-            ek: complement_ends_group,
-            "view_region": group_key,
-        }
-        complement_group = pd.DataFrame(complement_group)
-
-        complements.append(complement_group)
-
-    complements = pd.concat(complements).reset_index(drop=True)
-
-    return complements
-
-
 def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from df1 by intervals from df2.
@@ -1052,7 +870,7 @@ def closest(
 
     return_overlap : bool
         If True, return columns: have_overlap, overlap_start, and overlap_end.
-        Fills df_closest['overlap_start'] and df['overlap_end'] 
+        Fills df_closest['overlap_start'] and df['overlap_end']
         with None if non-overlapping. Default False.
 
     suffixes : (str, str)
@@ -1062,13 +880,13 @@ def closest(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-                                        
+
 
     Returns
     -------
     df_closest : pandas.DataFrame
         If no intervals found, returns none.
-                                        
+
     """
 
     if k < 1:
@@ -1178,7 +996,7 @@ def closest(
 def subtract(df1, df2, cols1=None, cols2=None):
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
-    
+
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
@@ -1198,7 +1016,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
-    name_updates = {ck1 + "_1": "chrom", "overlap_start": "start", "overlap_end": "end"}
+    name_updates = {ck1 + "_1": ck1, "overlap_" + sk1: sk1, "overlap_" + ek1: ek1}
     extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + "_1"] = i
@@ -1218,7 +1036,12 @@ def subtract(df1, df2, cols1=None, cols2=None):
         df2_group_idxs = df2_groups[group_keys]
         df2_group = df2.loc[df2_group_idxs]
         df_subtracted_group = overlap(
-            df1_group, complement(df2_group), how="inner", return_overlap=True
+            df1_group,
+            complement(df2_group, cols=cols2),
+            how="inner",
+            return_overlap=True,
+            cols1=cols1,
+            cols2=cols2,
         )[list(name_updates)]
         df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
     df_subtracted = pd.concat(df_subtracted)
@@ -1512,3 +1335,358 @@ def pair_by_distance(
     )
 
     return pd.concat([left_ivals, right_ivals], axis=1)
+
+
+def trim(
+    df,
+    view_df=None,
+    df_view_col="view_region",
+    view_name_col="name",
+    return_view_columns=False,
+    cols=None,
+):
+    """
+    Trim each interval to fall within regions specified in view_df.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    view_df : None or pandas.DataFrame
+        View specifying region start and ends for trimming. Attepts to
+        convert dictionary and pd.Series formats to viewframes.
+
+        If no view_df is provided, intervals are truncated at zero to avoid
+        negative values.
+
+    df_view_col : str
+        The column of df used to specify view regions.
+        The associated region in view_df is then used for trimming.
+        If no view_df is provided, uses the chrom column, df[cols[0]].
+        Default "view_region".
+
+    view_name_col : str
+        Column of df with region names. Default 'name'.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df_trimmed : pandas.DataFrame
+
+    """
+
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    df_columns = df.columns
+
+    if view_df is None:
+        df_view_col = ck
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
+
+    _verify_columns(df, [ck, sk, ek, df_view_col])
+    view_df = construction.make_viewframe(
+        view_df, view_name_col=view_name_col, cols=cols
+    )
+
+    checks.is_cataloged(
+        df,
+        view_df,
+        raise_errors=True,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+    )
+
+    df_trimmed = df.copy()
+    df_trimmed = df_trimmed.merge(
+        view_df,
+        how="left",
+        left_on=df_view_col,
+        right_on=view_name_col,
+        suffixes=("", "_view"),
+    )
+
+    lower_vector = df_trimmed[sk + "_view"].values
+    upper_vector = df_trimmed[ek + "_view"].values
+
+    df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+    df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+
+    if return_view_columns:
+        return df_trimmed
+    else:
+        return df_trimmed[df_columns]
+
+
+def complement(df, view_df=None, view_name_col="name", cols=None):
+    """
+    Find genomic regions in view_df that are not covered by any interval in df.
+    First assigns intervals in df to region in view_df, splitting df intervals as necessary.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    view_df : pandas.Dataframe
+        If none, attempts to infer the view from chroms (i.e. df[cols[0]]).
+
+    view_name_col : str
+        Name of column in view_df with unique reigon names. Default 'name'.
+
+    cols : (str, str, str)
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df_complement : pandas.DataFrame
+
+    """
+
+    ### TODO add on=, so can do strand-specific complements...
+
+    # Allow users to specify the names of columns containing the interval coordinates.
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    _verify_columns(df, [ck, sk, ek])
+
+    if view_df is None:
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].values)}
+    view_df = construction.make_viewframe(
+        view_df, view_name_col=view_name_col, cols=cols
+    )
+
+    # associate intervals to region, required to enable single interval from df to
+    # overlap multiple intervals in view_df.
+    new_intervals = overlap(
+        view_df,
+        df,
+        return_overlap=True,
+        how="inner",
+        suffixes=("", "_df"),
+        cols1=cols,
+        cols2=cols,
+    )
+    new_intervals = new_intervals[
+        [ck, "overlap_" + sk, "overlap_" + ek, view_name_col]
+    ].copy()
+    new_intervals.rename(
+        columns={
+            "overlap_" + sk: sk,
+            "overlap_" + ek: ek,
+            view_name_col: "view_region",
+        },
+        inplace=True,
+    )
+    df = new_intervals
+    checks.is_cataloged(
+        df,
+        view_df,
+        raise_errors=True,
+        df_view_col="view_region",
+        view_name_col=view_name_col,
+    )
+
+    # Find overlapping intervals per region.
+    df_groups = df.groupby("view_region").groups
+    all_groups = sorted(set(view_df[view_name_col]))
+
+    complements = []
+    for group_key in all_groups:
+        region_interval = view_df.loc[view_df[view_name_col] == group_key]
+        region_chrom, region_start, region_end = region_interval[[ck, sk, ek]].values[0]
+
+        if group_key not in df_groups:
+            complement_group = region_interval.copy().rename(
+                columns={view_name_col: "view_region"}
+            )
+            complements.append(pd.DataFrame(complement_group))
+            continue
+
+        df_group_idxs = df_groups[group_key].values
+        df_group = df.loc[df_group_idxs]
+
+        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
+            df_group[sk].values,
+            df_group[ek].values,
+            bounds=(region_start, region_end),
+        )
+
+        # Storing chromosome names causes a 2x slowdown. :(
+        complement_group = {
+            ck: pd.Series(
+                data=np.full(complement_starts_group.shape[0], region_chrom),
+                dtype=df[ck].dtype,
+            ),
+            sk: complement_starts_group,
+            ek: complement_ends_group,
+            "view_region": group_key,
+        }
+        complement_group = pd.DataFrame(complement_group)
+
+        complements.append(complement_group)
+
+    complements = pd.concat(complements).reset_index(drop=True)
+
+    return complements
+
+
+def sort_bedframe(
+    df,
+    view_df=None,
+    infer_assignment=True,
+    reset_index=True,
+    df_view_col="view_region",
+    view_name_col="name",
+    cols=None,
+):
+    """
+    Sorts a bedframe df. If no view_df is provided, sorts by cols.
+    If view_df is provided, sorts df[df_view_col] by view_df[view_name_col].
+    If view_df is provided but a column matching df_view_col is not in df, attempts
+    to assign interavls to the view region with the largest overlap and then sorts.
+
+    df : pandas.DataFrame
+        Valid bedframe.
+
+    view_df : pandas.DataFrame
+        Valid input to make a viewframe.
+
+    infer_assignment : bool
+        If True, tries to assign df intervals to the view region with the largest overlap.
+        Default True.
+
+    reset_index : bool
+        Default True.
+
+    df_view_col:
+        Column from df used to associate interviews with view regions.
+        Default `view_region`.
+
+    view_name_col:
+        Column from view_df with names of regions.
+        Default `name`.
+
+    Returns
+    -------
+    out_df : sorted bedframe
+
+    Notes
+    -------
+        df_view_col is currently returned as an ordered categorical
+
+    """
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+
+    if not checks.is_bedframe(df, cols=cols):
+        raise ValueError("not a valid bedframe, cannot sort")
+
+    out_df = df.copy()
+    if view_df is None:
+        out_df.sort_values([ck1, sk1, ek1], inplace=True)
+
+    else:
+        view_df = construction.make_viewframe(
+            view_df, view_name_col=view_name_col, cols=cols
+        )
+
+        if infer_assignment and (
+            not _verify_columns(out_df, [df_view_col], return_as_bool=True)
+        ):
+            out_df = assign_view(
+                out_df,
+                view_df,
+                df_view_col=df_view_col,
+                view_name_col=view_name_col,
+                cols=cols,
+            )
+
+        if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
+            raise ValueError("no df_view_col not present in df, cannot sort by view")
+
+        if not checks.is_cataloged(
+            out_df[pd.isna(out_df[df_view_col].values) == False],
+            view_df,
+            df_view_col=df_view_col,
+            view_name_col=view_name_col,
+        ):
+            raise ValueError(
+                "intervals in df not cataloged in view_df, cannot sort by view"
+            )
+
+        view_cat = pd.CategoricalDtype(
+            categories=view_df[view_name_col].values, ordered=True
+        )
+        out_df[df_view_col] = out_df[df_view_col].astype({df_view_col: view_cat})
+        out_df.sort_values([df_view_col, ck1, sk1, ek1], inplace=True)
+
+    if reset_index:
+        out_df.reset_index(inplace=True, drop=True)
+
+    return out_df
+
+
+def assign_view(
+    df,
+    view_df,
+    drop_unassigned=False,
+    df_view_col="view_region",
+    view_name_col="name",
+    cols=None,
+):
+    """
+    Associates genomic intervals in bedframe df with regions in viewframe view_df, based on their largest overlap.
+    Note this resets the index of the returned dataframe.
+
+    drop_unassigned : bool
+        If True, drop intervals in df that are do no Default False.
+
+    Returns
+    -------
+    out_df:dataframe with the associated view region for each interval in out_df[view_name_col]
+
+    """
+
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+
+    df = df.copy()
+    df.reset_index(inplace=True, drop=True)
+
+    checks.is_bedframe(df, raise_errors=True, cols=cols)
+    view_df = construction.make_viewframe(
+        view_df, view_name_col=view_name_col, cols=cols
+    )
+
+    overlap_view = overlap(
+        df,
+        view_df,
+        how="left",
+        suffixes=("", "_view"),
+        return_overlap=True,
+        keep_order=True,
+        return_index=True,
+        cols1=cols,
+        cols2=cols,
+    )
+
+    overlap_columns = overlap_view.columns
+    overlap_view["overlap_length"] = (
+        overlap_view["overlap_" + ek1] - overlap_view["overlap_" + sk1]
+    )
+
+    out_df = (
+        overlap_view.sort_values("overlap_length", ascending=False)
+        .drop_duplicates("index", keep="first")
+        .sort_index()
+    )
+
+    out_df.rename(columns={view_name_col + "_view": df_view_col}, inplace=True)
+
+    if drop_unassigned:
+        out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
+    out_df.reset_index(inplace=True, drop=True)
+
+    return_cols = list(df.columns) + [df_view_col]
+
+    return out_df[return_cols]

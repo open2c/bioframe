@@ -1,6 +1,6 @@
 from .schemas import SCHEMAS
 
-from .formats import (
+from .fileops import (
     read_table,
     read_chromsizes,
     read_tabix,
