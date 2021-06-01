@@ -3,6 +3,7 @@ import pandas as pd
 import collections
 
 from . import ops
+from .core.specs import _get_default_colnames, _verify_columns
 
 
 def make_chromarms(
@@ -52,8 +53,8 @@ def make_chromarms(
     elif isinstance(midpoints, pd.DataFrame):
         df_mids = midpoints.copy()
 
-    ops._verify_columns(df_mids, [ck2, sk2])
-    ops._verify_columns(df_chroms, [ck1, sk1])
+    _verify_columns(df_mids, [ck2, sk2])
+    _verify_columns(df_chroms, [ck1, sk1])
 
     df_chroms["start"] = 0
     df_chroms["end"] = df_chroms[sk1].values

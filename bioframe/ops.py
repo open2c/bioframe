@@ -1111,6 +1111,13 @@ def split(
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
+    add_names : bool
+        If true, adds a new column 'name' with intervals as UCSC strings. Default False.
+
+    suffixes : list
+        If add_names is true, these suffixes are appended onto the left and right sides of
+        the new intervals after splitting. Default ['_left','_right'].
+        Used for genomeops.make_chromarms() with ['_p','_q'].
 
     Returns
     -------
@@ -1121,9 +1128,9 @@ def split(
     ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
 
     name_updates = {
-        ck1 + "_1": "chrom",
-        "overlap_" + sk1: "start",
-        "overlap_" + ek1: "end",
+        ck1 + "_1": ck1,
+        "overlap_" + sk1: sk1,
+        "overlap_" + ek1: ek1,
     }
     if add_names:
         name_updates["index_2"] = "index_2"
@@ -1157,12 +1164,17 @@ def split(
         return_index=return_index,
     )[list(name_updates)]
     df_split.rename(columns=name_updates, inplace=True)
+    df_split.sort_values([ck1, sk1, ek1], inplace=True)
 
     if add_names:
-        df_split = add_UCSC_name_column(df_split, cols=[ck1, sk1, ek1], name_col="name")
+        df_split = construction.add_UCSC_name_column(
+            df_split, cols=[ck1, sk1, ek1], name_col="name"
+        )
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
         df_split.drop(columns=["index_2"], inplace=True)
+
+    df_split.reset_index(drop=True, inplace=True)
 
     return df_split
 

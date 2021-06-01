@@ -876,16 +876,12 @@ def test_split():
 
     df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
 
-    df_result = (
-        pd.DataFrame(
-            [
-                ["chrX", 3, 4],
-                ["chrX", 4, 8],
-            ],
-            columns=["chrom", "start", "end"],
-        )
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True)
+    df_result = pd.DataFrame(
+        [
+            ["chrX", 3, 4, "chrX:3-4_p"],
+            ["chrX", 4, 8, "chrX:4-8_q"],
+        ],
+        columns=["chromosome", "lo", "hi", "name"],
     )
 
     pd.testing.assert_frame_equal(
@@ -895,10 +891,12 @@ def test_split():
             df2,
             cols=["chromosome", "lo", "hi"],
             cols_points=["chromosome", "loc"],
-        )
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True),
+            add_names=True,
+            suffixes=["_p", "_q"],
+        ),
     )
+
+    # test adding UCSC column
 
 
 def test_count_overlaps():

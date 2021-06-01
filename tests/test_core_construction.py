@@ -7,6 +7,19 @@ from bioframe.core.construction import from_any
 from bioframe.core import construction
 
 
+def test_add_UCSC_name_column():
+    df = pd.DataFrame(
+        {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
+    )
+
+    pd.testing.assert_series_equal(
+        construction.add_UCSC_name_column(df)["name"],
+        pd.Series(
+            data=["chr0:1-4", "chr1:2-5", "chr2:3-6"], index=[0, 1, 2], name="name"
+        ),
+    )
+
+
 def test_any():
 
     ### tests copied from old parse_regions

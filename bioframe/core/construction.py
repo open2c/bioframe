@@ -7,6 +7,7 @@ from . import checks
 
 ### conversions from various input formats into dataframes ###
 
+
 def from_dict(regions, name_col="name", cols=None):
     """
     Makes a dataframe from a dictionary of {str,int} pairs, interpreted as chromosome names.
@@ -140,10 +141,13 @@ def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", col
 
 def add_UCSC_name_column(reg_df, name_col="name", cols=None):
     """
-    Auto-creates a UCSC name chrom:start-end for each region (chrom,start,end) in reg_df, replacing name_col if it exists.
+    Auto-creates a UCSC name chrom:start-end for each region (chrom,start,end) in reg_df.
+    Replaces name_col if it exists.
+
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     df = reg_df.copy()
+    _verify_columns(df, [ck1, sk1, ek1])
     data = zip(df[ck1], df[sk1], df[ek1])
     df[name_col] = [to_UCSC_string(i) for i in data]
     return df
