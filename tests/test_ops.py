@@ -504,6 +504,14 @@ def test_merge():
         check_dtype=False,
     )
 
+    # merge with repeated indices
+    df = pd.DataFrame({"chrom":["chr1","chr2"],"start":[100,400],"end":[110,410]})
+    df.index = [0,0]
+    pd.testing.assert_frame_equal(
+        df.reset_index(drop=True),
+        bioframe.merge(df)[['chrom','start','end']]
+    )
+
 
 def test_complement():
     ### complementing a df with no intervals in chrX by a view with chrX should return entire chrX region

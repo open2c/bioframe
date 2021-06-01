@@ -585,6 +585,11 @@ def merge(df, min_dist=0, cols=None, on=None):
     -------
     df_merged : pandas.DataFrame
         A pandas dataframe with coordinates of merged clusters.
+
+    Notes
+    -------
+    Resets index.
+
     """
 
     if min_dist is not None:
@@ -594,6 +599,9 @@ def merge(df, min_dist=0, cols=None, on=None):
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     _verify_columns(df, [ck, sk, ek])
+
+    df = df.copy()
+    df.reset_index(inplace=True, drop=True)
 
     # Find overlapping intervals for groups specified by on=[] (default on=None)
     group_list = [ck]
