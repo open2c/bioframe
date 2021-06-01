@@ -88,6 +88,26 @@ def test_select():
         df_result, bioframe.select(df1, region1).reset_index(drop=True)
     )
 
+    ### select with non-standard column names
+    region1 = "chrX:4-6"
+    new_names = ["chr", "chrstart", "chrend"]
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+        columns=new_names,
+    )
+    df_result = pd.DataFrame(
+        [["chrX", 3, 8], ["chrX", 1, 5]], 
+        columns=new_names,
+    )
+    pd.testing.assert_frame_equal(
+        df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
+    )
+    region1 = "chrX"
+    pd.testing.assert_frame_equal(
+        df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
+    )
+
+
 
 def test_trim():
 

@@ -43,12 +43,12 @@ def select(df, region, cols=None):
         raise ValueError("no chromosome detected, check region input")
     if (start is not None) and (end is not None):
         inds = (
-            (df.chrom.values == chrom)
-            & (df.start.values < end)
-            & (df.end.values > start)
+            (df[ck].values == chrom)
+            & (df[sk].values < end)
+            & (df[ek].values > start)
         )
     else:
-        inds = df.chrom.values == chrom
+        inds = df[ck].values == chrom
     return df.iloc[np.where(inds)[0]]
 
 
