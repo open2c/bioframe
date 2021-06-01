@@ -96,7 +96,7 @@ def test_select():
         columns=new_names,
     )
     df_result = pd.DataFrame(
-        [["chrX", 3, 8], ["chrX", 1, 5]], 
+        [["chrX", 3, 8], ["chrX", 1, 5]],
         columns=new_names,
     )
     pd.testing.assert_frame_equal(
@@ -106,7 +106,6 @@ def test_select():
     pd.testing.assert_frame_equal(
         df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
     )
-
 
 
 def test_trim():
@@ -505,11 +504,12 @@ def test_merge():
     )
 
     # merge with repeated indices
-    df = pd.DataFrame({"chrom":["chr1","chr2"],"start":[100,400],"end":[110,410]})
-    df.index = [0,0]
+    df = pd.DataFrame(
+        {"chrom": ["chr1", "chr2"], "start": [100, 400], "end": [110, 410]}
+    )
+    df.index = [0, 0]
     pd.testing.assert_frame_equal(
-        df.reset_index(drop=True),
-        bioframe.merge(df)[['chrom','start','end']]
+        df.reset_index(drop=True), bioframe.merge(df)[["chrom", "start", "end"]]
     )
 
 
@@ -654,6 +654,24 @@ def test_closest():
         check_dtype=False,
     )
 
+    # closest should ignore empty groups (e.g. from categorical chrom)
+    df = pd.DataFrame(
+        [
+            ["chrX", 1, 8],
+            ["chrX", 2, 10],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    d = """ chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+            0   chrX    1   8   chrX    2   10  0
+            1   chrX    2   10  chrX    1   8   0"""
+    df_closest = pd.read_csv(StringIO(d), sep=r"\s+")
+    df_cat = pd.CategoricalDtype(categories=["chrX", "chr1"], ordered=True)
+    df = df.astype({"chrom": df_cat})
+    pd.testing.assert_frame_equal(
+        df_closest, bioframe.closest(df), check_dtype=False, check_categorical=False
+    )
+
 
 def test_coverage():
 
@@ -765,6 +783,38 @@ def test_subtract():
         bioframe.subtract(df1, df2, cols1=funny_cols, cols2=funny_cols2)
         .sort_values(funny_cols)
         .reset_index(drop=True),
+    )
+
+    # subtract should ignore empty groups
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 1, 8],
+            ["chrX", 2, 10],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 1, 8],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    df_cat = pd.CategoricalDtype(categories=["chrX", "chr1"], ordered=True)
+    df1 = df1.astype({"chrom": df_cat})
+    df_subtracted = pd.DataFrame(
+        [
+            ["chrX", 8, 10],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+
+    assert bioframe.subtract(df1, df1).empty
+
+    pd.testing.assert_frame_equal(
+        df_subtracted,
+        bioframe.subtract(df1, df2),
+        check_dtype=False,
+        check_categorical=False,
     )
 
 
