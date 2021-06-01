@@ -61,6 +61,9 @@ def _verify_columns(df, colnames, return_as_bool=False):
             return False
         raise ValueError("df is not a dataframe")
 
+    if len(set(colnames)) < len(colnames):
+        raise ValueError("column names must be unique")
+        
     if not set(colnames).issubset(df.columns):
         if return_as_bool:
             return False
