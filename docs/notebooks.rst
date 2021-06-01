@@ -1,4 +1,4 @@
 Interactive Notebooks
 =======================
 
-Explore the `jupyter notebook examples for bioframe <https://github.com/open2c/bioframe/tree/master/docs/notebooks>`_
+Explore the `jupyter notebook examples for bioframe <https://github.com/open2c/bioframe/tree/main/docs/notebooks>`_
