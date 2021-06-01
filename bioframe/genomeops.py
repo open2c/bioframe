@@ -3,6 +3,7 @@ import pandas as pd
 import collections
 
 from . import ops
+from .core.specs import _get_default_colnames, _verify_columns
 
 
 def make_chromarms(
@@ -39,9 +40,7 @@ def make_chromarms(
     ck2, sk2 = cols_mids
 
     if isinstance(chromsizes, pd.Series):
-        df_chroms = (
-            pd.DataFrame(chromsizes).reset_index().rename(columns={"name": ck1})
-        )
+        df_chroms = pd.DataFrame(chromsizes).reset_index().rename(columns={"name": ck1})
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
     else:
@@ -54,8 +53,8 @@ def make_chromarms(
     elif isinstance(midpoints, pd.DataFrame):
         df_mids = midpoints.copy()
 
-    ops._verify_columns(df_mids, [ck2, sk2])
-    ops._verify_columns(df_chroms, [ck1, sk1])
+    _verify_columns(df_mids, [ck2, sk2])
+    _verify_columns(df_chroms, [ck1, sk1])
 
     df_chroms["start"] = 0
     df_chroms["end"] = df_chroms[sk1].values
@@ -198,7 +197,7 @@ def frac_mapped(df, fasta_records, return_input=True):
         return ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
-    
+
     def _each(bin):
         s = str(fasta_records[bin.chrom][bin.start : bin.end])
         nbases = len(s)
@@ -249,7 +248,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
-    
+
     def _each(chrom_group):
         chrom = chrom_group.name
         seq = fasta_records[chrom]
@@ -309,4 +308,3 @@ def frac_gene_coverage(df, ucsc_mrna):
     df_gene_coverage = ops.count_overlaps(df_gene_coverage, mrna)
 
     return df_gene_coverage
-

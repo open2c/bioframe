@@ -18,7 +18,7 @@ except ImportError:
     pyBigWig = None
 
 from ..util import run
-from ..region import parse_region
+from ..core.stringops import parse_region
 from ..arrops import argnatsort
 from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
@@ -99,7 +99,7 @@ def read_chromsizes(
     Returns
     -------
     Series of integer bp lengths indexed by sequence name or an interval dataframe.
-    
+
     Notes
     -----
     Mention name patterns
@@ -134,10 +134,10 @@ def read_chromsizes(
         chromtable = pd.concat(parts, axis=0)
 
     if as_bed:
-        chromtable['start'] = 0
+        chromtable["start"] = 0
         chromtable = (
-            chromtable[['name','start','length']]
-            .rename({'name':'chrom', 'length':'end'}, axis='columns')
+            chromtable[["name", "start", "length"]]
+            .rename({"name": "chrom", "length": "end"}, axis="columns")
             .reset_index(drop=True)
         )
     else:

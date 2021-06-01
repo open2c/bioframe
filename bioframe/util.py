@@ -105,6 +105,7 @@ if cmd_exists("bedtools"):
 
         return staticmethod(wrapper)
 
+
 else:
 
     def _register(name):

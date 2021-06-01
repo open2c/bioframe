@@ -22,8 +22,7 @@ def argnatsort(array):
 
 
 def _find_block_span(arr, val):
-    """Find the first and the last occurence + 1 of the value in the array.
-    """
+    """Find the first and the last occurence + 1 of the value in the array."""
     # it can be done via bisection, but for now BRUTE FORCE
     block_idxs = np.where(arr == val)[0]
     lo, hi = block_idxs[0], block_idxs[-1] + 1
@@ -33,17 +32,17 @@ def _find_block_span(arr, val):
 def interweave(a, b):
     """
     Interweave two arrays.
-    
+
     Parameters
     ----------
     a, b : numpy.ndarray
         Arrays to interweave, must have the same length/
-        
+
     Returns
     -------
     out : numpy.ndarray
         Array of interweaved values from a and b.
-    
+
     Notes
     -----
     From https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays
@@ -57,7 +56,7 @@ def interweave(a, b):
 def sum_slices(arr, starts, ends):
     """
     Calculate sums of slices of an array.
-    
+
     Parameters
     ----------
     arr : numpy.ndarray
@@ -65,14 +64,14 @@ def sum_slices(arr, starts, ends):
         Starts for each slice
     ends : numpy.ndarray
         Stops for each slice
-        
+
     Returns
     -------
     sums : numpy.ndarray
         Sums of the slices.
     """
     sums = np.add.reduceat(arr, interweave(starts, ends))[::2]
-    sums[starts==ends] = 0
+    sums[starts == ends] = 0
     return sums
 
 
@@ -93,7 +92,7 @@ def arange_multi(starts, stops=None, lengths=None):
     -------
     concat_ranges : numpy.ndarray
         Concatenated ranges.
-        
+
     Notes
     -----
     See the following illustrative example:
@@ -134,13 +133,13 @@ def arange_multi(starts, stops=None, lengths=None):
 def _check_overlap(starts1, ends1, starts2, ends2, closed=False):
     """
     Take pairs of intervals and test if each pair has an overlap.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. All four arrays must have the same size.
         Warning: if provided as pandas.Series, indices will be ignored.
-        
+
     closed : bool
         If True then treat intervals as closed and accept single-point overlaps.
 
@@ -163,17 +162,17 @@ def _check_overlap(starts1, ends1, starts2, ends2, closed=False):
 def _size_overlap(starts1, ends1, starts2, ends2):
     """
     Take pairs of intervals and return the length of an overlap in each pair.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. All four arrays must have the same size.
         Warning: if provided as pandas.Series, indices will be ignored.
-        
+
     Returns
     -------
     overlap_size : numpy.ndarray
-        An array where the i-th element contains the length of an overlap between 
+        An array where the i-th element contains the length of an overlap between
         the i-th interval in set 1 and the i-th interval in set 2.
         0 if the intervals overlap by a single point, -1 if they do not overlap.
     """
@@ -186,13 +185,13 @@ def _size_overlap(starts1, ends1, starts2, ends2):
 def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort=False):
     """
     Take two sets of intervals and return the indices of pairs of overlapping intervals.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
-        
+
     closed : bool
         If True, then treat intervals as closed and report single-point overlaps.
 
@@ -200,9 +199,9 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
     -------
     overlap_ids : numpy.ndarray
         An Nx2 array containing the indices of pairs of overlapping intervals.
-        The 1st column contains ids from the 1st set, the 2nd column has ids 
+        The 1st column contains ids from the 1st set, the 2nd column has ids
         from the 2nd set.
-    
+
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
@@ -269,22 +268,22 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
 def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     """
     Take two sets of intervals and return the indices of pairs of overlapping intervals.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
-        
+
     closed : bool
         If True, then treat intervals as closed and report single-point overlaps.
     Returns
     -------
     overlap_ids : numpy.ndarray
         An Nx2 array containing the indices of pairs of overlapping intervals.
-        The 1st column contains ids from the 1st set, the 2nd column has ids 
+        The 1st column contains ids from the 1st set, the 2nd column has ids
         from the 2nd set.
-    
+
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
@@ -303,44 +302,52 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     # Concatenate intervals lists
     n1 = len(starts1)
     n2 = len(starts2)
-    ids1 = np.arange(0,n1)
-    ids2 = np.arange(0,n2)
+    ids1 = np.arange(0, n1)
+    ids2 = np.arange(0, n2)
 
     # Sort all intervals together
     order1 = np.lexsort([ends1, starts1])
     order2 = np.lexsort([ends2, starts2])
     starts1, ends1, ids1 = starts1[order1], ends1[order1], ids1[order1]
     starts2, ends2, ids2 = starts2[order2], ends2[order2], ids2[order2]
-    
+
     # Find interval overlaps
     match_2in1_starts = np.searchsorted(starts2, starts1, "left")
     match_2in1_ends = np.searchsorted(starts2, ends1, "right" if closed else "left")
     # "right" is intentional here to avoid duplication
-    match_1in2_starts = np.searchsorted(starts1, starts2, "right") 
+    match_1in2_starts = np.searchsorted(starts1, starts2, "right")
     match_1in2_ends = np.searchsorted(starts1, ends2, "right" if closed else "left")
-    
+
     # Ignore self-overlaps
-    match_2in1_mask = match_2in1_ends > match_2in1_starts 
-    match_1in2_mask = match_1in2_ends > match_1in2_starts 
+    match_2in1_mask = match_2in1_ends > match_2in1_starts
+    match_1in2_mask = match_1in2_ends > match_1in2_starts
     match_2in1_starts, match_2in1_ends = (
-        match_2in1_starts[match_2in1_mask], match_2in1_ends[match_2in1_mask])
+        match_2in1_starts[match_2in1_mask],
+        match_2in1_ends[match_2in1_mask],
+    )
     match_1in2_starts, match_1in2_ends = (
-        match_1in2_starts[match_1in2_mask], match_1in2_ends[match_1in2_mask])
+        match_1in2_starts[match_1in2_mask],
+        match_1in2_ends[match_1in2_mask],
+    )
 
     # Generate IDs of pairs of overlapping intervals
     overlap_ids = np.block(
-    [
         [
-            np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts)[:,None],
-            ids2[arange_multi(match_2in1_starts, match_2in1_ends)][:,None],
-        ],
-        [
-            ids1[arange_multi(match_1in2_starts, match_1in2_ends)][:,None],
-            np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts)[:,None],
+            [
+                np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts)[
+                    :, None
+                ],
+                ids2[arange_multi(match_2in1_starts, match_2in1_ends)][:, None],
+            ],
+            [
+                ids1[arange_multi(match_1in2_starts, match_1in2_ends)][:, None],
+                np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts)[
+                    :, None
+                ],
+            ],
         ]
-    ]
     )
-    
+
     if sort:
         # Sort overlaps according to the 1st
         overlap_ids = overlap_ids[np.lexsort([overlap_ids[:, 1], overlap_ids[:, 0]])]
@@ -352,7 +359,7 @@ def overlap_intervals_outer(starts1, ends1, starts2, ends2, closed=False):
     """
     Take two sets of intervals and return the indices of pairs of overlapping intervals,
     as well as the indices of the intervals that do not overlap any other interval.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
@@ -361,14 +368,14 @@ def overlap_intervals_outer(starts1, ends1, starts2, ends2, closed=False):
 
     closed : bool
         If True, then treat intervals as closed and report single-point overlaps.
-        
+
     Returns
     -------
     overlap_ids : numpy.ndarray
         An Nx2 array containing the indices of pairs of overlapping intervals.
-        The 1st column contains ids from the 1st set, the 2nd column has ids 
+        The 1st column contains ids from the 1st set, the 2nd column has ids
         from the 2nd set.
-    
+
     no_overlap_ids1, no_overlap_ids2 : numpy.ndarray
         Two 1D arrays containing the indices of intervals in sets 1 and 2
         respectively that do not overlap with any interval in the other set.
@@ -388,21 +395,21 @@ def overlap_intervals_outer(starts1, ends1, starts2, ends2, closed=False):
 def merge_intervals(starts, ends, min_dist=0):
     """
     Merge overlapping intervals.
-    
+
     Parameters
     ----------
     starts, ends : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
-        
+
     min_dist : float or None
-        If provided, merge intervals separated by this distance or less. 
-        If None, do not merge non-overlapping intervals. Using 
-        min_dist=0 and min_dist=None will bring different results. 
+        If provided, merge intervals separated by this distance or less.
+        If None, do not merge non-overlapping intervals. Using
+        min_dist=0 and min_dist=None will bring different results.
         bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
-        do not overlap, but are separated by a distance of 0. Such intervals 
+        do not overlap, but are separated by a distance of 0. Such intervals
         are not merged when min_dist=None, but are merged when min_dist=0.
-        
+
     Returns
     -------
     cluster_ids : numpy.ndarray
@@ -410,10 +417,10 @@ def merge_intervals(starts, ends, min_dist=0):
     cluster_starts : numpy.ndarray
     cluster_ends : numpy.ndarray
         The spans of the merged intervals.
-    
+
     Notes
     -----
-    From 
+    From
     https://stackoverflow.com/questions/43600878/merging-overlapping-intervals/58976449#58976449
     """
 
@@ -452,7 +459,9 @@ def merge_intervals(starts, ends, min_dist=0):
 
 
 def complement_intervals(
-    starts, ends, bounds=(0, np.iinfo(np.int64).max),
+    starts,
+    ends,
+    bounds=(0, np.iinfo(np.int64).max),
 ):
 
     _, merged_starts, merged_ends = merge_intervals(starts, ends, min_dist=0)
@@ -478,31 +487,31 @@ def _closest_intervals_nooverlap(
     starts1, ends1, starts2, ends2, tie_arr=None, k_upstream=1, k_downstream=1
 ):
     """
-    For every interval in set 1, return the indices of k closest intervals 
-    from set 2. Overlapping intervals from set 2 are not reported, unless they 
+    For every interval in set 1, return the indices of k closest intervals
+    from set 2. Overlapping intervals from set 2 are not reported, unless they
     overlap by a single point.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
-        
+
     tie_arr : numpy.ndarray or None
-        Extra data describing intervals in set 2 to break ties when multiple intervals 
+        Extra data describing intervals in set 2 to break ties when multiple intervals
         are located at the same distance. An interval with the *lowest* value is
         selected.
-        
+
     k_upstream, k_downstream : int
         The number of upstream and downstream neighbors to report.
-        
+
     Returns
     -------
     upstream_ids, downstream_ids: numpy.ndarray
-        Two Nx2 arrays containing the indices of pairs of closest intervals, 
-        reported separately for the downstream and upstream neighbors. The two columns 
+        Two Nx2 arrays containing the indices of pairs of closest intervals,
+        reported separately for the downstream and upstream neighbors. The two columns
         are the inteval ids from set 1, ids of the closest intevals from set 2.
-            
+
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
@@ -600,35 +609,35 @@ def closest_intervals(
 ):
     """
     For every interval in set 1, return the indices of k closest intervals from set 2.
-    
+
     Parameters
     ----------
     starts1, ends1, starts2, ends2 : numpy.ndarray
         Interval coordinates. Warning: if provided as pandas.Series, indices
-        will be ignored. If start2 and ends2 are None, find closest intervals 
+        will be ignored. If start2 and ends2 are None, find closest intervals
         within the same set.
-        
+
     k : int
         The number of neighbors to report.
 
     tie_arr : numpy.ndarray or None
-        Extra data describing intervals in set 2 to break ties when multiple intervals 
-        are located at the same distance. Intervals with *lower* tie_arr values will 
+        Extra data describing intervals in set 2 to break ties when multiple intervals
+        are located at the same distance. Intervals with *lower* tie_arr values will
         be given priority.
 
     ignore_overlaps : bool
         If True, ignore set 2 intervals that overlap with set 1 intervals.
-        
+
     ignore_upstream, ignore_downstream : bool
         If True, ignore set 2 intervals upstream/downstream of set 1 intervals.
-        
+
     Returns
     -------
     closest_ids : numpy.ndarray
         An Nx2 array containing the indices of pairs of closest intervals.
-        The 1st column contains ids from the 1st set, the 2nd column has ids 
+        The 1st column contains ids from the 1st set, the 2nd column has ids
         from the 2nd set.
-    
+
     """
 
     if ignore_overlaps:
