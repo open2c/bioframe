@@ -16,21 +16,16 @@ Bioframe is a library to enable flexible and scalable operations on genomic inte
    :caption: Contents:
 
    quickstart
-   api
    ops
-   arrops
    core
    technical-notes
-   notebooks
+   notebooks/performance.ipynb
 
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
 
-   notebooks/arrops_tutorial.ipynb
-   notebooks/intervals_tutorial.ipynb
    notebooks/tutorial_assign_motifs_to_peaks.ipynb
-   notebooks/performance.ipynb
 
 
 Indices and tables
