@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import arrops
+from .core import arrops
 
 DEFAULT_FACECOLOR = "skyblue"
 DEFAULT_EDGECOLOR = "dimgray"

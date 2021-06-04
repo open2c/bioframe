@@ -6,4 +6,8 @@ Low-level API
    :maxdepth: 2
    :caption: Contents:
 
-   arrops
+   core/arrops
+   core/specs
+   core/construction
+   core/stringops
+   core/checks

@@ -17,9 +17,8 @@ try:
 except ImportError:
     pyBigWig = None
 
-from ..util import run
 from ..core.stringops import parse_region
-from ..arrops import argnatsort
+from ..core.arrops import argnatsort
 from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
 
 
