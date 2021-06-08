@@ -16,7 +16,6 @@ bioframe
 
    quickstart
    notebooks/intervals_tutorial.ipynb
-   notebooks/arrops_tutorial.ipynb
    notebooks/performance.ipynb
    notebooks/recipes.ipynb
    technical-notes
@@ -26,16 +25,17 @@ bioframe
    :caption: Tutorials
 
    notebooks/tutorial_assign_motifs_to_peaks.ipynb
+   notebooks/arrops_tutorial.ipynb
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: API
 
    ops
    fileops
    utils
-   core
    vis
+   core
 
 Indices and tables
 ==================
