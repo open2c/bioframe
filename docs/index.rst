@@ -12,14 +12,10 @@ bioframe
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Guide:
 
    quickstart
-   ops
-   fileops
-   utils
-   core
-   vis
+   notebooks/intervals_tutorial.ipynb
    notebooks/performance.ipynb
    notebooks/recipes.ipynb
    technical-notes
@@ -30,6 +26,15 @@ bioframe
 
    notebooks/tutorial_assign_motifs_to_peaks.ipynb
 
+.. toctree::
+   :maxdepth: 2
+   :caption: API:
+
+   ops
+   fileops
+   utils
+   core
+   vis
 
 Indices and tables
 ==================
