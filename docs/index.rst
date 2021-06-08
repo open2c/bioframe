@@ -12,10 +12,11 @@ bioframe
 
 .. toctree::
    :maxdepth: 2
-   :caption: Guide:
+   :caption: Guide
 
    quickstart
    notebooks/intervals_tutorial.ipynb
+   notebooks/arrops_tutorial.ipynb
    notebooks/performance.ipynb
    notebooks/recipes.ipynb
    technical-notes
@@ -28,7 +29,7 @@ bioframe
 
 .. toctree::
    :maxdepth: 2
-   :caption: API:
+   :caption: API
 
    ops
    fileops
