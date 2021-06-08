@@ -78,6 +78,7 @@ setup(
     package_data={"bioframe": ["io/data/*"]},
     zip_safe=False,
     classifiers=CLASSIFIERS,
+    python_requires=">=3.6",
     install_requires=get_requirements(INSTALL_DEPS_PATH),
     tests_require=["pytest"],
     setup_requires=["wheel"],
