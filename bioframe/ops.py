@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from . import arrops
 
 from .core.specs import _get_default_colnames, _verify_columns
 from .core.stringops import parse_region
 
+from .core import arrops
 from .core import specs
 from .core import construction
 from .core import checks
@@ -751,6 +751,8 @@ def _closest_intidxs(
         The indices of the overlapping genomic intervals in the original
         dataframes. The 1st column contains the indices of intervals
         from the 1st set, the 2nd column - the indicies from the 2nd set.
+        The second column is filled with -1 for those intervals in the 1st
+        set with no closest 2nd set interval.
     """
 
     # Allow users to specify the names of columns containing the interval coordinates.
@@ -776,6 +778,14 @@ def _closest_intidxs(
     closest_intidxs = []
     for group_keys, df1_group_idxs in df1_groups.items():
         if group_keys not in df2_groups:
+            # 
+            closest_idxs_group = np.vstack(
+                [
+                    df1_group_idxs,
+                    -1 * np.ones_like(df1_group_idxs),
+                ]
+            ).T
+            closest_intidxs.append(closest_idxs_group)
             continue
 
         df2_group_idxs = df2_groups[group_keys]
@@ -925,6 +935,7 @@ def closest(
         cols1=cols1,
         cols2=cols2,
     )
+    na_mask = closest_df_idxs[:, 1] == -1
 
     if len(closest_df_idxs) == 0:
         return  # case of no closest intervals
@@ -940,6 +951,7 @@ def closest(
         df_index_2 = pd.DataFrame(
             {index_col + suffixes[1]: df2.index[closest_df_idxs[:, 1]]}
         )
+        df_index_2[na_mask] = pd.NA
 
     df_overlap = None
     if return_overlap:
@@ -968,8 +980,16 @@ def closest(
                 "have_overlap": have_overlap,
                 "overlap_start": np.where(have_overlap, overlap_start, None),
                 "overlap_end": np.where(have_overlap, overlap_end, None),
+            },
+        )
+        df_overlap = df_overlap.astype(
+            {
+                "have_overlap": pd.BooleanDtype(),
+                "overlap_start": pd.Int64Dtype(),
+                "overlap_end": pd.Int64Dtype(),
             }
         )
+        df_overlap[na_mask] = pd.NA
 
     df_distance = None
     if return_distance:
@@ -984,7 +1004,8 @@ def closest(
             - df1[ek1].values[closest_df_idxs[:, 0]],
         )
         distance = np.amax(np.vstack([distance_left, distance_right]), axis=0)
-        df_distance = pd.DataFrame({"distance": distance})
+        df_distance = pd.DataFrame({"distance": distance}, dtype=pd.Int64Dtype())
+        df_distance[na_mask] = pd.NA
 
     df_input_1 = None
     df_input_2 = None
@@ -994,6 +1015,10 @@ def closest(
     if return_input is True or str(return_input) == "2" or return_input == "right":
         df_input_2 = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
+        df_input_2 = df_input_2.astype(
+            {sk2 + suffixes[1]: pd.Int64Dtype(), ek2 + suffixes[1]: pd.Int64Dtype()}
+        )
+        df_input_2[na_mask] = pd.NA
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap, df_distance],

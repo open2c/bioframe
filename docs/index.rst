@@ -7,8 +7,7 @@ bioframe
 ==================
 
 
-Bioframe is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of 
-`pandas <https://pandas.pydata.org/>`_ enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization and iteration of genomic analyses.
+`Bioframe <https://github.com/open2c/bioframe>`_ is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of `pandas <https://pandas.pydata.org/>`_ enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization and iteration of genomic analyses.
 
 
 .. toctree::
@@ -16,21 +15,20 @@ Bioframe is a library to enable flexible and scalable operations on genomic inte
    :caption: Contents:
 
    quickstart
-   api
    ops
-   arrops
+   fileops
+   utils
    core
+   vis
+   notebooks/performance.ipynb
+   notebooks/recipes.ipynb
    technical-notes
-   notebooks
 
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
 
-   notebooks/arrops_tutorial.ipynb
-   notebooks/intervals_tutorial.ipynb
    notebooks/tutorial_assign_motifs_to_peaks.ipynb
-   notebooks/performance.ipynb
 
 
 Indices and tables

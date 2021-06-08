@@ -603,12 +603,15 @@ def test_closest():
     d = """chrom_1  start_1  end_1 chrom_2  start_2  end_2  distance
         0    chr1        1      5    chr1        4      8         0"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),
+        'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### closest(df1,df2, ignore_overlaps=True)) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
         0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, ignore_overlaps=True))
 
     ### closest(df1,df2,k=2) ###
@@ -616,6 +619,8 @@ def test_closest():
             0   chr1    1   5   chr1    4   8   0
             1   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
+
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=2))
 
     ### closest(df2,df1) ###
@@ -623,6 +628,7 @@ def test_closest():
             0   chr1    4   8   chr1    1   5   0
             1   chr1    10  11  chr1    1   5   5 """
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1))
 
     ### change first interval to new chrom ###
@@ -630,6 +636,7 @@ def test_closest():
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
               0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### test other return arguments ###
