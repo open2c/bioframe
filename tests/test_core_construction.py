@@ -1,19 +1,20 @@
+from io import StringIO
+
 import pandas as pd
 import numpy as np
 import pytest
-from io import StringIO
 
 from bioframe.core.construction import from_any
 from bioframe.core import construction
 
 
-def test_add_UCSC_name_column():
+def test_add_ucsc_name_column():
     df = pd.DataFrame(
         {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
     )
 
     pd.testing.assert_series_equal(
-        construction.add_UCSC_name_column(df)["name"],
+        construction.add_ucsc_name_column(df)["name"],
         pd.Series(
             data=["chr0:1-4", "chr1:2-5", "chr2:3-6"], index=[0, 1, 2], name="name"
         ),
@@ -27,13 +28,13 @@ def test_any():
     df = pd.DataFrame(
         {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
     )
-    parsed = from_any(df, names_as_UCSC=True, name_col="regions")
+    parsed = from_any(df, names_as_ucsc=True, name_col="regions")
     assert parsed.iloc[0]["chrom"] == "chr0"
     assert parsed.iloc[0]["regions"] == "chr0:1-4"
 
     # re-create dataframe from UCSC name alone
     df2 = pd.DataFrame({"regions": parsed["regions"].values})
-    assert (from_any(df2, names_as_UCSC=True, name_col="regions") == parsed).all().all()
+    assert (from_any(df2, names_as_ucsc=True, name_col="regions") == parsed).all().all()
 
     # re-parsing results yields the same
     assert (from_any(parsed) == parsed).all().all()
@@ -42,23 +43,23 @@ def test_any():
     assert from_any([("chr1", None, 5)], fill_null={"chr1": 10})["start"].values[0] == 0
 
     # pull end from chromsizes
-    p2 = from_any([("chr1", 5, None)], fill_null={"chr1": 40}, names_as_UCSC=True)
+    p2 = from_any([("chr1", 5, None)], fill_null={"chr1": 40}, names_as_ucsc=True)
     assert list(p2.values[0]) == ["chr1", 5, 40, "chr1:5-40"]
 
     # We could keep things as None if chromsizes were not proviced
     p3 = from_any(["chr1", "chr2"], fill_null=False)
     assert list(p3.values[0]) == ["chr1", None, None, "chr1"]
 
-    # we can force CUSC names
-    p4 = from_any([("chr1", 0, 5)], names_as_UCSC=True)
+    # we can force UCSC names
+    p4 = from_any([("chr1", 0, 5)], names_as_ucsc=True)
     assert list(p4.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # nothing happens: name was autocompleted
-    p5 = from_any([("chr1", 0, 5)], names_as_UCSC=False)
+    p5 = from_any([("chr1", 0, 5)], names_as_ucsc=False)
     assert list(p5.values[0]) == ["chr1", 0, 5, "chr1"]
 
     # forcing UCSC names
-    p7 = from_any([("chr1")], fill_null={"chr1": 5}, names_as_UCSC=True)
+    p7 = from_any([("chr1")], fill_null={"chr1": 5}, names_as_ucsc=True)
     assert list(p7.values[0]) == ["chr1", 0, 5, "chr1:0-5"]
 
     # kept the strange name
@@ -174,7 +175,7 @@ def test_make_viewframe():
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(chromsizes, view_names_as_UCSC=True),
+        construction.make_viewframe(chromsizes, view_names_as_ucsc=True),
     )
 
     # test pd.DataFrame input

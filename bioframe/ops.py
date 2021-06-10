@@ -9,6 +9,25 @@ from .core import specs
 from .core import construction
 from .core import checks
 
+__all__ = [
+    "select",
+    "expand",
+    "overlap",
+    "cluster",
+    "merge",
+    "coverage",
+    "closest",
+    "subtract",
+    "setdiff",
+    "split",
+    "count_overlaps",
+    "pair_by_distance",
+    "trim",
+    "complement",
+    "sort_bedframe",
+    "assign_view",
+]
+
 
 def select(df, region, cols=None):
     """
@@ -258,7 +277,7 @@ def _overlap_intidxs(
             )
 
     if len(overlap_intidxs) == 0:
-        return np.ndarray(shape=(0, 2), dtype=np.int)
+        return np.ndarray(shape=(0, 2), dtype=int)
     overlap_intidxs = np.vstack(overlap_intidxs)
 
     if keep_order:
@@ -778,7 +797,7 @@ def _closest_intidxs(
     closest_intidxs = []
     for group_keys, df1_group_idxs in df1_groups.items():
         if group_keys not in df2_groups:
-            # 
+            #
             closest_idxs_group = np.vstack(
                 [
                     df1_group_idxs,
@@ -1202,7 +1221,7 @@ def split(
     df_split.sort_values([ck1, sk1, ek1], inplace=True)
 
     if add_names:
-        df_split = construction.add_UCSC_name_column(
+        df_split = construction.add_ucsc_name_column(
             df_split, cols=[ck1, sk1, ek1], name_col="name"
         )
         sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)

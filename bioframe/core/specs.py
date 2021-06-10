@@ -2,6 +2,11 @@ import collections
 import pandas as pd
 import numpy as np
 
+__all__ = [
+    "update_default_colnames",
+    "is_chrom_dtype",
+]
+
 _rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
 
 

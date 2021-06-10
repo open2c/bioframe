@@ -439,7 +439,7 @@ def merge_intervals(starts, ends, min_dist=0):
     starts, ends = starts[order], ends[order]
 
     ends = np.maximum.accumulate(ends)
-    cluster_borders = np.zeros(len(starts) + 1, dtype=np.bool)
+    cluster_borders = np.zeros(len(starts) + 1, dtype=bool)
     cluster_borders[0] = True
     cluster_borders[-1] = True
 

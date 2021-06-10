@@ -1,10 +1,11 @@
-import pandas as pd
-import bioframe
-import numpy as np
 from io import StringIO
 import os.path as op
 
+import pandas as pd
+import numpy as np
 import pytest
+
+import bioframe
 
 testdir = op.realpath(op.dirname(__file__))
 

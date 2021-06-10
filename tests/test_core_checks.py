@@ -1,8 +1,11 @@
+from io import StringIO
+
+import pandas as pd
+import numpy as np
+import pytest
+
 from bioframe.core.checks import *
 from bioframe.ops import sort_bedframe
-import pandas as pd
-import pytest
-from io import StringIO
 
 
 def test_is_cataloged():

@@ -1,9 +1,17 @@
 import pandas as pd
 import numpy as np
-from .specs import _get_default_colnames, _verify_columns
-from .stringops import parse_region_string, to_UCSC_string, is_complete_UCSC_string
-from . import specs
+from .specs import _get_default_colnames, _verify_columns, is_chrom_dtype
+from .stringops import parse_region_string, to_ucsc_string, is_complete_ucsc_string
 from . import checks
+
+__all__ = [
+    "from_dict",
+    "from_series",
+    "from_list",
+    "from_any",
+    "make_viewframe",
+    "sanitize_bedframe",
+]
 
 ### conversions from various input formats into dataframes ###
 
@@ -52,7 +60,7 @@ def from_list(regions, name_col="name", cols=None):
     return df
 
 
-def from_UCSC_string_list(region_list, name_col="name", cols=None):
+def from_ucsc_string_list(region_list, name_col="name", cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     parsed = [parse_region_string(i) for i in region_list]
     df = pd.DataFrame(parsed, columns=[ck1, sk1, ek1])
@@ -60,7 +68,7 @@ def from_UCSC_string_list(region_list, name_col="name", cols=None):
     return df
 
 
-def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", cols=None):
+def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", cols=None):
     """
     Attempts to make a dataframe with columns [chr,start,end,name_col] from a variety of input types.
     Currently supported inputs:
@@ -70,7 +78,7 @@ def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", col
     - pandas series where the index is interpreted as chromosomes and values are interpreted as end
     - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
 
-    names_as_UCSC : bool
+    names_as_ucsc : bool
         replaces values in name_col with UCSC strings made from (chrom,start,end).
         Default False.
 
@@ -95,10 +103,10 @@ def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", col
     if type(regions) is pd.core.frame.DataFrame:
         if set([ck1, sk1, ek1]).issubset(regions.columns):
             out_df = regions.copy()
-        elif (len(regions[name_col].values.shape) == 1) and is_complete_UCSC_string(
+        elif (len(regions[name_col].values.shape) == 1) and is_complete_ucsc_string(
             regions[name_col].values[0]
         ):
-            out_df = from_UCSC_string_list(
+            out_df = from_ucsc_string_list(
                 regions[name_col].values, name_col=name_col, cols=[ck1, sk1, ek1]
             )
         else:
@@ -112,7 +120,7 @@ def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", col
 
     elif type(regions) is list:
         if len(np.shape(regions)) == 1 and type(regions[0]) is str:
-            out_df = from_UCSC_string_list(
+            out_df = from_ucsc_string_list(
                 regions, name_col=name_col, cols=[ck1, sk1, ek1]
             )
         else:
@@ -133,13 +141,13 @@ def from_any(regions, names_as_UCSC=False, fill_null=False, name_col="name", col
         except:
             raise ValueError("could not fill ends with provided chromsizes")
 
-    if names_as_UCSC:
-        out_df = add_UCSC_name_column(out_df, name_col=name_col, cols=cols)
+    if names_as_ucsc:
+        out_df = add_ucsc_name_column(out_df, name_col=name_col, cols=cols)
 
     return out_df
 
 
-def add_UCSC_name_column(reg_df, name_col="name", cols=None):
+def add_ucsc_name_column(reg_df, name_col="name", cols=None):
     """
     Auto-creates a UCSC name chrom:start-end for each region (chrom,start,end) in reg_df.
     Replaces name_col if it exists.
@@ -149,14 +157,14 @@ def add_UCSC_name_column(reg_df, name_col="name", cols=None):
     df = reg_df.copy()
     _verify_columns(df, [ck1, sk1, ek1])
     data = zip(df[ck1], df[sk1], df[ek1])
-    df[name_col] = [to_UCSC_string(i) for i in data]
+    df[name_col] = [to_ucsc_string(i) for i in data]
     return df
 
 
 def make_viewframe(
     regions,
     check_bounds=None,
-    view_names_as_UCSC=False,
+    view_names_as_ucsc=False,
     view_name_col="name",
     cols=None,
 ):
@@ -203,8 +211,8 @@ def make_viewframe(
                 "Invalid input to make a viewFrame, regions not contained by bounds"
             )
 
-    if view_names_as_UCSC:
-        view_df = add_UCSC_name_column(view_df, name_col=view_name_col, cols=cols)
+    if view_names_as_ucsc:
+        view_df = add_ucsc_name_column(view_df, name_col=view_name_col, cols=cols)
 
     if checks.is_viewframe(
         view_df, view_name_col=view_name_col, cols=cols, raise_errors=True
@@ -251,7 +259,7 @@ def sanitize_bedframe(
 
     if recast_dtypes:
         chrom_dtype, start_dtype, end_dtype = out_df.dtypes[[ck1, sk1, ek1]]
-        if not specs.is_chrom_dtype(chrom_dtype):
+        if not is_chrom_dtype(chrom_dtype):
             out_df[ck1] = out_df[ck1].astype(str)
         if not ((start_dtype is pd.Int64Dtype()) and (end_dtype is pd.Int64Dtype())):
             out_df[sk1] = out_df[sk1].astype(pd.Int64Dtype())

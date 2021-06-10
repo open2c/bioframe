@@ -1,9 +1,18 @@
 import pandas as pd
 import numpy as np
-from .. import ops
 from . import construction
-from . import specs
 from .specs import _get_default_colnames, _verify_columns, _verify_column_dtypes
+
+__all__ = [
+    "is_bedframe",
+    "is_cataloged",
+    "is_overlapping",
+    "is_viewframe",
+    "is_contained",
+    "is_covering",
+    "is_tiling",
+    "is_sorted",
+]
 
 
 def is_bedframe(
@@ -110,10 +119,11 @@ def is_overlapping(df, cols=None):
     is_overlapping:bool
 
     """
+    from ..ops import merge
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
-    df_merged = ops.merge(df, cols=cols)
+    df_merged = merge(df, cols=cols)
 
     total_interval_len = np.sum((df[ek1] - df[sk1]).values)
     total_interval_len_merged = np.sum((df_merged[ek1] - df_merged[sk1]).values)
@@ -206,6 +216,7 @@ def is_contained(
     is_contained:bool
 
     """
+    from ..ops import trim
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
@@ -216,7 +227,7 @@ def is_contained(
             raise ValueError("df not cataloged in view_df")
         return False
 
-    df_trim = ops.trim(
+    df_trim = trim(
         df, view_df=view_df, df_view_col=df_view_col, view_name_col=view_name_col
     )
     is_start_trimmed = np.any(df[sk1].values != df_trim[sk1].values)
@@ -242,8 +253,9 @@ def is_covering(df, view_df, view_name_col="name", cols=None):
     is_covering:bool
 
     """
+    from ..ops import complement
 
-    if ops.complement(
+    if complement(
         df,
         view_df=view_df,
         view_name_col=view_name_col,
@@ -313,8 +325,9 @@ def is_sorted(
     is_sorted : bool
 
     """
+    from ..ops import sort_bedframe
 
-    df_sorted = ops.sort_bedframe(
+    df_sorted = sort_bedframe(
         df.copy(),
         view_df=view_df,
         infer_assignment=infer_assignment,

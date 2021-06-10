@@ -11,7 +11,7 @@ __all__ = [
 ### functions for manipulating UCSC strings ###
 
 
-def to_UCSC_string(triplet):
+def to_ucsc_string(triplet):
     """
     convert a triplet to a UCSC string
     """
@@ -102,7 +102,7 @@ def parse_region_string(s):
     return (chrom, start, end)
 
 
-def is_complete_UCSC_string(mystring):
+def is_complete_ucsc_string(mystring):
     """
     Check if a string can be parsed into chrom,start,end format.
     """
