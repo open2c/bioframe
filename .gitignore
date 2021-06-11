@@ -6,6 +6,7 @@
 __pycache__
 .cache
 .pytest_cache
+.ipynb_checkpoints/
 
 # setup and build
 docs/_*
