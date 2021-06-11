@@ -1,9 +1,6 @@
-Utilities
+Plotting
 ===============
 
-.. automodule:: bioframe.utils
+.. automodule:: bioframe.vis
    :autosummary:
    :members:
-
-
-

@@ -4,8 +4,7 @@
    contain the root `toctree` directive.
 
 bioframe
-==================
-
+========
 
 `Bioframe <https://github.com/open2c/bioframe>`_ is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of `pandas <https://pandas.pydata.org/>`_ enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization and iteration of genomic analyses.
 
@@ -14,28 +13,30 @@ bioframe
    :maxdepth: 2
    :caption: Guide
 
-   quickstart
-   notebooks/intervals_tutorial.ipynb
-   notebooks/performance.ipynb
-   notebooks/recipes.ipynb
-   technical-notes
+   guide-quickstart
+   guide-intervalops.md
+   guide-performance.ipynb
+   guide-recipes.md
+   guide-technical-notes
 
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
 
-   notebooks/tutorial_assign_motifs_to_peaks.ipynb
-   notebooks/arrops_tutorial.ipynb
+   tutorials/tutorial_assign_motifs_to_peaks.ipynb
 
 .. toctree::
    :maxdepth: 3
    :caption: API
 
-   ops
-   fileops
-   utils
-   vis
-   core
+   api-construction
+   api-validation
+   api-intervalops
+   api-io
+   api-extras
+   api-vis
+   api-lowlevel.md
+
 
 Indices and tables
 ==================
