@@ -1,24 +1,13 @@
 from .schemas import SCHEMAS
 
-from .fileops import (
-    read_table,
-    read_chromsizes,
-    read_tabix,
-    read_pairix,
-    read_bam,
-    load_fasta,
-    read_bigwig,
-    to_bigwig,
-    read_bigbed,
-    to_bigbed,
-    read_parquet,
-    to_parquet,
-)
+from . import fileops
+from .fileops import *
 
-from .resources import (
-    fetch_chromsizes,
-    fetch_centromeres,
-    UCSCClient,
-    EncodeClient,
-    FDNClient,
-)
+from . import resources
+from .resources import *
+
+__all__ = [
+    "SCHEMAS",
+    *fileops.__all__,
+    *resources.__all__,
+]

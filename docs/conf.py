@@ -15,29 +15,13 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../"))
 
-import mock
-
-MOCK_MODULES = [
-    "numpy",
-    "pandas",
-    "pandas.algos",
-    "pandas.api",
-    "pandas.api.types",
-    # 'dask',
-    # 'dask.base',
-    # 'dask.array',
-    # 'dask.dataframe',
-    # 'dask.dataframe.core',
-    # 'dask.dataframe.utils',
-]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
 
 # -- Project information -----------------------------------------------------
 
 project = "bioframe"
-copyright = "2020, OmicRelief"
-author = "OmicRelief"
+copyright = "2020, Open2C"
+author = "Open2C"
+
 
 # The full version, including alpha/beta/rc tags
 def _read(*parts, **kwargs):
@@ -74,14 +58,14 @@ extensions = [
     "sphinx.ext.autodoc",
     # 'sphinx.ext.doctest',
     # 'sphinx.ext.todo',
-    #'sphinx.ext.coverage',
+    # 'sphinx.ext.coverage',
     # 'sphinx.ext.mathjax',
     # 'sphinx.ext.ifconfig',
     "autodocsumm",
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",  # 'numpydoc'
-    "nbsphinx",
+    "myst_nb",
 ]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -91,7 +75,9 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", '**.ipynb_checkpoints']
 
-
+# nbsphinx_custom_formats = {
+#     '.md': ['jupytext.reads', {'fmt': 'MyST'}],
+# }
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -108,3 +94,10 @@ html_static_path = ["_static"]
 master_doc = "index"
 
 autosummary_generate = True
+
+# Don't include fully qualified name prefixes in autodoc
+add_module_names = False
+
+# Cache MyST (.md or .ipynb) notebook outputs if unmodified
+jupyter_execute_notebooks = "cache"
+execution_excludepatterns = ['guide-performance.ipynb']

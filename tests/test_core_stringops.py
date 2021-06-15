@@ -1,12 +1,13 @@
-from bioframe.core import stringops
-from bioframe.core.stringops import parse_region
 import pandas as pd
 import numpy as np
 import pytest
 
+from bioframe.core import stringops
+from bioframe.core.stringops import parse_region
 
-def test_to_UCSC_string():
-    assert stringops.to_UCSC_string(("chr21", 1, 4)) == "chr21:1-4"
+
+def test_to_ucsc_string():
+    assert stringops.to_ucsc_string(("chr21", 1, 4)) == "chr21:1-4"
 
 
 def test_parse_region():
@@ -60,10 +61,10 @@ def test_parse_region_string():
     assert stringops.parse_region_string("c6:1000-2000") == ("c6", 1000, 2000)
 
 
-def test_is_complete_UCSC_string():
-    assert stringops.is_complete_UCSC_string("chrX:1M-2M") is True
-    assert stringops.is_complete_UCSC_string("chrX") is False
-    assert stringops.is_complete_UCSC_string("1M-2M") is False
-    assert stringops.is_complete_UCSC_string(1000) is False
-    assert stringops.is_complete_UCSC_string(np.array([100, 200])) is False
-    assert stringops.is_complete_UCSC_string(np.array(["chr1:100-200"])) is False
+def test_is_complete_ucsc_string():
+    assert stringops.is_complete_ucsc_string("chrX:1M-2M") is True
+    assert stringops.is_complete_ucsc_string("chrX") is False
+    assert stringops.is_complete_ucsc_string("1M-2M") is False
+    assert stringops.is_complete_ucsc_string(1000) is False
+    assert stringops.is_complete_ucsc_string(np.array([100, 200])) is False
+    assert stringops.is_complete_ucsc_string(np.array(["chr1:100-200"])) is False

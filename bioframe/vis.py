@@ -1,9 +1,9 @@
 import itertools
+import numpy as np
+import pandas as pd
 
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 from .core import arrops
 
@@ -16,7 +16,6 @@ __all__ = ["plot_intervals"]
 def _plot_interval(
     start, end, level, facecolor=None, edgecolor=None, height=0.6, ax=None
 ):
-
     facecolor = DEFAULT_FACECOLOR if facecolor is None else facecolor
     edgecolor = DEFAULT_EDGECOLOR if edgecolor is None else edgecolor
 
@@ -70,7 +69,6 @@ def plot_intervals_arr(
         The size of the figure. If None, plot within the current figure.
 
     """
-
     starts = np.asarray(starts)
     ends = np.asarray(ends)
 
@@ -158,7 +156,6 @@ def plot_intervals(
         The size of the figure. If None, plot within the current figure.
 
     """
-
     chrom_gb = df.groupby("chrom")
     for chrom, chrom_df in chrom_gb:
         if isinstance(levels, (list, pd.core.series.Series, np.ndarray)):

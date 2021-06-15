@@ -1,7 +1,9 @@
+from io import StringIO
+
 import pandas as pd
 import numpy as np
-from io import StringIO
 import pytest
+
 from bioframe.core import specs
 import bioframe
 

@@ -5,6 +5,15 @@ import collections
 from . import ops
 from .core.specs import _get_default_colnames, _verify_columns
 
+__all__ = [
+    "make_chromarms",
+    "binnify",
+    "digest",
+    "frac_mapped",
+    "frac_gc",
+    "frac_gene_coverage",
+]
+
 
 def make_chromarms(
     chromsizes,

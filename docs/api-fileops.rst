@@ -1,9 +1,7 @@
-File I/O
-===========================
+File I/O 
+========
 
 .. automodule:: bioframe.io.fileops
    :autosummary:
    :members:
-
-
 

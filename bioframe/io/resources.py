@@ -30,24 +30,6 @@ __all__ = [
 ]
 
 
-LOCAL_CHROMSIZES = {
-    path[:-12]: lambda: read_chromsizes(
-        pkg_resources.resource_filename(__name__, "data/" + path)
-    )
-    for path in pkg_resources.resource_listdir(__name__, "data/")
-    if path.endswith(".chrom.sizes")
-}
-
-
-LOCAL_CENTROMERES = {
-    path[:-12]: lambda: read_table(
-        pkg_resources.resource_filename(__name__, "data/" + path), SCHEMAS["bed3"]
-    )
-    for path in pkg_resources.resource_listdir(__name__, "data/")
-    if path.endswith(".centromeres")
-}
-
-
 def _check_connectivity(reference="http://www.google.com"):
     try:
         urllib.request.urlopen(reference, timeout=5)
@@ -91,8 +73,14 @@ def fetch_chromsizes(
 
     """
 
-    if provider == "local" or db in LOCAL_CHROMSIZES:
-        pass
+    if provider == "local":
+        fpath = f'data/{db}.chrom.sizes'
+        if pkg_resources.resource_exists('bioframe.io', fpath):
+            return read_chromsizes(
+                pkg_resources.resource_filename('bioframe.io', fpath)
+            )
+        else:
+            raise LookupError(f"Assembly '{db}' not found in local storage")
 
     if provider == "ucsc" or provider is None:
         return UCSCClient(db).fetch_chromsizes(
@@ -107,7 +95,8 @@ def fetch_chromsizes(
 
 
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
-
+    """
+    """
     # the priority goes as
     # - Local
     # - centromeres.txt
@@ -118,30 +107,40 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     # if db in CENTROMERES:
     #     return CENTROMERES[db]
 
-    if not _check_connectivity("http://www.google.com"):
-        raise ConnectionError("No internet connection!")
+    # if not _check_connectivity("http://www.google.com"):
+    #     raise ConnectionError("No internet connection!")
 
-    if not _check_connectivity("https://hgdownload.cse.ucsc.edu"):
-        raise ConnectionError(
-            "No connection to the genome database at hgdownload.cse.ucsc.edu!"
-        )
+    # if not _check_connectivity("https://hgdownload.cse.ucsc.edu"):
+    #     raise ConnectionError(
+    #         "No connection to the genome database at hgdownload.cse.ucsc.edu!"
+    #     )
 
-    client = UCSCClient(db)
-    fetchers = [
-        ("centromeres", client.fetch_centromeres),
-        ("cytoband", client.fetch_cytoband),
-        ("cytoband", partial(client.fetch_cytoband, ideo=True)),
-        ("gap", client.fetch_gaps),
-    ]
+    if provider == "local":
+        fpath = f'data/{db}.centromeres'
+        if pkg_resources.resource_exists('bioframe.io', fpath):
+            return read_chromsizes(
+                pkg_resources.resource_filename('bioframe.io', fpath)
+            )
+        else:
+            raise LookupError(f"Centromeres for '{db}' not found in local storage")
 
-    for schema, fetcher in fetchers:
-        try:
-            df = fetcher()
-            break
-        except urllib.error.HTTPError:
-            pass
-    else:
-        raise ValueError("No source for centromere data found.")
+    if provider == "ucsc" or provider is None:
+        client = UCSCClient(db)
+        fetchers = [
+            ("centromeres", client.fetch_centromeres),
+            ("cytoband", client.fetch_cytoband),
+            ("cytoband", partial(client.fetch_cytoband, ideo=True)),
+            ("gap", client.fetch_gaps),
+        ]
+
+        for schema, fetcher in fetchers:
+            try:
+                df = fetcher()
+                break
+            except urllib.error.HTTPError:
+                pass
+        else:
+            raise ValueError("No source for centromere data found.")
 
     return extract_centromeres(df, schema=schema, merge=merge)
 

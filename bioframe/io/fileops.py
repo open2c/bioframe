@@ -39,6 +39,13 @@ __all__ = [
 
 
 def read_table(filepath_or, schema=None, **kwargs):
+    """
+    Read a tab-delimited file into a data frame.
+
+    Equivalent to :func:`pandas.read_table` but supports an additional
+    `schema` argument to populate column names for common genomic formats.
+
+    """
     kwargs.setdefault("sep", "\t")
     kwargs.setdefault("header", None)
     if isinstance(filepath_or, str) and filepath_or.endswith(".gz"):
@@ -536,7 +543,12 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
             f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
         )
 
-        run(["bedGraphToBigWig", f.name, cs.name, outpath], print_cmd=True)
+        p = subprocess.run(
+            ["bedGraphToBigWig", f.name, cs.name, outpath],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    return p
 
 
 def to_bigbed(df, chromsizes, outpath, schema="bed6"):
