@@ -22,6 +22,7 @@ The following are required before installing bioframe:
 ```sh
 pip install bioframe
 ```
+
 ## Interval operations
 
 Key genomic interval operations in bioframe include:
