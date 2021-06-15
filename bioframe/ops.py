@@ -71,29 +71,29 @@ def select(df, region, cols=None):
 
 def expand(df, pad=None, scale=None, side="both", cols=None):
     """
-    Expand each interval by an amount specified with pad.
+    Expand each interval by an amount specified with `pad`.
+
     Negative values for pad shrink the interval, up to the midpoint.
-    Multiplicative rescaling of intervals enabled with scale.
-    Only one of pad or scale can be provided.
-    Often followed by `trim()`.
+    Multiplicative rescaling of intervals enabled with scale. Only one of pad
+    or scale can be provided. Often followed by :func:`trim()`.
 
     Parameters
     ----------
     df : pandas.DataFrame
 
-    pad : int
+    pad : int, optional
         The amount by which the intervals are additively expanded *on each side*.
         Negative values for pad shrink intervals, but not beyond the interval midpoint.
-        If pad_as_multiplier=True, then floats are accepted and intervals are
-        expanded/shrunk multiplicatively.
+        Either pad or scale must be supplied.
 
-    side : str
-        Which side to expand, possible values are "left", "right" and "both".
-
-    scale: float
+    scale : float, optional
         The factor by which to scale intervals multiplicatively on each side, e.g
-        scale=2 doubles each interval, scale=0 returns midpoints, and
-        scale=1 returns original intervals. Default False.
+        ``scale=2`` doubles each interval, ``scale=0`` returns midpoints, and
+        ``scale=1`` returns original intervals. Default False.
+        Either pad or scale must be supplied.
+
+    side : str, optional
+        Which side to expand, possible values are 'left', 'right' and 'both'.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -295,7 +295,7 @@ def overlap(
     return_index=False,
     return_overlap=False,
     suffixes=("_1", "_2"),
-    keep_order=False,
+    keep_order=True,
     cols1=None,
     cols2=None,
     on=None,
@@ -320,7 +320,8 @@ def overlap(
         If True, return columns from input dfs. Default True.
 
     return_index : bool
-        If True, return indicies of overlapping pairs as two new columns (`index_1` and `index_2`). Default False.
+        If True, return indicies of overlapping pairs as two new columns 
+        (`index_1` and `index_2`). Default False.
 
     return_overlap : bool
         If True, return overlapping intervals for the overlapping pairs
@@ -329,8 +330,9 @@ def overlap(
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
 
-    keep_order : bool
-        << to be documented >>
+    keep_order : bool, optional
+        Sort the output dataframe to preserve the order of the intervals in
+        the input dataframes. Disable to increase performance.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -338,9 +340,10 @@ def overlap(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to perform clustering on independently, passed as an argument
-        to df.groupby when considering overlaps. Default is ['chrom'], which must match the first name
-        from cols. Examples for additional columns include 'strand'.
+        List of column names to perform clustering on independently, passed 
+        as an argument to df.groupby when considering overlaps. Default is 
+        ['chrom'], which must match the first name from cols. Examples for 
+        additional columns include 'strand'.
 
     Returns
     -------
