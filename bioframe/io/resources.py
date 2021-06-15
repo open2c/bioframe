@@ -95,7 +95,8 @@ def fetch_chromsizes(
 
 
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
-
+    """
+    """
     # the priority goes as
     # - Local
     # - centromeres.txt

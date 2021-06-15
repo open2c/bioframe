@@ -10,7 +10,7 @@ bioframe
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Guide
 
    guide-quickstart
@@ -20,7 +20,7 @@ bioframe
    guide-technical-notes
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorials
 
    tutorials/tutorial_assign_motifs_to_peaks.ipynb
@@ -32,7 +32,8 @@ bioframe
    api-construction
    api-validation
    api-intervalops
-   api-io
+   api-fileops
+   api-resources
    api-extras
    api-vis
    api-lowlevel.md
