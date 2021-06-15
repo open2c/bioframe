@@ -6,6 +6,8 @@ from .specs import _get_default_colnames
 __all__ = [
     "parse_region",
     "parse_region_string",
+    "is_complete_ucsc_string",
+    "to_ucsc_string",
 ]
 
 ### functions for manipulating UCSC strings ###
