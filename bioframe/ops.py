@@ -471,11 +471,10 @@ def cluster(
 
     min_dist : float or None
         If provided, cluster intervals separated by this distance or less.
-        If ``None``, do not cluster non-overlapping intervals. Using
-        ``min_dist=0`` and ``min_dist=None`` will bring different results.
-        bioframe uses semi-open intervals, so interval pairs [0,1) and [1,2)
-        do not overlap, but are separated by a distance of 0. Adjacent intervals
-        are not clustered when ``min_dist=None``, but are clustered when min_dist=0.
+        If ``None``, do not cluster non-overlapping intervals. 
+        Since bioframe uses semi-open intervals, interval pairs [0,1) and [1,2)
+        do not overlap, but are separated by a distance of 0. Such adjacent intervals
+        are not clustered when ``min_dist=None``, but are clustered when ``min_dist=0``.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the

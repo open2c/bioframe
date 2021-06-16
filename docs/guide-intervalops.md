@@ -15,13 +15,10 @@ kernelspec:
 # Genomic interval operations 
 
 ```{eval-rst}
+This guide provides an introdution into how to use bioframe to perform genomic interval operations. For the full list of genomic interval operations, see the :ref:`API reference<API_ops>`.
 
-See the :ref:`API reference<API_ops>` for interval operations.
-
-
+The following modules are used in this guide:
 ```
-
-
 ```{code-cell} ipython3
 import itertools
 
@@ -34,8 +31,11 @@ import bioframe as bf
 import bioframe.vis
 ```
 
-### Example interval sets
+### DataFrames of genomic intervals
 
+```{eval-rst}
+The core object in bioframe are genomic interval dataframes, or bedframes. These can either be defined with :py:class:`pandas.DataFrame`:
+```
 ```{code-cell} ipython3
 df1 = pd.DataFrame([
     ['chr1', 1, 5],
@@ -44,26 +44,46 @@ df1 = pd.DataFrame([
     ['chr1', 12, 14]],
     columns=['chrom', 'start', 'end']
 )
-
-df2 = pd.DataFrame([
-    ['chr1', 4, 8],
-    ['chr1', 10, 11]],
-    columns=['chrom', 'start', 'end']
-)
+```
+```{eval-rst}
+Or via functions in :mod:`bioframe.core.construction`, e.g.:
+```
+```{code-cell} ipython3
+df2 = bioframe.from_list(
+    [['chr1', 4, 8],
+     ['chr1', 10, 11]], 
+    name_col='chrom')
 ```
 
+BedFrames satisfy the following properties:  
+- chrom, start, end columns  
+- columns have valid dtypes (object/string/categorical, int, int)  
+- all starts < ends.  
+```{eval-rst}
+Whether a dataframe satisfies these properties can be checked with :func:`bioframe.core.checks.is_bedframe`:
+```
+```{code-cell} ipython3
+bioframe.is_bedframe(df2)
+```
+```{eval-rst}
+See the :ref:`Technical Notes<Technical_Notes>` for more details.
+```
+
+```{eval-rst}
+:py:mod:`bioframe.vis` provides plotting utilities for intervals:
+```
 ```{code-cell} ipython3
 bf.vis.plot_intervals(df1, show_coords=True, xlim=(0,16))
-plt.title('set 1')
+plt.title('bedFrame1 intervals');
 
 bf.vis.plot_intervals(df2, show_coords=True, xlim=(0,16), colors='lightpink')
-plt.title('set 2')
+plt.title('bedFrame2 intervals');
 ```
 
-### Overlap
-
+### Overlaps
+The two dataframes defined above contain two pairs of overlapping intervals:
 ```{code-cell} ipython3
-overlapping_intervals = bf.overlap(df1, df2, how='inner')
+overlapping_intervals = bf.overlap(df1, df2, how='inner', suffixes=('_1','_2'))
 display(overlapping_intervals)
 ```
 
@@ -80,7 +100,10 @@ for i, reg_pair in overlapping_intervals.iterrows():
 ```
 
 ### Cluster
-
+```{eval-rst}
+To demonstrate the usage of :py:func:`bioframe.cluster`, we use the same df1 as above:
+```
+bioframe.cluster
 ```{code-cell} ipython3
 df1 = pd.DataFrame([
     ['chr1', 1, 5],
@@ -94,18 +117,21 @@ df1 = pd.DataFrame([
 bf.vis.plot_intervals(df1, show_coords=True, xlim=(0,16))
 ```
 
+Cluster returns a DataFrame where each interval is assigned to a group:
 ```{code-cell} ipython3
 df_annotated = bf.cluster(df1, min_dist=0)
 display(df_annotated)
 bf.vis.plot_intervals(df_annotated, labels=df_annotated['cluster'], show_coords=True, xlim=(0,16))
 ```
 
+Note that using ``min_dist=0`` and ``min_dist=None`` give different results, as the latter only clusters overlapping intervals and not adjacent intervals:
 ```{code-cell} ipython3
 df_annotated = bf.cluster(df1, min_dist=None)
 display(df_annotated)
 bf.vis.plot_intervals(df_annotated, labels=df_annotated['cluster'], show_coords=True, xlim=(0,16))
 ```
 
+Extending the minimum distance to 2 makes all intervals part of the same cluster "0":
 ```{code-cell} ipython3
 df_annotated = bf.cluster(df1, min_dist=2)
 display(df_annotated)
@@ -114,6 +140,12 @@ bf.vis.plot_intervals(df_annotated, labels=df_annotated['cluster'], show_coords=
 
 ### Merge
 
+
+```{eval-rst}
+Instead of returning cluster assignments, :py:func:`bioframe.merge` returns a new dataframe of merged genomic intervals. 
+
+If ``min_dist=0``, this returns a dataframe of two intervals:
+```
 ```{code-cell} ipython3
 df_merged = bf.merge(df1, min_dist=0)
 
@@ -121,6 +153,7 @@ display(df_merged)
 bf.vis.plot_intervals(df_merged, show_coords=True, xlim=(0,16))
 ```
 
+If ``min_dist=None``, this returns a dataframe of three intervals:
 ```{code-cell} ipython3
 df_merged = bf.merge(df1, min_dist=None)
 display(df_merged)
@@ -155,7 +188,7 @@ bf.closest(df1, df2, return_input=2)
 ```
 
 ```{code-cell} ipython3
-closest_intervals = bf.closest(df1, df2)
+closest_intervals = bf.closest(df1, df2, suffixes=('_1','_2'))
 for i, reg_pair in closest_intervals.iterrows(): 
     bf.vis.plot_intervals_arr(
         starts = [reg_pair.start_1,reg_pair.start_2],
@@ -172,7 +205,7 @@ bf.closest(df1, None, k=2)
 ```
 
 ```{code-cell} ipython3
-closest_intervals = bf.closest(df1, df2, ignore_overlaps=True)
+closest_intervals = bf.closest(df1, df2, ignore_overlaps=True, suffixes=('_1','_2'))
 for i, reg_pair in closest_intervals.iterrows(): 
     bf.vis.plot_intervals_arr(
         starts = [reg_pair.start_1,reg_pair.start_2],
@@ -198,7 +231,7 @@ df1_coverage
 ### Overlaps
 
 ```{code-cell} ipython3
-n_overlaps = bf.overlap(df1, df2, return_index=True).groupby('index_1').agg({"index_2": "count"})
+n_overlaps = bf.overlap(df1, df2, return_index=True, suffixes=('_1','_2')).groupby('index_1').agg({"index_2": "count"})
 df1_n_overlaps = ( pd.Series(np.zeros(df1.shape[0], dtype=np.int64), index=df1.index)
                     .add(n_overlaps["index_2"], fill_value=0)
                     .astype(np.int64) )
