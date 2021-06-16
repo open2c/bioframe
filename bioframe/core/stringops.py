@@ -15,7 +15,16 @@ __all__ = [
 
 def to_ucsc_string(triplet):
     """
-    convert a triplet to a UCSC string
+    Convert a triplet to a UCSC string.
+
+    Parameters
+    ----------
+    triplet : (chrom, start, end)
+
+    Returns
+    -------
+    ucsc_string : str
+        UCSC-style string, 'chrom:start-end'
     """
     return "{0}:{1}-{2}".format(*triplet)
 
@@ -52,7 +61,7 @@ def parse_region_string(s):
 
     Returns
     -------
-    (str, int or None, int or None)
+    triple : (str, int or None, int or None)
 
     """
 
@@ -106,7 +115,17 @@ def parse_region_string(s):
 
 def is_complete_ucsc_string(mystring):
     """
-    Check if a string can be parsed into chrom,start,end format.
+    Check if a string can be parsed into (`chrom`, `start`, `end`) format.
+
+    Parameters
+    ----------
+    mystring : str
+
+    Returns
+    -------
+    is_complete : bool
+        True if able to be parsed into (`chrom`, `start`, `end`) format.
+
     """
     if type(mystring) is not str:
         return False
@@ -136,7 +155,8 @@ def parse_region(reg, chromsizes=None):
 
     Returns
     -------
-    A well-formed genomic region triple (str, int, int)
+    triple : (str, int, int)
+        A well-formed genomic region triple (str, int, int)
 
     """
     if isinstance(reg, str):
