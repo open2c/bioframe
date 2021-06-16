@@ -1,9 +1,4 @@
-sphinx>=4
-numpy>=1.10
-pandas>=1.0
-click>=7
-mock
-sphinx_rtd_theme
 autodocsumm
-jupytext
 myst_nb
+sphinx<4,>=2.1
+sphinx_rtd_theme
