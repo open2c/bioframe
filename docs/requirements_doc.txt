@@ -1,6 +1,5 @@
--r ../requirements.txt
+pip<=21.1.1
 autodocsumm
-jupytext
 myst_nb
-sphinx>=4
+sphinx<4,>=2.1
 sphinx_rtd_theme
