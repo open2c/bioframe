@@ -195,15 +195,14 @@ def make_viewframe(
     cols=None,
 ):
     """
-    Makes and validates a dataframe view_df out of regions.
+    Makes and validates a dataframe `view_df` out of regions.
 
     Parameters
     ----------
     regions : supported input type
         Currently supported input types:
 
-            - a dictionary where keys are strings and values are integers {str:int},
-            specifying regions (chrom, 0, end, chrom)
+            - a dictionary where keys are strings and values are integers {str:int}, specifying regions (chrom, 0, end, chrom)
             - a pandas series of chromosomes lengths with index specifying region names
             - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
             - a pandas DataFrame, skips to validation step
@@ -213,7 +212,7 @@ def make_viewframe(
         supplied in check_bounds, typically provided as a series of chromosome sizes.
         Default None.
 
-    view_name_col:str
+    view_name_col : str
         Specifies column name of the view regions. Default 'name'.
 
     cols : (str, str, str) or None
@@ -276,9 +275,10 @@ def sanitize_bedframe(
 
     start_exceed_end_action : str or None
         Options: 'flip' or 'drop' or None. Default None.
-        If 'flip', attempts to sanitize by flipping intervals with start>end.
-        If 'drop' attempts to sanitize dropping intervals with start>end.
-        If None, does not alter these intervals if present.
+
+            - If 'flip', attempts to sanitize by flipping intervals with start>end.
+            - If 'drop' attempts to sanitize dropping intervals with start>end.
+            - If None, does not alter these intervals if present.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -292,7 +292,7 @@ def sanitize_bedframe(
 
     Notes
     ------
-    The option start_exceed_end_action='flip' may be useful for gff files with strand information but starts > ends.
+    The option ``start_exceed_end_action='flip'`` may be useful for gff files with strand information but starts > ends.
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols

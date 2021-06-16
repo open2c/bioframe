@@ -21,7 +21,9 @@ def is_bedframe(
     cols=None,
 ):
     """
-    Checks that a genomic interval dataframe `df` has:
+    Checks that required bedframe properties are satisfied for dataframe `df`.
+
+    This includes:
 
     - chrom, start, end columns
     - columns have valid dtypes (object/string/categorical, int, int)
@@ -89,11 +91,15 @@ def is_cataloged(
         Name of column from df that indicates region in view.
 
     view_name_col: str
-        Name of column from view that specifies unique region name.
+        Name of column from view that specifies  region name.
 
     Returns
     -------
     is_cataloged:bool
+
+    Notes
+    -----
+    Does not check if names in `view_df[view_name_col]` are unique.
 
     """
     if not _verify_columns(df, [df_view_col], return_as_bool=True):
@@ -158,7 +164,9 @@ def is_overlapping(df, cols=None):
 
 def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None):
     """
-    Checks that region_df is a valid view, namely:
+    Checks that `region_df` is a valid viewFrame.
+
+    This includes:
 
     - it satisfies requirements for a bedframe, including columns for ('chrom', 'start', 'end')
     - it has an additional column, view_name_col, with default 'name'
@@ -333,7 +341,7 @@ def is_tiling(
     cols=None,
 ):
     """
-    Tests if a view `view_df` is tiled by the set of genomic intervals in the bedframe `df`
+    Tests if a view `view_df` is tiled by the set of genomic intervals in the bedframe `df`.
 
     This is true if:
 
