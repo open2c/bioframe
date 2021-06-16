@@ -23,7 +23,7 @@ def make_chromarms(
     suffixes=("_p", "_q"),
 ):
     """
-    Split chromosomes into chromosome arms
+    Split chromosomes into chromosome arms.
 
     Parameters
     ----------

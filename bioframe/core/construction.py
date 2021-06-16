@@ -19,7 +19,25 @@ __all__ = [
 def from_dict(regions, name_col="name", cols=None):
     """
     Makes a dataframe from a dictionary of {str,int} pairs, interpreted as chromosome names.
+
     Note that {str,(int,int)} dictionaries of tuples are no longer supported!
+
+    Parameters
+    ----------
+
+    regions : dict
+
+    name_col : str
+        Default 'name'.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    df : pandas.DataFrame
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     data = []
@@ -70,13 +88,18 @@ def from_ucsc_string_list(region_list, name_col="name", cols=None):
 
 def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", cols=None):
     """
-    Attempts to make a dataframe with columns [chr,start,end,name_col] from a variety of input types.
-    Currently supported inputs:
-    - dataframe
-    - series of UCSC strings
-    - dictionary of {str:int} key value pairs
-    - pandas series where the index is interpreted as chromosomes and values are interpreted as end
-    - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
+    Attempts to make a genomic interval dataframe with columns [chr, start, end, name_col] from a variety of input types.
+
+    Parameters
+    ----------
+    regions : supported input
+        Currently supported inputs:
+
+            - dataframe
+            - series of UCSC strings
+            - dictionary of {str:int} key value pairs
+            - pandas series where the index is interpreted as chromosomes and values are interpreted as end
+            - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
 
     names_as_ucsc : bool
         replaces values in name_col with UCSC strings made from (chrom,start,end).
@@ -149,8 +172,11 @@ def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", col
 
 def add_ucsc_name_column(reg_df, name_col="name", cols=None):
     """
-    Auto-creates a UCSC name chrom:start-end for each region (chrom,start,end) in reg_df.
+    Auto-creates a UCSC name 'chrom:start-end' for each region (chrom,start,end) in reg_df.
+
     Replaces name_col if it exists.
+
+
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
@@ -169,12 +195,18 @@ def make_viewframe(
     cols=None,
 ):
     """
-    Makes and validates a dataframe view_df, where supported input types for regions are:
-    - a dictionary where keys are strings and values are integers {str:int},
-    specifying regions (chrom, 0, end, chrom)
-    - a pandas series of chromosomes lengths with index specifying region names
-    - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
-    - a pandas DataFrame, skips to validation step
+    Makes and validates a dataframe view_df out of regions.
+
+    Parameters
+    ----------
+    regions : supported input type
+        Currently supported input types:
+
+            - a dictionary where keys are strings and values are integers {str:int},
+            specifying regions (chrom, 0, end, chrom)
+            - a pandas series of chromosomes lengths with index specifying region names
+            - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
+            - a pandas DataFrame, skips to validation step
 
     check_bounds : None, or chromosome sizes provided as any of valid formats above
         Optional, if provided checks if regions in the view are contained by regions
@@ -230,7 +262,14 @@ def sanitize_bedframe(
     cols=None,
 ):
     """
-    Attempts to clean a genomic interval dataframe to be valid.
+    Attempts to clean a genomic interval dataframe to be a valid bedframe.
+
+    Parameters
+    ----------
+    df1 : pandas.DataFrame
+
+    recast_dtypes : bool
+        Whether to attempt to recast column dtypes to pandas nullable dtypes.
 
     drop_null : bool
         Drops rows with pd.NA. Default False.
@@ -246,9 +285,14 @@ def sanitize_bedframe(
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
-    Notes
+    Returns
     -------
-        The option start_exceed_end_action='flip' may be useful for gff files with strand information but starts > ends.
+    out_df : pandas.DataFrame
+        Sanitized dataframe satisfying the properties of a bedframe.
+
+    Notes
+    ------
+    The option start_exceed_end_action='flip' may be useful for gff files with strand information but starts > ends.
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
