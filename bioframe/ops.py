@@ -31,8 +31,7 @@ __all__ = [
 
 def select(df, region, cols=None):
     """
-    Return all genomic intervals in a dataframe that overlap
-    a genomic region.
+    Return all genomic intervals in a dataframe that overlap a genomic region.
 
     Parameters
     ----------
@@ -40,9 +39,9 @@ def select(df, region, cols=None):
 
     region : str or tuple
         The genomic region to select from the dataframe.
-        UCSC-style genomic region string, or
-        Triple (chrom, start, end), where ``start`` or ``end`` may be ``None``.
-        See parse_region for more information on region formatting.
+        UCSC-style genomic region string, or Triple (chrom, start, end), 
+        where ``start`` or ``end`` may be ``None``. See :func:`.core.stringops.parse_region()` 
+        for more information on region formatting.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -84,20 +83,21 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     pad : int, optional
         The amount by which the intervals are additively expanded *on each side*.
         Negative values for pad shrink intervals, but not beyond the interval midpoint.
-        Either pad or scale must be supplied.
+        Either `pad` or `scale` must be supplied.
 
     scale : float, optional
         The factor by which to scale intervals multiplicatively on each side, e.g
         ``scale=2`` doubles each interval, ``scale=0`` returns midpoints, and
         ``scale=1`` returns original intervals. Default False.
-        Either pad or scale must be supplied.
+        Either `pad` or `scale` must be supplied.
 
     side : str, optional
         Which side to expand, possible values are 'left', 'right' and 'both'.
+        Default 'both'.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
+        genomic intervals, provided separately for each set. Default
         values are 'chrom', 'start', 'end'.
 
     Returns
@@ -149,6 +149,17 @@ def _overlap_intidxs(
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
 
+    how : {'left', 'right', 'outer', 'inner'}, default 'left'
+        How to handle the overlaps on the two dataframes.
+        left: use the set of intervals in df1
+        right: use the set of intervals in df2
+        outer: use the union of the set of intervals from df1 and df2
+        inner: use intersection of the set of intervals from df1 and df2
+
+    keep_order : bool, optional
+        Sort the output dataframe to preserve the order of the intervals in
+        the input dataframes. Disable to increase performance.
+
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
@@ -191,8 +202,7 @@ def _overlap_intidxs(
     df2_groups = df2.groupby(group_list2, observed=True).groups
     all_groups = sorted(
         set.union(set(df1_groups), set(df2_groups))
-    )  ### breaks if any of the groupby elements are pd.NA...
-    # all_groups = list(set.union(set(df1_groups), set(df2_groups))) ### disagrees with pyranges order so a test fails...
+    )  
 
     overlap_intidxs = []
     for group_keys in all_groups:
@@ -294,7 +304,7 @@ def overlap(
     return_input=True,
     return_index=False,
     return_overlap=False,
-    suffixes=("_1", "_2"),
+    suffixes=("", "_"),
     keep_order=True,
     cols1=None,
     cols2=None,
@@ -321,7 +331,7 @@ def overlap(
 
     return_index : bool
         If True, return indicies of overlapping pairs as two new columns 
-        (`index_1` and `index_2`). Default False.
+        (`index`+suffixes[0] and `index`+suffixes[1]). Default False.
 
     return_overlap : bool
         If True, return overlapping intervals for the overlapping pairs
@@ -340,10 +350,9 @@ def overlap(
         values are 'chrom', 'start', 'end'.
 
     on : list
-        List of column names to perform clustering on independently, passed 
-        as an argument to df.groupby when considering overlaps. Default is 
-        ['chrom'], which must match the first name from cols. Examples for 
-        additional columns include 'strand'.
+        List of additional shared columns to consider as separate groups
+        when considering overlaps. A common use would be passing on=['strand'].
+        Default is None.
 
     Returns
     -------
@@ -678,9 +687,10 @@ def merge(df, min_dist=0, cols=None, on=None):
     return clusters
 
 
-def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
+def coverage(df1, df2, keep_order=True, suffixes=("","_"), return_input=True, cols1=None, cols2=None):
     """
     Quantify the coverage of intervals from df1 by intervals from df2.
+
     For every interval in df1 find the number of base pairs covered by intervals in df2.
     Note this only quantifies whether a basepair in df1 was covered, not the number
     of intervals in df2 that cover it.
@@ -689,6 +699,13 @@ def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
+
+    suffixes : (str, str)
+        The suffixes for the columns of the two overlapped sets.
+
+    keep_order : bool, optional
+        Sort the output dataframe to preserve the order of the intervals in
+        the input dataframes. Disable to increase performance.
 
     return_input : bool
         If True, return input as well as computed coverage
@@ -713,6 +730,8 @@ def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
         df1,
         df2_merged,
         how="left",
+        suffixes=suffixes,
+        keep_order=keep_order,
         return_index=True,
         return_overlap=True,
         cols1=cols1,
@@ -723,7 +742,7 @@ def coverage(df1, df2, return_input=True, cols1=None, cols2=None):
         overlap_idxs["overlap_end"] - overlap_idxs["overlap_start"]
     )
 
-    coverage_sparse_df = overlap_idxs.groupby("index_1").agg({"overlap": "sum"})
+    coverage_sparse_df = overlap_idxs.groupby("index"+suffixes[0]).agg({"overlap": "sum"})
 
     out_df = {}
     out_df["coverage"] = (
@@ -868,7 +887,7 @@ def closest(
     return_index=False,
     return_distance=True,
     return_overlap=False,
-    suffixes=("_1", "_2"),
+    suffixes=("", "_"),
     cols1=None,
     cols2=None,
 ):
@@ -1050,7 +1069,7 @@ def closest(
     return out_df
 
 
-def subtract(df1, df2, cols1=None, cols2=None):
+def subtract(df1, df2, suffixes=("","_"), cols1=None, cols2=None):
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
 
@@ -1096,6 +1115,7 @@ def subtract(df1, df2, cols1=None, cols2=None):
             df1_group,
             complement(df2_group, cols=cols2),
             how="inner",
+            suffixes=('_1','_2'),
             return_overlap=True,
             cols1=cols1,
             cols2=cols2,
@@ -1185,12 +1205,12 @@ def split(
     ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
 
     name_updates = {
-        ck1 + "_1": ck1,
+        ck1 + suffixes[0]: ck1,
         "overlap_" + sk1: sk1,
         "overlap_" + ek1: ek1,
     }
     if add_names:
-        name_updates["index_2"] = "index_2"
+        name_updates["index"+suffixes[1]] = "index"+suffixes[1]
         return_index = True
     else:
         return_index = False
@@ -1215,6 +1235,7 @@ def split(
         df,
         complement(points, view_df=all_chroms, cols=(ck2, "start", "end")),
         how="inner",
+        suffixes=suffixes,
         cols1=cols,
         cols2=(ck2, "start", "end"),
         return_overlap=True,
@@ -1227,9 +1248,9 @@ def split(
         df_split = construction.add_ucsc_name_column(
             df_split, cols=[ck1, sk1, ek1], name_col="name"
         )
-        sides = np.mod(df_split["index_2"].values, 2).astype(int)  # .astype(str)
+        sides = np.mod(df_split["index"+suffixes[1]].values, 2).astype(int)  # .astype(str)
         df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
-        df_split.drop(columns=["index_2"], inplace=True)
+        df_split.drop(columns=["index"+suffixes[1]], inplace=True)
 
     df_split.reset_index(drop=True, inplace=True)
 
@@ -1239,6 +1260,7 @@ def split(
 def count_overlaps(
     df1,
     df2,
+    suffixes=("","_"),
     cols1=None,
     cols2=None,
     on=None,
@@ -1284,6 +1306,7 @@ def count_overlaps(
         how="left",
         return_input=False,
         keep_order=True,
+        suffixes=suffixes,
         return_index=True,
         on=on,
         cols1=cols1,
@@ -1293,7 +1316,7 @@ def count_overlaps(
         [
             df1,
             pd.DataFrame(
-                df_counts.groupby(["index_1"])["index_2"].count().values,
+                df_counts.groupby(["index"+suffixes[0]])["index"+suffixes[1]].count().values,
                 columns=["count"],
             ),
         ],
@@ -1382,7 +1405,7 @@ def pair_by_distance(
     # Intersect right-handed probes (from intervals on the left)
     # with left-handed probes (from intervals on the right)
     idxs = overlap(
-        right_probe, left_probe, how="inner", return_index=True, return_input=False
+        right_probe, left_probe, suffixes=suffixes, how="inner", return_index=True, return_input=False
     )
 
     # Select only the pairs that are separated by
