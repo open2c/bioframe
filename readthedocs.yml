@@ -21,6 +21,6 @@ formats: all
 python:
   version: 3.8
   install:
-    - requirements: docs/requirements_doc.txt
+    - requirements: docs/requirements_rtd.txt
     - method: setuptools
       path: .

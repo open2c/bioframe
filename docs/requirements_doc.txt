@@ -1,4 +1,3 @@
-pip<=21.1.1
 autodocsumm
 myst_nb
 sphinx<4,>=2.1
