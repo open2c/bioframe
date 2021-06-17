@@ -296,7 +296,7 @@ def test_overlap():
         return_index=True,
         return_input=False,
     )
-    assert np.sum(pd.isna(b["index_2"].values)) == 3
+    assert np.sum(pd.isna(b["index_"].values)) == 3
 
     b = bioframe.overlap(
         df1,
@@ -308,7 +308,7 @@ def test_overlap():
         return_index=True,
         return_input=False,
     )
-    assert np.sum(pd.isna(b["index_2"].values)) == 2
+    assert np.sum(pd.isna(b["index_"].values)) == 2
 
     b = bioframe.overlap(
         df1,
@@ -320,7 +320,7 @@ def test_overlap():
         return_index=True,
         return_input=False,
     )
-    assert np.sum(pd.isna(b["index_2"].values)) == 0
+    assert np.sum(pd.isna(b["index_"].values)) == 0
 
     ### test overlap 'left', 'outer', and 'right'
     b = bioframe.overlap(
@@ -601,10 +601,10 @@ def test_closest():
     )
 
     ### closest(df1,df2,k=1) ###
-    d = """chrom_1  start_1  end_1 chrom_2  start_2  end_2  distance
+    d = """chrom  start  end chrom_  start_  end_  distance
         0    chr1        1      5    chr1        4      8         0"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),
+    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),
         'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
@@ -613,7 +613,7 @@ def test_closest():
         0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, ignore_overlaps=True))
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), ignore_overlaps=True))
 
     ### closest(df1,df2,k=2) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
@@ -621,8 +621,7 @@ def test_closest():
             1   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=2))
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), k=2))
 
     ### closest(df2,df1) ###
     d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
@@ -630,20 +629,20 @@ def test_closest():
             1   chr1    10  11  chr1    1   5   5 """
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1))
+    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=('_1','_2')))
 
     ### change first interval to new chrom ###
     df2.iloc[0, 0] = "chrA"
-    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+    d = """chrom start   end     chrom_ start_ end_  distance
               0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
+    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### test other return arguments ###
     df2.iloc[0, 0] = "chr1"
     d = """
-        index_1 index_2 have_overlap    overlap_start   overlap_end distance
+        index index_ have_overlap    overlap_start   overlap_end distance
         0   0   0   True    4   5   0
         1   0   1   False   <NA>    <NA>    5
         """
@@ -677,7 +676,7 @@ def test_closest():
     df_cat = pd.CategoricalDtype(categories=["chrX", "chr1"], ordered=True)
     df = df.astype({"chrom": df_cat})
     pd.testing.assert_frame_equal(
-        df_closest, bioframe.closest(df), check_dtype=False, check_categorical=False
+        df_closest, bioframe.closest(df, suffixes=('_1','_2')), check_dtype=False, check_categorical=False
     )
 
 

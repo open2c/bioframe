@@ -47,7 +47,7 @@ def fetch_chromsizes(
     chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
     natsort=True,
     as_bed=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Fetch chromsizes from the UCSC database or local storage.
@@ -74,10 +74,10 @@ def fetch_chromsizes(
     """
 
     if provider == "local":
-        fpath = f'data/{db}.chrom.sizes'
-        if pkg_resources.resource_exists('bioframe.io', fpath):
+        fpath = f"data/{db}.chrom.sizes"
+        if pkg_resources.resource_exists("bioframe.io", fpath):
             return read_chromsizes(
-                pkg_resources.resource_filename('bioframe.io', fpath)
+                pkg_resources.resource_filename("bioframe.io", fpath)
             )
         else:
             raise LookupError(f"Assembly '{db}' not found in local storage")
@@ -88,15 +88,14 @@ def fetch_chromsizes(
             chrom_patterns=chrom_patterns,
             natsort=natsort,
             as_bed=as_bed,
-            **kwargs
+            **kwargs,
         )
     else:
         raise ValueError("Unknown provider '{}'".format(provider))
 
 
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
-    """
-    """
+    """"""
     # the priority goes as
     # - Local
     # - centromeres.txt
@@ -116,10 +115,10 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     #     )
 
     if provider == "local":
-        fpath = f'data/{db}.centromeres'
-        if pkg_resources.resource_exists('bioframe.io', fpath):
+        fpath = f"data/{db}.centromeres"
+        if pkg_resources.resource_exists("bioframe.io", fpath):
             return read_chromsizes(
-                pkg_resources.resource_filename('bioframe.io', fpath)
+                pkg_resources.resource_filename("bioframe.io", fpath)
             )
         else:
             raise LookupError(f"Centromeres for '{db}' not found in local storage")
@@ -158,7 +157,7 @@ class UCSCClient:
         chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
         natsort=True,
         as_bed=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Fetch chromsizes from the UCSC database.
@@ -189,7 +188,7 @@ class UCSCClient:
             chrom_patterns=chrom_patterns,
             natsort=natsort,
             as_bed=as_bed,
-            **kwargs
+            **kwargs,
         )
 
     def fetch_centromeres(self, **kwargs):

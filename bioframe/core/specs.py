@@ -11,6 +11,16 @@ _rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
 
 
 def _get_default_colnames():
+    """
+    Returns default column names.
+
+    These defaults be updated with :func:`update_default_colnames`.
+
+    Returns
+    -------
+    colnames : triplet (str, str, str)
+
+    """
     return _rc["colnames"]["chrom"], _rc["colnames"]["start"], _rc["colnames"]["end"]
 
 
@@ -52,12 +62,14 @@ def _verify_columns(df, colnames, return_as_bool=False):
     """
     Raises ValueError if columns with colnames are not present in dataframe df.
 
+    Parameters
+    ----------
     df: pandas.DataFrame
 
-    colnames: list of columns
+    colnames: list of column names
 
     return_as_bool : bool
-        If true, returns as a boolean instead of raising errors. Default False.
+        If True, returns as a boolean instead of raising errors. Default False.
 
     """
 
@@ -85,6 +97,10 @@ def _verify_column_dtypes(df, cols=None, return_as_bool=False):
     Checks that dataframe `df` has chrom, start, end columns with valid dtypes.
     Raises TypeErrors if cols have invalid dtypes.
 
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
@@ -92,7 +108,6 @@ def _verify_column_dtypes(df, cols=None, return_as_bool=False):
 
     return_as_bool : bool
         If true, returns as a boolean instead of raising errors. Default False.
-
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols

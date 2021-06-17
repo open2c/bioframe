@@ -21,14 +21,21 @@ def is_bedframe(
     cols=None,
 ):
     """
-    Checks that a genomic interval dataframe `df` has:
+    Checks that required bedframe properties are satisfied for dataframe `df`.
+
+    This includes:
+
     - chrom, start, end columns
     - columns have valid dtypes (object/string/categorical, int, int)
     - all starts < ends.
 
-    raise_errors:bool
-        If true, raises errors instead of returning a boolean False for invalid properties.
-        Default false.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    raise_errors : bool
+        If True, raises errors instead of returning a boolean False for invalid properties.
+        Default False.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -68,21 +75,31 @@ def is_cataloged(
     df, view_df, raise_errors=False, df_view_col="view_region", view_name_col="name"
 ):
     """
-    tests if all regions names in a bioframe `df` are present in the view `view_df`.
+    Tests if all region names in `df[df_view_col]` are present in `view_df[view_name_col]`.
 
+    Parameters
+    ----------
     df : pandas.DataFrame
 
     view_df : pandas.DataFrame
+
+    raise_errors : bool
+        If True, raises errors instead of returning a boolean False for invalid properties.
+        Default False.
 
     df_view_col: str
         Name of column from df that indicates region in view.
 
     view_name_col: str
-        Name of column from view that specifies unique region name.
+        Name of column from view that specifies  region name.
 
     Returns
     -------
     is_cataloged:bool
+
+    Notes
+    -----
+    Does not check if names in `view_df[view_name_col]` are unique.
 
     """
     if not _verify_columns(df, [df_view_col], return_as_bool=True):
@@ -112,7 +129,18 @@ def is_cataloged(
 
 def is_overlapping(df, cols=None):
     """
-    tests if any genomic intervals in a bioframe `df` overlap
+    Tests if any genomic intervals in a bioframe `df` overlap.
+
+    Also see :func:`bioframe.ops.merge()`.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -136,16 +164,33 @@ def is_overlapping(df, cols=None):
 
 def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None):
     """
-    Checks that region_df is a valid view, namely:
+    Checks that `region_df` is a valid viewFrame.
+
+    This includes:
+
     - it satisfies requirements for a bedframe, including columns for ('chrom', 'start', 'end')
     - it has an additional column, view_name_col, with default 'name'
     - it does not contain null values
     - entries in the view_name_col are unique.
     - intervals are non-overlapping
 
-    raise_errors:bool
-        If true, raises errors instead of returning a boolean for invalid properties.
-        Default false.
+    Parameters
+    ----------
+
+    region_df : pandas.DataFrame
+        Dataframe of genomic intervals to be tested.
+
+    raise_errors : bool
+        If True, raises errors instead of returning a boolean False for invalid properties.
+        Default False.
+
+    view_name_col : str
+        Specifies column name of the view regions. Default 'name'.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -196,13 +241,19 @@ def is_contained(
     cols=None,
 ):
     """
-    tests if all genomic intervals in a bioframe `df` are cataloged and do not extend beyond their
+    Tests if all genomic intervals in a bioframe `df` are cataloged and do not extend beyond their
     associated region in the view `view_df`.
 
+    Parameters
+    ----------
     df : pandas.DataFrame
 
     view_df : pandas.DataFrame
         Valid viewframe.
+
+    raise_errors : bool
+        If True, raises errors instead of returning a boolean False for invalid properties.
+        Default False.
 
     df_view_col:
         Column from df used to associate interviews with view regions.
@@ -243,10 +294,25 @@ def is_contained(
 
 def is_covering(df, view_df, view_name_col="name", cols=None):
     """
-    tests if a view `view_df` is covered by the set of genomic intervals in the bedframe `df`
-    this is true if the complement is empty.
+    Tests if a view `view_df` is covered by the set of genomic intervals in the bedframe `df`.
 
-    Note this does not depend on regions assigned to intervals in df, if any, since regions are re-assigned in complement.
+    This test is true if ``complement(df,view_df)`` is empty. Also note this test ignores regions assigned to
+    intervals in `df` since regions are re-assigned in :func:`bioframe.ops.complement`.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    view_df : pandas.DataFrame
+        Valid viewFrame.
+
+    view_name_col:
+        Column from view_df with view region names. Default `name`.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -275,11 +341,35 @@ def is_tiling(
     cols=None,
 ):
     """
-    tests if a view `view_df` is tiled by the set of genomic intervals in the bedframe `df`
-    this is true if:
+    Tests if a view `view_df` is tiled by the set of genomic intervals in the bedframe `df`.
+
+    This is true if:
+
     - df is not overlapping
     - df is covering view_df
     - df is contained in view_df
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    view_df : pandas.DataFrame
+        valid viewFrame
+
+    raise_errors : bool
+        If True, raises errors instead of returning a boolean False for invalid properties.
+        Default False.
+
+    df_view_col: str
+        Name of column from df that indicates region in view.
+
+    view_name_col: str
+        Name of column from view that specifies unique region name.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -319,6 +409,29 @@ def is_sorted(
 ):
     """
     Tests if a bedframe is changed by sorting.
+
+    Also see :func:`bioframe.ops.sort_bedframe`.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    view_df : pandas.DataFrame or None
+        Optional view to pass to ``sort_bedframe``.
+
+    reset_index : bool
+        Optional argument to pass to ``sort_bedframe``.
+
+    df_view_col: str
+        Name of column from df that indicates region in view.
+
+    view_name_col: str
+        Name of column from view that specifies unique region name.
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------

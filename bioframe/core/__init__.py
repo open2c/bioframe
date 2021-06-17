@@ -13,10 +13,9 @@ from . import construction
 from .construction import *
 
 __all__ = [
-    'arrops',
+    "arrops",
     *specs.__all__,
     *stringops.__all__,
     *checks.__all__,
     *construction.__all__,
 ]
-
