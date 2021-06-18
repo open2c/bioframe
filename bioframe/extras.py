@@ -20,7 +20,7 @@ def make_chromarms(
     midpoints,
     cols_chroms=("chrom", "length"),
     cols_mids=("chrom", "mid"),
-    suffixes=("_p", "_q"),
+    sub_index_to_suffix={0: "_p", 1: "_q"},
 ):
     """
     Split chromosomes into chromosome arms.
@@ -29,10 +29,17 @@ def make_chromarms(
     ----------
     chromsizes : pandas.Dataframe or pandas.Series
         If pandas.Series, a map from chromosomes to lengths in bp.
-        If pandas.Dataframe, a dataframe with columns 'chrom' and 'length'.
+        If pandas.Dataframe, a dataframe with columns defined by cols_chroms.
+        If cols_chroms is a triplet (e.g. 'chrom','start','end'), then
+        values in chromsizes[cols_chroms[1]].values must all be zero.
 
     midpoints : pandas.Dataframe or dict-like
-        Mapping of chromosomes to midpoint locations.
+        Mapping of chromosomes to midpoint (aka centromere) locations.
+        If pandas.Series, a map from chromosomes to midpoints in bp.
+        If pandas.Dataframe, a dataframe with columns defined by cols_mids.
+
+    cols_chroms : (str, str) or (str, str, str)
+        Two columns
 
     suffixes : tuple, optional
         Suffixes to name chromosome arms. Defaults to p and q.
@@ -42,42 +49,64 @@ def make_chromarms(
     df_chromarms
         4-column BED-like DataFrame (chrom, start, end, name).
         Arm names are chromosome names + suffix.
-        Any chromosome not included in ``mids`` will be omitted.
+        Any chromosome not included in ``mids`` will be not be split.
 
     """
-    ck1, sk1 = cols_chroms
-    ck2, sk2 = cols_mids
+    columns_to_drop = ["index", "sub_index_"]
 
     if isinstance(chromsizes, pd.Series):
-        df_chroms = pd.DataFrame(chromsizes).reset_index().rename(columns={"name": ck1})
+        df_chroms = (
+            pd.DataFrame(chromsizes).reset_index().rename(columns={"index": ck1})
+        )
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
     else:
         raise ValueError("unknown input type for chromsizes")
 
+    if len(cols_chroms) == 2:
+        ck1, sk1 = cols_chroms
+        _verify_columns(df_chroms, [ck1, sk1])
+        columns_to_drop += [sk1]
+        df_chroms["end"] = df_chroms[sk1].values
+        df_chroms["start"] = 0
+        sk1, ek1 = "start", "end"
+    elif len(cols_chroms) == 3:
+        ck1, sk1, ek1 = cols_chroms
+        _verify_columns(df_chroms, [ck1, sk1, ek1])
+        if any((df_chroms[sk1].values != 0)):
+            raise ValueError("all values in starts column must be zero")
+    else:
+        raise ValueError("invalid number of cols_chroms")
+
+    ck2, sk2 = cols_mids
     if isinstance(midpoints, dict):
         df_mids = pd.DataFrame.from_dict(midpoints, orient="index", columns=[sk2])
         df_mids.reset_index(inplace=True)
         df_mids.rename(columns={"index": ck2}, inplace=True)
     elif isinstance(midpoints, pd.DataFrame):
         df_mids = midpoints.copy()
-
+    else:
+        raise ValueError("unknown input type for midpoints")
     _verify_columns(df_mids, [ck2, sk2])
-    _verify_columns(df_chroms, [ck1, sk1])
+    df_mids["start"] = df_mids[sk2]
+    df_mids["end"] = df_mids[sk2]
 
-    df_chroms["start"] = 0
-    df_chroms["end"] = df_chroms[sk1].values
-
-    df_chromarms = ops.split(
+    df_chromarms = ops.subtract(
         df_chroms,
         df_mids,
-        add_names=True,
-        cols=(ck1, "start", "end"),
-        cols_points=(ck2, sk2),
-        suffixes=suffixes,
+        cols1=(ck1, sk1, ek1),
+        cols2=(ck2, "start", "end"),
+        return_index=True,
+        keep_order=True,
     )
-    df_chromarms["name"].replace(r"[\:\[].*?[\)\_]", "", regex=True, inplace=True)
-    df_chromarms.drop(columns=["length"], inplace=True)
+    if df_chromarms["sub_index_"].max() > 1:
+        raise ValueError(
+            "chromosome split into more than two arms, double-check midpoints"
+        )
+    df_chromarms["name"] = df_chromarms[ck1] + [
+        sub_index_to_suffix[i] for i in df_chromarms["sub_index_"].values
+    ]
+    df_chromarms.drop(columns=columns_to_drop, inplace=True)
     return df_chromarms
 
 

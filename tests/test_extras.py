@@ -12,6 +12,36 @@ testdir = op.realpath(op.dirname(__file__))
 ### todo: test make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
 
 
+def test_make_chromarms():
+
+    ### test the case where columns have different names
+    df1 = pd.DataFrame(
+        [["chrX", 0, 8]],
+        columns=["chromosome", "lo", "hi"],
+    )
+
+    df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
+
+    df_result = pd.DataFrame(
+        [
+            ["chrX", 0, 4, "chrX_p"],
+            ["chrX", 4, 8, "chrX_q"],
+        ],
+        columns=["chromosome", "lo", "hi", "name"],
+    )
+
+    pd.testing.assert_frame_equal(
+        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}),
+        bioframe.make_chromarms(
+            df1,
+            df2,
+            cols_chroms=["chromosome", "lo", "hi"],
+            cols_mids=["chromosome", "loc"],
+            sub_index_to_suffix={0: "_p", 1: "_q"},
+        ),
+    )
+
+
 def test_binnify():
     chromsizes = bioframe.read_chromsizes(
         testdir + "/test_data/test.chrom.sizes", filter_chroms=False

@@ -604,39 +604,72 @@ def test_closest():
     d = """chrom  start  end chrom_  start_  end_  distance
         0    chr1        1      5    chr1        4      8         0"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),
-        'distance':pd.Int64Dtype()})
+    df = df.astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### closest(df1,df2, ignore_overlaps=True)) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
         0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), ignore_overlaps=True))
+    df = df.astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True)
+    )
 
     ### closest(df1,df2,k=2) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    1   5   chr1    4   8   0
             1   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), k=2))
+    df = df.astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), k=2)
+    )
 
     ### closest(df2,df1) ###
     d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    4   8   chr1    1   5   0
             1   chr1    10  11  chr1    1   5   5 """
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=('_1','_2')))
+    df = df.astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=("_1", "_2")))
 
     ### change first interval to new chrom ###
     df2.iloc[0, 0] = "chrA"
     d = """chrom start   end     chrom_ start_ end_  distance
               0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
+    df = df.astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### test other return arguments ###
@@ -676,7 +709,10 @@ def test_closest():
     df_cat = pd.CategoricalDtype(categories=["chrX", "chr1"], ordered=True)
     df = df.astype({"chrom": df_cat})
     pd.testing.assert_frame_equal(
-        df_closest, bioframe.closest(df, suffixes=('_1','_2')), check_dtype=False, check_categorical=False
+        df_closest,
+        bioframe.closest(df, suffixes=("_1", "_2")),
+        check_dtype=False,
+        check_categorical=False,
     )
 
 
@@ -734,7 +770,7 @@ def test_subtract():
     df_result = pd.DataFrame(
         [["chr1", 4, 5, "sea-creature"], ["chr1", 6, 7, "sea-creature"]],
         columns=["chrom", "start", "end", "animal"],
-    )
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(
         df_result,
         bioframe.subtract(df1, df2)
@@ -754,7 +790,7 @@ def test_subtract():
         columns=["chrom", "start", "end", "animal"],
     )
     pd.testing.assert_frame_equal(
-        df_result,
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df1, df2)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
@@ -785,6 +821,10 @@ def test_subtract():
         [["chr1", 4, 5, "+"], ["chr1", 6, 7, "+"]],
         columns=funny_cols + ["strand"],
     )
+    df_result = df_result.astype(
+        {funny_cols[1]: pd.Int64Dtype(), funny_cols[2]: pd.Int64Dtype()}
+    )
+
     pd.testing.assert_frame_equal(
         df_result,
         bioframe.subtract(df1, df2, cols1=funny_cols, cols2=funny_cols2)
@@ -818,10 +858,83 @@ def test_subtract():
     assert bioframe.subtract(df1, df1).empty
 
     pd.testing.assert_frame_equal(
-        df_subtracted,
+        df_subtracted.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df1, df2),
         check_dtype=False,
         check_categorical=False,
+    )
+
+    ## test transferred from deprecated bioframe.split
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
+        columns=["chrom", "start", "end"],
+    )
+
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 4],
+            ["chr1", 5],
+        ],
+        columns=["chrom", "pos"],
+    )
+    df2["start"] = df2["pos"]
+    df2["end"] = df2["pos"]
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chrX", 1, 4],
+                ["chrX", 3, 4],
+                ["chrX", 4, 5],
+                ["chrX", 4, 8],
+                ["chr1", 5, 7],
+                ["chr1", 4, 5],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+        .astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    )
+
+    pd.testing.assert_frame_equal(
+        df_result,
+        bioframe.subtract(df1, df2)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
+    )
+
+    # Test the case when a chromosome should not be split (now implemented with subtract)
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 3, 8],
+            ["chr1", 4, 7],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+
+    df2 = pd.DataFrame([["chrX", 4]], columns=["chrom", "pos"])
+    df2["start"] = df2["pos"].values
+    df2["end"] = df2["pos"].values
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chrX", 3, 4],
+                ["chrX", 4, 8],
+                ["chr1", 4, 7],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
+
+    pd.testing.assert_frame_equal(
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df1, df2)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
     )
 
 
@@ -883,105 +996,6 @@ def test_setdiff():
         )
         == 2
     )  # one overlaps, two remain
-
-
-def test_split():
-    df1 = pd.DataFrame(
-        [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
-        columns=["chrom", "start", "end"],
-    )
-
-    df2 = pd.DataFrame(
-        [
-            ["chrX", 4],
-            ["chr1", 5],
-        ],
-        columns=["chrom", "pos"],
-    )
-
-    df_result = (
-        pd.DataFrame(
-            [
-                ["chrX", 1, 4],
-                ["chrX", 3, 4],
-                ["chrX", 4, 5],
-                ["chrX", 4, 8],
-                ["chr1", 5, 7],
-                ["chr1", 4, 5],
-            ],
-            columns=["chrom", "start", "end"],
-        )
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True)
-    )
-
-    pd.testing.assert_frame_equal(
-        df_result,
-        bioframe.split(df1, df2)
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True),
-    )
-
-    # Test the case when a chromosome is missing from points.
-    df1 = pd.DataFrame(
-        [
-            ["chrX", 3, 8],
-            ["chr1", 4, 7],
-        ],
-        columns=["chrom", "start", "end"],
-    )
-
-    df2 = pd.DataFrame([["chrX", 4]], columns=["chrom", "pos"])
-
-    df_result = (
-        pd.DataFrame(
-            [
-                ["chrX", 3, 4],
-                ["chrX", 4, 8],
-                ["chr1", 4, 7],
-            ],
-            columns=["chrom", "start", "end"],
-        )
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True)
-    )
-
-    pd.testing.assert_frame_equal(
-        df_result,
-        bioframe.split(df1, df2)
-        .sort_values(["chrom", "start", "end"])
-        .reset_index(drop=True),
-    )
-
-    ### test the case where columns have different names
-    df1 = pd.DataFrame(
-        [["chrX", 3, 8]],
-        columns=["chromosome", "lo", "hi"],
-    )
-
-    df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
-
-    df_result = pd.DataFrame(
-        [
-            ["chrX", 3, 4, "chrX:3-4_p"],
-            ["chrX", 4, 8, "chrX:4-8_q"],
-        ],
-        columns=["chromosome", "lo", "hi", "name"],
-    )
-
-    pd.testing.assert_frame_equal(
-        df_result,
-        bioframe.split(
-            df1,
-            df2,
-            cols=["chromosome", "lo", "hi"],
-            cols_points=["chromosome", "loc"],
-            add_names=True,
-            suffixes=["_p", "_q"],
-        ),
-    )
-
-    # test adding UCSC column
 
 
 def test_count_overlaps():

@@ -471,7 +471,7 @@ def cluster(
 
     min_dist : float or None
         If provided, cluster intervals separated by this distance or less.
-        If ``None``, do not cluster non-overlapping intervals. 
+        If ``None``, do not cluster non-overlapping intervals.
         Since bioframe uses semi-open intervals, interval pairs [0,1) and [1,2)
         do not overlap, but are separated by a distance of 0. Such adjacent intervals
         are not clustered when ``min_dist=None``, but are clustered when ``min_dist=0``.
@@ -1083,7 +1083,15 @@ def closest(
     return out_df
 
 
-def subtract(df1, df2, suffixes=("", "_"), cols1=None, cols2=None):
+def subtract(
+    df1,
+    df2,
+    return_index=False,
+    keep_order=True,
+    suffixes=("", "_"),
+    cols1=None,
+    cols2=None,
+):
     """
     Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
 
@@ -1091,6 +1099,11 @@ def subtract(df1, df2, suffixes=("", "_"), cols1=None, cols2=None):
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
+
+    return_index : bool
+        Whether to return the indices of the original intervals ('index'+suffixes[0]),
+        and the indices of the split sub-intervals ('sub_index'+suffixes[1]).
+        Default False.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -1100,6 +1113,10 @@ def subtract(df1, df2, suffixes=("", "_"), cols1=None, cols2=None):
     Returns
     -------
     df_subtracted : pandas.DataFrame
+
+    Notes
+    -----
+    Resets index, drops completely subtracted (null) intervals, and casts to pd.Int64Dtype().
 
     """
 
@@ -1114,32 +1131,36 @@ def subtract(df1, df2, suffixes=("", "_"), cols1=None, cols2=None):
     extra_columns_1 = [i for i in list(df1.columns) if i not in [ck1, sk1, ek1]]
     for i in extra_columns_1:
         name_updates[i + suffixes[0]] = i
+    if return_index:
+        name_updates["index" + suffixes[0]] = "index" + suffixes[0]
+        name_updates["index" + suffixes[1]] = "complement_index" + suffixes[1]
 
-    ### loop over chromosomes, then either return the same or subtracted intervals.
-    df1_groups = df1.groupby(ck1, observed=True).groups
-    df2_groups = df2.groupby(ck2, observed=True).groups
-    df_subtracted = []
-    for group_keys, df1_group_idxs in df1_groups.items():
-        df1_group = df1.loc[df1_group_idxs]
+    all_chroms = np.unique(list(pd.unique(df1[ck1])) + list(pd.unique(df2[ck2])))
 
-        # if nothing to subtract, add original intervals
-        if group_keys not in df2_groups:
-            df_subtracted.append(df1_group)
-            continue
+    df_subtracted = overlap(
+        df1,
+        complement(
+            df2, view_df={i: np.iinfo(np.int64).max for i in all_chroms}, cols=cols2
+        ).astype({sk2: pd.Int64Dtype(), ek2: pd.Int64Dtype()}),
+        how="left",
+        suffixes=suffixes,
+        return_index=return_index,
+        return_overlap=True,
+        keep_order=keep_order,
+        cols1=cols1,
+        cols2=cols2,
+    )[list(name_updates)]
+    df_subtracted.rename(columns=name_updates, inplace=True)
+    df_subtracted = df_subtracted.iloc[~pd.isna(df_subtracted[sk1].values)]
+    df_subtracted.reset_index(drop=True, inplace=True)
 
-        df2_group_idxs = df2_groups[group_keys]
-        df2_group = df2.loc[df2_group_idxs]
-        df_subtracted_group = overlap(
-            df1_group,
-            complement(df2_group, cols=cols2),
-            how="inner",
-            suffixes=suffixes,
-            return_overlap=True,
-            cols1=cols1,
-            cols2=cols2,
-        )[list(name_updates)]
-        df_subtracted.append(df_subtracted_group.rename(columns=name_updates))
-    df_subtracted = pd.concat(df_subtracted)
+    if return_index:
+        inds = df_subtracted["index" + suffixes[0]].values
+        comp_inds = df_subtracted["complement_index" + suffixes[1]].copy()  # .values
+        for i in np.unique(inds):
+            comp_inds[inds == i] -= comp_inds[inds == i].min()
+        df_subtracted["sub_index" + suffixes[1]] = comp_inds.copy()
+        df_subtracted.drop(columns=["complement_index" + suffixes[1]], inplace=True)
     return df_subtracted
 
 
@@ -1177,105 +1198,6 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     inds_non_overlapped = np.setdiff1d(np.arange(len(df1)), df_overlapped[:, 0])
     df_setdiff = df1.iloc[inds_non_overlapped]
     return df_setdiff
-
-
-def split(
-    df,
-    points,
-    cols=None,
-    cols_points=None,
-    add_names=False,
-    suffixes=["_left", "_right"],
-):
-    """
-    Generate a new dataframe of genomic intervals by splitting each interval from the
-    first dataframe that overlaps an interval from the second dataframe.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Genomic intervals stored as a DataFrame.
-
-    points : pandas.DataFrame or dict
-        If pandas.DataFrame, a set of genomic positions specified in columns 'chrom', 'pos'.
-        Names of cols can be overwridden by cols_points.
-        If dict, mapping of chromosomes to positions.
-
-    cols : (str, str, str) or None
-        The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
-
-    add_names : bool
-        If true, adds a new column 'name' with intervals as UCSC strings. Default False.
-
-    suffixes : list
-        If add_names is true, these suffixes are appended onto the left and right sides of
-        the new intervals after splitting. Default ['_left','_right'].
-        Used for genomeops.make_chromarms() with ['_p','_q'].
-
-    Returns
-    -------
-    df_split : pandas.DataFrame
-
-    """
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    ck2, sk2 = ("chrom", "pos") if cols_points is None else cols_points
-
-    name_updates = {
-        ck1 + suffixes[0]: ck1,
-        "overlap_" + sk1: sk1,
-        "overlap_" + ek1: ek1,
-    }
-    if add_names:
-        name_updates["index" + suffixes[1]] = "index" + suffixes[1]
-        return_index = True
-    else:
-        return_index = False
-    extra_columns_1 = [i for i in list(df.columns) if i not in [ck1, sk1, ek1]]
-    for i in extra_columns_1:
-        name_updates[i + "_1"] = i
-
-    if isinstance(points, dict):
-        points = pd.DataFrame.from_dict(points, orient="index", columns=[sk2])
-        points.reset_index(inplace=True)
-        points.rename(columns={"index": "chrom"}, inplace=True)
-    elif not isinstance(points, pd.DataFrame):
-        raise ValueError("points must be a dict or pd.Dataframe")
-
-    points["start"] = points[sk2]
-    points["end"] = points[sk2]
-
-    all_chroms = set(df[ck1].unique()).union(df[ck2].unique())
-    all_chroms = {c: np.iinfo(np.int64).max for c in all_chroms}
-
-    df_split = overlap(
-        df,
-        complement(points, view_df=all_chroms, cols=(ck2, "start", "end")),
-        how="inner",
-        suffixes=suffixes,
-        cols1=cols,
-        cols2=(ck2, "start", "end"),
-        return_overlap=True,
-        return_index=return_index,
-    )[list(name_updates)]
-    df_split.rename(columns=name_updates, inplace=True)
-    df_split.sort_values([ck1, sk1, ek1], inplace=True)
-
-    if add_names:
-        df_split = construction.add_ucsc_name_column(
-            df_split, cols=[ck1, sk1, ek1], name_col="name"
-        )
-        sides = np.mod(df_split["index" + suffixes[1]].values, 2).astype(
-            int
-        )  # .astype(str)
-        df_split["name"] = df_split["name"].values + np.array(suffixes)[sides]
-        df_split.drop(columns=["index" + suffixes[1]], inplace=True)
-
-    df_split.reset_index(drop=True, inplace=True)
-
-    return df_split
-
 
 def count_overlaps(
     df1,
