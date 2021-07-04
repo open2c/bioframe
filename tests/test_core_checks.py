@@ -233,6 +233,37 @@ def test_is_bedframe():
     )
     assert is_bedframe(df1) is False
 
+    ### third interval has a null in one column
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 10, 20, 'first'],
+            ["chr1", 10, 15, 'second'],
+            ["chr1", pd.NA, 15,'third'],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    # should raise  a TypeError if the second column is an object
+    with pytest.raises(TypeError):
+        is_bedframe(df1, raise_errors=True)
+    # should raise  a ValueError after recasting to pd.Int64Dtype
+    df1 = df1.astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    with pytest.raises(ValueError):
+        is_bedframe(df1, raise_errors=True)
+
+    ### first interval is completely NA
+    df1 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA, 'first'],
+            ["chr1", 10, 15, 'second'],
+            ["chr1", 10, 15,'third'],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df1 = df1.astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    assert is_bedframe(df1) is True
+
+
+
 
 def test_is_viewframe():
     # not a bedframe

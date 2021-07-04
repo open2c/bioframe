@@ -99,10 +99,19 @@ def test_sanitize_bedframe():
     )
 
     # keep rows with null, but recast
-    sanitized_df1 = df1.astype(
-        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    sanitized_df1 = pd.DataFrame(
+        [
+            ["chr1", 10, 20],
+            ["chr1", 10, 20],
+            [pd.NA, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
     )
-    pd.testing.assert_frame_equal(sanitized_df1, construction.sanitize_bedframe(df1))
+    sanitized_df1 = sanitized_df1.astype(
+        {"chrom": object, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+    pd.testing.assert_frame_equal(sanitized_df1.fillna(-1), construction.sanitize_bedframe(df1).fillna(-1))
 
     # flip intervals as well as drop NA
     df1 = pd.DataFrame(

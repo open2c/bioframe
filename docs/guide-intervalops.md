@@ -49,7 +49,7 @@ df1 = pd.DataFrame([
 Or via functions in :mod:`bioframe.core.construction`, e.g.:
 ```
 ```{code-cell} ipython3
-df2 = bioframe.from_list(
+df2 = bioframe.from_any(
     [['chr1', 4, 8],
      ['chr1', 10, 11]], 
     name_col='chrom')
@@ -63,7 +63,8 @@ and :mod:`bioframe.io.resources`.
 BedFrames satisfy the following properties:  
 
 - chrom, start, end columns  
-- columns have valid dtypes (object/string/categorical, int, int)  
+- columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype(), int/pd.Int64Dtype())  
+- for each interval, if any of chrom, start, end are null, then all are null
 - all starts < ends.  
 
 Whether a dataframe satisfies these properties can be checked with :func:`bioframe.core.checks.is_bedframe`:

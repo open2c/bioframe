@@ -19,7 +19,6 @@ __all__ = [
     "closest",
     "subtract",
     "setdiff",
-    "split",
     "count_overlaps",
     "pair_by_distance",
     "trim",
@@ -1102,7 +1101,7 @@ def subtract(
 
     return_index : bool
         Whether to return the indices of the original intervals ('index'+suffixes[0]),
-        and the indices of the split sub-intervals ('sub_index'+suffixes[1]).
+        and the indices of any sub-intervals split by subtraction ('sub_index'+suffixes[1]).
         Default False.
 
     cols1, cols2 : (str, str, str) or None

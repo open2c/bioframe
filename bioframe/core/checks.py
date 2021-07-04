@@ -26,7 +26,8 @@ def is_bedframe(
     This includes:
 
     - chrom, start, end columns
-    - columns have valid dtypes (object/string/categorical, int, int)
+    - columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype, int/pd.Int64Dtype)
+    - for each interval, if any of chrom, start, end are null, then all are null
     - all starts < ends.
 
     Parameters
@@ -57,6 +58,12 @@ def is_bedframe(
     if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
             raise TypeError("Invalid column dtypes")
+        return False
+
+    nan_intervals = pd.isnull(df[[ck1, sk1, ek1]])
+    if (~ (~ nan_intervals.any(axis=1) |  nan_intervals.all(axis=1))).any():
+        if raise_errors:
+            raise ValueError("Invalid null values: if any of chrom, start, end are null, then all must be null")
         return False
 
     if ((df[ek1] - df[sk1]) < 0).any():

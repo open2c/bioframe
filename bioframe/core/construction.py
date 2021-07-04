@@ -309,8 +309,10 @@ def sanitize_bedframe(
             out_df[sk1] = out_df[sk1].astype(pd.Int64Dtype())
             out_df[ek1] = out_df[ek1].astype(pd.Int64Dtype())
 
+    nan_intervals = pd.isnull(out_df[[ck1, sk1, ek1]]).any(axis=1)
+    out_df.loc[nan_intervals, [ck1, sk1, ek1]] = pd.NA
     if drop_null:
-        out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
+        out_df.dropna(axis=0, inplace=True)
         out_df.reset_index(drop=True, inplace=True)
 
     if start_exceed_end_action is not None:
