@@ -108,6 +108,26 @@ def test_select():
         df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
     )
 
+    ### select from a DataFrame with NaNs
+    colnames = ["chrom", "start", "end", "view_region"]
+    df = pd.DataFrame(
+        [
+            ["chr1", -6, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=colnames,
+    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    df_result = pd.DataFrame(
+        [["chr1", -6, 12, "chr1p"]],
+        columns=colnames,
+    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+
+    region1 = 'chr1:0-1'
+    pd.testing.assert_frame_equal(
+        df_result, bioframe.select(df, region1).reset_index(drop=True)
+    )
+
 
 def test_trim():
 
@@ -185,6 +205,25 @@ def test_trim():
         ],
         columns=["chrom", "start", "end", "region"],
     )
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
+
+    ### trim when there are NaN intervals
+    df = pd.DataFrame(
+        [
+            ["chr1", -4, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
+            ["chrX", -5, -1, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
+            ["chrX", 0, 0, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
 
 

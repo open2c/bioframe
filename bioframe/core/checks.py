@@ -119,7 +119,7 @@ def is_cataloged(
             raise ValueError(f"Could not find ‘{view_name_col}’ column in view_df")
         return False
 
-    if not set(df[df_view_col].values).issubset(set(view_df[view_name_col].values)):
+    if not set(df[df_view_col].copy().dropna().values).issubset(set(view_df[view_name_col].values)):
         if raise_errors is True:
             raise ValueError(
                 "The following regions in df[df_view_col] not in view_df[view_name_col]: \n"

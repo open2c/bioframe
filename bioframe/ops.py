@@ -53,18 +53,17 @@ def select(df, region, cols=None):
 
     """
 
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    ck, sk, ek = _get_default_colnames() if cols is None else cols    
+    checks.is_bedframe(df, raise_errors=True, cols=[ck,sk,ek])
+
     chrom, start, end = parse_region(region)
     if chrom is None:
         raise ValueError("no chromosome detected, check region input")
     if (start is not None) and (end is not None):
-        inds = (
-            (df[ck].values == chrom) & (df[sk].values < end) & (df[ek].values > start)
-        )
+        inds = ((df[ck] == chrom) & (df[sk] < end) & (df[ek] > start))
     else:
-        inds = df[ck].values == chrom
-    return df.iloc[np.where(inds)[0]]
+        inds = (df[ck] == chrom)
+    return df[inds]
 
 
 def expand(df, pad=None, scale=None, side="both", cols=None):
@@ -1426,7 +1425,7 @@ def trim(
 
     if view_df is None:
         df_view_col = ck
-        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].values)}
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].copy().dropna().values)}
 
     _verify_columns(df, [ck, sk, ek])
     _verify_columns(df, [df_view_col])
