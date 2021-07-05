@@ -111,7 +111,9 @@ def test_sanitize_bedframe():
     sanitized_df1 = sanitized_df1.astype(
         {"chrom": object, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
     )
-    pd.testing.assert_frame_equal(sanitized_df1.fillna(-1), construction.sanitize_bedframe(df1).fillna(-1))
+    pd.testing.assert_frame_equal(
+        sanitized_df1.fillna(-1), construction.sanitize_bedframe(df1).fillna(-1)
+    )
 
     # flip intervals as well as drop NA
     df1 = pd.DataFrame(

@@ -37,7 +37,6 @@ def test_make_chromarms():
             df2,
             cols_chroms=["chromosome", "lo", "hi"],
             cols_mids=["chromosome", "loc"],
-            sub_index_to_suffix={0: "_p", 1: "_q"},
         ),
     )
 

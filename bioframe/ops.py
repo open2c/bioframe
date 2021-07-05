@@ -53,16 +53,16 @@ def select(df, region, cols=None):
 
     """
 
-    ck, sk, ek = _get_default_colnames() if cols is None else cols    
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     chrom, start, end = parse_region(region)
     if chrom is None:
         raise ValueError("no chromosome detected, check region input")
     if (start is not None) and (end is not None):
-        inds = ((df[ck] == chrom) & (df[sk] < end) & (df[ek] > start))
+        inds = (df[ck] == chrom) & (df[sk] < end) & (df[ek] > start)
     else:
-        inds = (df[ck] == chrom)
+        inds = df[ck] == chrom
     return df[inds]
 
 
@@ -415,31 +415,36 @@ def overlap(
     if how != "inner":
         if df_input_1 is not None:
             df_input_1[overlap_df_idxs[:, 0] == -1] = None
-            df_input_1[[sk1 + suffixes[0], ek1 + suffixes[0]]] = df_input_1[
-                [sk1 + suffixes[0], ek1 + suffixes[0]]
-            ].astype(pd.Int64Dtype())
+            df_input_1 = df_input_1.astype(
+                {
+                    (sk1 + suffixes[0]): pd.Int64Dtype(),
+                    (ek1 + suffixes[0]): pd.Int64Dtype(),
+                }
+            )
         if df_input_2 is not None:
             df_input_2[overlap_df_idxs[:, 1] == -1] = None
-            df_input_2[[sk2 + suffixes[1], ek2 + suffixes[1]]] = df_input_2[
-                [sk2 + suffixes[1], ek2 + suffixes[1]]
-            ].astype(pd.Int64Dtype())
+            df_input_2 = df_input_2.astype(
+                {
+                    (sk2 + suffixes[1]): pd.Int64Dtype(),
+                    (ek2 + suffixes[1]): pd.Int64Dtype(),
+                }
+            )
         if df_index_1 is not None:
             df_index_1[overlap_df_idxs[:, 0] == -1] = None
-            df_index_1["index" + suffixes[0]] = df_index_1[
-                "index" + suffixes[0]
-            ].astype(pd.Int64Dtype())
+            df_index_1 = df_index_1.astype({"index" + suffixes[0]: pd.Int64Dtype()})
         if df_index_2 is not None:
             df_index_2[overlap_df_idxs[:, 1] == -1] = None
-            df_index_2["index" + suffixes[1]] = df_index_2[
-                "index" + suffixes[1]
-            ].astype(pd.Int64Dtype())
+            df_index_2 = df_index_2.astype({("index" + suffixes[1]): pd.Int64Dtype()})
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
             ] = None
-            df_overlap[["overlap_" + sk1, "overlap_" + ek1]] = df_overlap[
-                ["overlap_" + sk1, "overlap_" + ek1]
-            ].astype(pd.Int64Dtype())
+            df_overlap = df_overlap.astype(
+                {
+                    ("overlap_" + sk1): pd.Int64Dtype(),
+                    ("overlap_" + ek1): pd.Int64Dtype(),
+                }
+            )
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
@@ -1198,6 +1203,7 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     df_setdiff = df1.iloc[inds_non_overlapped]
     return df_setdiff
 
+
 def count_overlaps(
     df1,
     df2,
@@ -1426,7 +1432,10 @@ def trim(
 
     if view_df is None:
         df_view_col = ck
-        view_df = {i: np.iinfo(np.int64).max for i in set(df[df_view_col].copy().dropna().values)}
+        view_df = {
+            i: np.iinfo(np.int64).max
+            for i in set(df[df_view_col].copy().dropna().values)
+        }
 
     _verify_columns(df, [ck, sk, ek])
     _verify_columns(df, [df_view_col])

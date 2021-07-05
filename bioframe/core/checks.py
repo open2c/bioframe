@@ -61,9 +61,11 @@ def is_bedframe(
         return False
 
     nan_intervals = pd.isnull(df[[ck1, sk1, ek1]])
-    if (~ (~ nan_intervals.any(axis=1) |  nan_intervals.all(axis=1))).any():
+    if (~(~nan_intervals.any(axis=1) | nan_intervals.all(axis=1))).any():
         if raise_errors:
-            raise ValueError("Invalid null values: if any of chrom, start, end are null, then all must be null")
+            raise ValueError(
+                "Invalid null values: if any of chrom, start, end are null, then all must be null"
+            )
         return False
 
     if ((df[ek1] - df[sk1]) < 0).any():
@@ -119,7 +121,9 @@ def is_cataloged(
             raise ValueError(f"Could not find ‘{view_name_col}’ column in view_df")
         return False
 
-    if not set(df[df_view_col].copy().dropna().values).issubset(set(view_df[view_name_col].values)):
+    if not set(df[df_view_col].copy().dropna().values).issubset(
+        set(view_df[view_name_col].values)
+    ):
         if raise_errors is True:
             raise ValueError(
                 "The following regions in df[df_view_col] not in view_df[view_name_col]: \n"

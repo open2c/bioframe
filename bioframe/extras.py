@@ -20,7 +20,7 @@ def make_chromarms(
     midpoints,
     cols_chroms=("chrom", "length"),
     cols_mids=("chrom", "mid"),
-    sub_index_to_suffix={0: "_p", 1: "_q"},
+    suffixes=("_p", "_q")
 ):
     """
     Split chromosomes into chromosome arms.
@@ -104,7 +104,7 @@ def make_chromarms(
             "chromosome split into more than two arms, double-check midpoints"
         )
     df_chromarms["name"] = df_chromarms[ck1] + [
-        sub_index_to_suffix[i] for i in df_chromarms["sub_index_"].values
+        suffixes[i] for i in df_chromarms["sub_index_"].values
     ]
     df_chromarms.drop(columns=columns_to_drop, inplace=True)
     return df_chromarms

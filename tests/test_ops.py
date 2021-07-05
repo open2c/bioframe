@@ -117,13 +117,13 @@ def test_select():
             ["chrX", 1, 8, "chrX_0"],
         ],
         columns=colnames,
-    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     df_result = pd.DataFrame(
         [["chr1", -6, 12, "chr1p"]],
         columns=colnames,
-    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
-    region1 = 'chr1:0-1'
+    region1 = "chr1:0-1"
     pd.testing.assert_frame_equal(
         df_result, bioframe.select(df, region1).reset_index(drop=True)
     )
@@ -215,7 +215,7 @@ def test_trim():
             ["chrX", -5, -1, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "region"],
-    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     df_trimmed = pd.DataFrame(
         [
             ["chr1", 0, 12, "chr1p"],
@@ -223,7 +223,7 @@ def test_trim():
             ["chrX", 0, 0, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "region"],
-    ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
 
     ### trim with view_df and NA intervals
@@ -243,7 +243,7 @@ def test_trim():
             ["chrX", 1, 8, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "view_region"],
-    ).astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     df_trimmed = pd.DataFrame(
         [
             ["chr1", 0, 12, "chr1p"],
@@ -252,8 +252,9 @@ def test_trim():
             ["chrX", 1, 8, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "view_region"],
-    ).astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
+
 
 def test_expand():
 
@@ -305,7 +306,7 @@ def test_expand():
     fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
     d = """chrom  start  end
          0  chr1      -1    7
-         1  chr1     47   57
+         1  chr1     48   58
          2  chr2    50  250"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, fake_expanded)
@@ -315,18 +316,19 @@ def test_expand():
          0  chr1      1    5
          1  NA     NA   NA
          2  chr2    100  200"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+").astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    fake_bioframe = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
     mult = 1.10
     fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
     d = """chrom  start  end
          0  chr1      1   5
          1  NA     NA   NA
          2  chr2    95  205"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
     pd.testing.assert_frame_equal(df, fake_expanded)
-
-
-
 
 
 def test_overlap():
@@ -457,7 +459,6 @@ def test_overlap():
         cols2=("chrom2", "start2", "end2"),
     )
     assert len(b) == 3
-
 
 def test_cluster():
     df1 = pd.DataFrame(
