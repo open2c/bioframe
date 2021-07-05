@@ -54,7 +54,7 @@ def select(df, region, cols=None):
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols    
-    checks.is_bedframe(df, raise_errors=True, cols=[ck,sk,ek])
+    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     chrom, start, end = parse_region(region)
     if chrom is None:
@@ -104,7 +104,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     if scale is not None:
         if scale < 0:
@@ -130,6 +130,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
             df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
             df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
     if scale is not None:
+        df_expanded[[sk, ek]] = df_expanded[[sk, ek]].round()
         df_expanded[[sk, ek]] = df_expanded[[sk, ek]].astype(types)
 
     return df_expanded

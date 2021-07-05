@@ -226,6 +226,34 @@ def test_trim():
     ).astype({'start':pd.Int64Dtype(),'end':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
 
+    ### trim with view_df and NA intervals
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", -6, 12, "chr1p"],
+            ["chr1", 0, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, pd.NA],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    ).astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 0, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, pd.NA],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    ).astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
 
 def test_expand():
 
@@ -281,6 +309,24 @@ def test_expand():
          2  chr2    50  250"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, fake_expanded)
+
+    # expand with NA and non-integer multiplicative pad
+    d = """chrom  start  end
+         0  chr1      1    5
+         1  NA     NA   NA
+         2  chr2    100  200"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype({"start":pd.Int64Dtype(),"end":pd.Int64Dtype()})
+    mult = 1.10
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
+    d = """chrom  start  end
+         0  chr1      1   5
+         1  NA     NA   NA
+         2  chr2    95  205"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+
+
 
 
 def test_overlap():
