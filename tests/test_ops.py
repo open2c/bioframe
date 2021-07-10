@@ -460,6 +460,79 @@ def test_overlap():
     )
     assert len(b) == 3
 
+    ### test keep_order and NA handling
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+"],
+            [pd.NA, pd.NA, pd.NA, "-"],
+            ["chrX", 1, 8, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [["chr1", 6, 10, "+"], [pd.NA, pd.NA, pd.NA, "-"], ["chrX", 7, 10, "-"]],
+        columns=["chrom2", "start2", "end2", "strand"],
+    ).astype({"start2": pd.Int64Dtype(), "end2": pd.Int64Dtype()})
+
+    assert df1.equals(
+        bioframe.overlap(
+            df1, df2, how="left", keep_order=True, cols2=["chrom2", "start2", "end2"]
+        )[["chrom", "start", "end", "strand"]]
+    )
+    assert ~df1.equals(
+        bioframe.overlap(
+            df1, df2, how="left", keep_order=False, cols2=["chrom2", "start2", "end2"]
+        )[["chrom", "start", "end", "strand"]]
+    )
+
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+", pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chrX", 1, 8, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [["chr1", 6, 10, pd.NA, "tiger"]],
+        columns=["chrom2", "start2", "end2", "strand", "animal"],
+    ).astype({"start2": pd.Int64Dtype(), "end2": pd.Int64Dtype()})
+
+    assert (
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            cols2=["chrom2", "start2", "end2"],
+            return_index=True,
+            keep_order=False,
+        ).shape
+        == (3, 12)
+    )
+
+    with pytest.raises(ValueError):
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            on=["strand"],
+            cols2=["chrom2", "start2", "end2"],
+            keep_order=False,
+        )
+
+    with pytest.raises(ValueError):
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            on=["animal"],
+            cols2=["chrom2", "start2", "end2"],
+            keep_order=False,
+        )
+
+
 def test_cluster():
     df1 = pd.DataFrame(
         [

@@ -136,9 +136,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     return df_expanded
 
 
-def _overlap_intidxs(
-    df1, df2, how="left", keep_order=False, cols1=None, cols2=None, on=None
-):
+def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
     """
     Find pairs of overlapping genomic intervals and return the integer
     indices of the overlapping intervals.
@@ -154,10 +152,6 @@ def _overlap_intidxs(
         right: use the set of intervals in df2
         outer: use the union of the set of intervals from df1 and df2
         inner: use intersection of the set of intervals from df1 and df2
-
-    keep_order : bool, optional
-        Sort the output dataframe to preserve the order of the intervals in
-        the input dataframes. Disable to increase performance.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -185,22 +179,17 @@ def _overlap_intidxs(
     df1 = df1.reset_index(drop=True)
     df2 = df2.reset_index(drop=True)
 
-    # Find overlapping intervals per chromosome.
+    # Calculate groups, determined by chrom and on.
     group_list1 = [ck1]
     group_list2 = [ck2]
     if on is not None:
-        if type(on) is not list:
-            raise ValueError("on=[] must be None or list")
-        if (ck1 in on) or (ck2 in on):
-            raise ValueError("on=[] should not contain chromosome colnames")
-        _verify_columns(df1, on)
-        _verify_columns(df2, on)
         group_list1 += on
         group_list2 += on
     df1_groups = df1.groupby(group_list1, observed=True).groups
     df2_groups = df2.groupby(group_list2, observed=True).groups
     all_groups = sorted(set.union(set(df1_groups), set(df2_groups)))
 
+    # Find overlapping intervals per group (determined by chrom and on).
     overlap_intidxs = []
     for group_keys in all_groups:
         df1_group_idxs = (
@@ -287,10 +276,6 @@ def _overlap_intidxs(
         return np.ndarray(shape=(0, 2), dtype=int)
     overlap_intidxs = np.vstack(overlap_intidxs)
 
-    if keep_order:
-        order = np.lexsort([overlap_intidxs[:, 1], overlap_intidxs[:, 0]])
-        overlap_intidxs = overlap_intidxs[order]
-
     return overlap_intidxs
 
 
@@ -346,7 +331,7 @@ def overlap(
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
-    on : list
+    on : list or None
         List of additional shared columns to consider as separate groups
         when considering overlaps. A common use would be passing on=['strand'].
         Default is None.
@@ -359,6 +344,39 @@ def overlap(
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    _verify_columns(df1, [ck1, sk1, ek1])
+    _verify_columns(df2, [ck2, sk2, ek2])
+
+    if on is None:
+        on_list = []
+    else:
+        if type(on) is not list:
+            raise ValueError("on=[] must be None or list")
+        if (ck1 in on) or (ck2 in on):
+            raise ValueError("on=[] should not contain chromosome colnames")
+        _verify_columns(df1, on)
+        _verify_columns(df2, on)
+        on_list = on
+
+    df1_nans = pd.isnull(df1[[ck1, sk1, ek1] + on_list]).any(axis=1)
+    if np.sum(df1_nans) > 0:
+        df1_has_nans = True
+        df1_nan_rows = df1.loc[df1_nans].copy()
+        df1 = df1.loc[~df1_nans]
+        if len(df1)==0:
+            raise ValueError("no remaining rows in df1 after masking NAs")
+    else:
+        df1_has_nans = False
+
+    df2_nans = pd.isnull(df2[[ck2, sk2, ek2] + on_list]).any(axis=1)
+    if np.sum(df2_nans) > 0:
+        df2_has_nans = True
+        df2_nan_rows = df2.loc[df2_nans].copy()
+        df2 = df2.loc[~df2_nans]
+        if len(df2)==0:
+            raise ValueError("no remaining rows in df2 after masking NAs")
+    else:
+        df2_has_nans = False
 
     overlap_df_idxs = _overlap_intidxs(
         df1,
@@ -366,25 +384,22 @@ def overlap(
         how=how,
         cols1=cols1,
         cols2=cols2,
-        keep_order=keep_order,
         on=on,
     )
 
     # Generate output tables.
-    df_index_1 = None
-    df_index_2 = None
-    if return_index:
-        index_col = return_index if isinstance(return_index, str) else "index"
-        df_index_1 = pd.DataFrame(
-            {index_col + suffixes[0]: df1.index[overlap_df_idxs[:, 0]]}
-        )
-        df_index_2 = pd.DataFrame(
-            {index_col + suffixes[1]: df2.index[overlap_df_idxs[:, 1]]}
-        )
+    index_col = return_index if isinstance(return_index, str) else "index"
+    index_col_1 = index_col + suffixes[0]
+    index_col_2 = index_col + suffixes[1]
+    df_index_1 = pd.DataFrame({index_col_1: df1.index[overlap_df_idxs[:, 0]]})
+    df_index_2 = pd.DataFrame({index_col_2: df2.index[overlap_df_idxs[:, 1]]})
 
     df_overlap = None
     if return_overlap:
         overlap_col = return_overlap if isinstance(return_overlap, str) else "overlap"
+        overlap_col_sk1 = overlap_col + "_" + sk1
+        overlap_col_ek1 = overlap_col + "_" + ek1
+
         overlap_start = np.maximum(
             df1[sk1].values[overlap_df_idxs[:, 0]],
             df2[sk2].values[overlap_df_idxs[:, 1]],
@@ -396,10 +411,7 @@ def overlap(
         )
 
         df_overlap = pd.DataFrame(
-            {
-                overlap_col + "_" + sk1: overlap_start,
-                overlap_col + "_" + ek1: overlap_end,
-            }
+            {overlap_col_sk1: overlap_start, overlap_col_ek1: overlap_end}
         )
 
     df_input_1 = None
@@ -413,6 +425,11 @@ def overlap(
 
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
+        df_index_1[overlap_df_idxs[:, 0] == -1] = None
+        df_index_1 = df_index_1.astype({index_col_1: pd.Int64Dtype()})
+        df_index_2[overlap_df_idxs[:, 1] == -1] = None
+        df_index_2 = df_index_2.astype({index_col_2: pd.Int64Dtype()})
+
         if df_input_1 is not None:
             df_input_1[overlap_df_idxs[:, 0] == -1] = None
             df_input_1 = df_input_1.astype(
@@ -429,27 +446,45 @@ def overlap(
                     (ek2 + suffixes[1]): pd.Int64Dtype(),
                 }
             )
-        if df_index_1 is not None:
-            df_index_1[overlap_df_idxs[:, 0] == -1] = None
-            df_index_1 = df_index_1.astype({"index" + suffixes[0]: pd.Int64Dtype()})
-        if df_index_2 is not None:
-            df_index_2[overlap_df_idxs[:, 1] == -1] = None
-            df_index_2 = df_index_2.astype({("index" + suffixes[1]): pd.Int64Dtype()})
         if df_overlap is not None:
             df_overlap[
                 (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
             ] = None
             df_overlap = df_overlap.astype(
-                {
-                    ("overlap_" + sk1): pd.Int64Dtype(),
-                    ("overlap_" + ek1): pd.Int64Dtype(),
-                }
+                {overlap_col_sk1: pd.Int64Dtype(), (overlap_col_ek1): pd.Int64Dtype()}
             )
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
     )
 
+    # add back in left NaNs
+    if (how in ["left", "outer"]) and df1_has_nans:
+        name_update_dict_1 = dict(
+            zip(df1_nan_rows.columns, [c + suffixes[0] for c in df1_nan_rows.columns])
+        )
+        name_update_dict_1["index"] = index_col_1
+        df1_nan_rows.reset_index(inplace=True)
+        df1_nan_rows.rename(columns=name_update_dict_1, inplace=True)
+        out_df = pd.concat([out_df, df1_nan_rows], axis="rows")
+
+    # add back in right NaNs
+    if (how in ["right", "outer"]) and df2_has_nans:
+        name_update_dict_2 = dict(
+            zip(df2_nan_rows.columns, [c + suffixes[1] for c in df2_nan_rows.columns])
+        )
+        name_update_dict_2["index"] = index_col_2
+        df2_nan_rows.reset_index(inplace=True)
+        df2_nan_rows.rename(columns=name_update_dict_2, inplace=True)
+        out_df = pd.concat([out_df, df2_nan_rows], axis="rows")
+
+    if keep_order:
+        out_df = out_df.sort_values([index_col_1, index_col_2])
+
+    if not return_index:
+        out_df.drop([index_col_1, index_col_2], axis=1, inplace=True)
+
+    out_df.reset_index(drop=True, inplace=True)
     return out_df
 
 
@@ -1745,7 +1780,7 @@ def assign_view(
         how="left",
         suffixes=("", "_view"),
         return_overlap=True,
-        keep_order=True,
+        keep_order=False,
         return_index=True,
         cols1=cols,
         cols2=cols,
@@ -1759,7 +1794,7 @@ def assign_view(
     out_df = (
         overlap_view.sort_values("overlap_length", ascending=False)
         .drop_duplicates("index", keep="first")
-        .sort_index()
+        .sort_values("index")
     )
 
     out_df.rename(columns={view_name_col + "_view": df_view_col}, inplace=True)
