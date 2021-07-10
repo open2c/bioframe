@@ -20,7 +20,7 @@ def make_chromarms(
     midpoints,
     cols_chroms=("chrom", "length"),
     cols_mids=("chrom", "mid"),
-    suffixes=("_p", "_q")
+    suffixes=("_p", "_q"),
 ):
     """
     Split chromosomes into chromosome arms.

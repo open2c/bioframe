@@ -287,7 +287,7 @@ def overlap(
     return_index=False,
     return_overlap=False,
     suffixes=("", "_"),
-    keep_order=True,
+    keep_order=None,
     cols1=None,
     cols2=None,
     on=None,
@@ -323,8 +323,9 @@ def overlap(
         The suffixes for the columns of the two overlapped sets.
 
     keep_order : bool, optional
-        Sort the output dataframe to preserve the order of the intervals in
-        the input dataframes. Disable to increase performance.
+        If True and how='left', sort the output dataframe to preserve the order
+        of the intervals in df1. Cannot be used with how='right'/'outer'/'inner'.
+        Default True for how='left'.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -347,6 +348,11 @@ def overlap(
     _verify_columns(df1, [ck1, sk1, ek1])
     _verify_columns(df2, [ck2, sk2, ek2])
 
+    if (how == "left") and (keep_order is None):
+        keep_order = True
+    if (how != "left") and (keep_order is True):
+        raise ValueError("keep_order=True only allowed for how='left'")
+
     if on is None:
         on_list = []
     else:
@@ -363,7 +369,7 @@ def overlap(
         df1_has_nans = True
         df1_nan_rows = df1.loc[df1_nans].copy()
         df1 = df1.loc[~df1_nans]
-        if len(df1)==0:
+        if len(df1) == 0:
             raise ValueError("no remaining rows in df1 after masking NAs")
     else:
         df1_has_nans = False
@@ -373,7 +379,7 @@ def overlap(
         df2_has_nans = True
         df2_nan_rows = df2.loc[df2_nans].copy()
         df2 = df2.loc[~df2_nans]
-        if len(df2)==0:
+        if len(df2) == 0:
             raise ValueError("no remaining rows in df2 after masking NAs")
     else:
         df2_has_nans = False

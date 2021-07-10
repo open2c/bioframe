@@ -532,6 +532,16 @@ def test_overlap():
             keep_order=False,
         )
 
+    # test keep_order incompatible if how!= 'left'
+    with pytest.raises(ValueError):
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            on=["animal"],
+            cols2=["chrom2", "start2", "end2"],
+            keep_order=True,
+        )
 
 def test_cluster():
     df1 = pd.DataFrame(
