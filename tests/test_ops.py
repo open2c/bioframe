@@ -543,6 +543,7 @@ def test_overlap():
             keep_order=True,
         )
 
+
 def test_cluster():
     df1 = pd.DataFrame(
         [
@@ -681,6 +682,22 @@ def test_merge():
     pd.testing.assert_frame_equal(
         df.reset_index(drop=True), bioframe.merge(df)[["chrom", "start", "end"]]
     )
+
+    ### test cluster with NAs
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 1, 8, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chr1", 8, 12, "+", pd.NA],
+            ["chr1", 1, 8, np.nan, pd.NA],
+            [pd.NA, np.nan, pd.NA, "-", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert bioframe.cluster(df1)["cluster"].max() == 3
+    assert bioframe.cluster(df1, on=["strand"])["cluster"].max()
+    pd.testing.assert_frame_equal(df1, bioframe.cluster(df1)[df1.columns])
 
 
 def test_complement():

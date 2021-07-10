@@ -571,6 +571,8 @@ def cluster(
     max_cluster_id = -1
 
     for group_keys, df_group_idxs in df_groups.items():
+        if pd.isna(pd.Series(group_keys)).any():
+            continue
         if df_group_idxs.empty:
             continue
         df_group = df.loc[df_group_idxs]
@@ -603,6 +605,13 @@ def cluster(
         clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
         clusters.append(clusters_group)
+
+    df_nans = pd.isnull(df[[sk, ek] + group_list]).any(axis=1)
+    if df_nans.sum() > 0:
+        cluster_ids[df_nans.values] = (
+            max_cluster_id + 1 + np.arange(np.sum(df_nans.values))
+        )
+        clusters.append(df.loc[df_nans])
 
     assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
