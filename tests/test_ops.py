@@ -6,6 +6,8 @@ import pytest
 
 import bioframe
 
+import bioframe.core.checks as checks
+
 # import pyranges as pr
 
 # def bioframe_to_pyranges(df):
@@ -512,25 +514,36 @@ def test_overlap():
         == (3, 12)
     )
 
-    with pytest.raises(ValueError):
-        bioframe.overlap(
-            df1,
-            df2,
-            how="outer",
-            on=["strand"],
-            cols2=["chrom2", "start2", "end2"],
-            keep_order=False,
-        )
+    ### result of overlap should still have bedframe-like properties
+    overlap_df = bioframe.overlap(
+        df1,
+        df2,
+        how="outer",
+        cols2=["chrom2", "start2", "end2"],
+        return_index=True,
+        suffixes=("", ""),
+    )
+    assert checks.is_bedframe(
+        overlap_df[df1.columns],
+    )
+    assert checks.is_bedframe(
+        overlap_df[df2.columns], cols=["chrom2", "start2", "end2"]
+    )
 
-    with pytest.raises(ValueError):
-        bioframe.overlap(
-            df1,
-            df2,
-            how="outer",
-            on=["animal"],
-            cols2=["chrom2", "start2", "end2"],
-            keep_order=False,
-        )
+    overlap_df = bioframe.overlap(
+        df1,
+        df2,
+        how="innter",
+        cols2=["chrom2", "start2", "end2"],
+        return_index=True,
+        suffixes=("", ""),
+    )
+    assert checks.is_bedframe(
+        overlap_df[df1.columns],
+    )
+    assert checks.is_bedframe(
+        overlap_df[df2.columns], cols=["chrom2", "start2", "end2"]
+    )
 
     # test keep_order incompatible if how!= 'left'
     with pytest.raises(ValueError):
@@ -600,6 +613,32 @@ def test_cluster():
         bioframe.cluster(df1, on=["location", "animal"])["cluster"].values
         == np.array([0, 2, 1, 3])
     ).all()
+
+    ### test cluster with NAs
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 1, 8, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chr1", 8, 12, "+", pd.NA],
+            ["chr1", 1, 8, np.nan, pd.NA],
+            [pd.NA, np.nan, pd.NA, "-", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert bioframe.cluster(df1)["cluster"].max() == 3
+    assert bioframe.cluster(df1, on=["strand"])["cluster"].max() == 4
+    pd.testing.assert_frame_equal(df1, bioframe.cluster(df1)[df1.columns])
+
+    assert checks.is_bedframe(
+        bioframe.cluster(df1, on=["strand"]),
+        cols=["chrom", "cluster_start", "cluster_end"],
+    )
+    assert checks.is_bedframe(
+        bioframe.cluster(df1), cols=["chrom", "cluster_start", "cluster_end"]
+    )
+    assert checks.is_bedframe(
+        bioframe.cluster(df1))
 
 
 def test_merge():
@@ -683,7 +722,7 @@ def test_merge():
         df.reset_index(drop=True), bioframe.merge(df)[["chrom", "start", "end"]]
     )
 
-    ### test cluster with NAs
+    # test merge with NAs
     df1 = pd.DataFrame(
         [
             ["chrX", 1, 8, pd.NA, pd.NA],
@@ -695,9 +734,13 @@ def test_merge():
         columns=["chrom", "start", "end", "strand", "animal"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
-    assert bioframe.cluster(df1)["cluster"].max() == 3
-    assert bioframe.cluster(df1, on=["strand"])["cluster"].max()
-    pd.testing.assert_frame_equal(df1, bioframe.cluster(df1)[df1.columns])
+    assert bioframe.merge(df1).shape[0] == 4
+    assert bioframe.merge(df1)['start'].iloc[0] == 1
+    assert bioframe.merge(df1)['end'].iloc[0] == 12
+    assert bioframe.merge(df1, on=["strand"]).shape[0] == df1.shape[0]
+    assert bioframe.merge(df1, on=["animal"]).shape[0] == df1.shape[0]
+    assert bioframe.merge(df1, on=["animal"]).shape[1] == df1.shape[1]+1
+    assert checks.is_bedframe(bioframe.merge(df1, on=["strand","animal"]))
 
 
 def test_complement():

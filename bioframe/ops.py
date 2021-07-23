@@ -185,22 +185,19 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
     if on is not None:
         group_list1 += on
         group_list2 += on
-    df1_groups = df1.groupby(group_list1, observed=True).groups
-    df2_groups = df2.groupby(group_list2, observed=True).groups
-    all_groups = sorted(set.union(set(df1_groups), set(df2_groups)))
+    df1_groups = df1.groupby(group_list1, observed=True, dropna=False).indices
+
+    df2_groups = df2.groupby(group_list2, observed=True, dropna=False).indices
+    all_groups = set.union(set(df1_groups), set(df2_groups))
 
     # Find overlapping intervals per group (determined by chrom and on).
     overlap_intidxs = []
     for group_keys in all_groups:
         df1_group_idxs = (
-            df1_groups[group_keys].values
-            if (group_keys in df1_groups)
-            else np.array([])
+            df1_groups[group_keys] if (group_keys in df1_groups) else np.array([])
         )
         df2_group_idxs = (
-            df2_groups[group_keys].values
-            if (group_keys in df2_groups)
-            else np.array([])
+            df2_groups[group_keys] if (group_keys in df2_groups) else np.array([])
         )
         overlap_intidxs_sub = []
 
@@ -345,8 +342,8 @@ def overlap(
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
-    _verify_columns(df1, [ck1, sk1, ek1])
-    _verify_columns(df2, [ck2, sk2, ek2])
+    checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
+    checks.is_bedframe(df2, raise_errors=True, cols=[ck2, sk2, ek2])
 
     if (how == "left") and (keep_order is None):
         keep_order = True
@@ -363,26 +360,6 @@ def overlap(
         _verify_columns(df1, on)
         _verify_columns(df2, on)
         on_list = on
-
-    df1_nans = pd.isnull(df1[[ck1, sk1, ek1] + on_list]).any(axis=1)
-    if np.sum(df1_nans) > 0:
-        df1_has_nans = True
-        df1_nan_rows = df1.loc[df1_nans].copy()
-        df1 = df1.loc[~df1_nans]
-        if len(df1) == 0:
-            raise ValueError("no remaining rows in df1 after masking NAs")
-    else:
-        df1_has_nans = False
-
-    df2_nans = pd.isnull(df2[[ck2, sk2, ek2] + on_list]).any(axis=1)
-    if np.sum(df2_nans) > 0:
-        df2_has_nans = True
-        df2_nan_rows = df2.loc[df2_nans].copy()
-        df2 = df2.loc[~df2_nans]
-        if len(df2) == 0:
-            raise ValueError("no remaining rows in df2 after masking NAs")
-    else:
-        df2_has_nans = False
 
     overlap_df_idxs = _overlap_intidxs(
         df1,
@@ -463,27 +440,6 @@ def overlap(
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
     )
-
-    # add back in left NaNs
-    if (how in ["left", "outer"]) and df1_has_nans:
-        name_update_dict_1 = dict(
-            zip(df1_nan_rows.columns, [c + suffixes[0] for c in df1_nan_rows.columns])
-        )
-        name_update_dict_1["index"] = index_col_1
-        df1_nan_rows.reset_index(inplace=True)
-        df1_nan_rows.rename(columns=name_update_dict_1, inplace=True)
-        out_df = pd.concat([out_df, df1_nan_rows], axis="rows")
-
-    # add back in right NaNs
-    if (how in ["right", "outer"]) and df2_has_nans:
-        name_update_dict_2 = dict(
-            zip(df2_nan_rows.columns, [c + suffixes[1] for c in df2_nan_rows.columns])
-        )
-        name_update_dict_2["index"] = index_col_2
-        df2_nan_rows.reset_index(inplace=True)
-        df2_nan_rows.rename(columns=name_update_dict_2, inplace=True)
-        out_df = pd.concat([out_df, df2_nan_rows], axis="rows")
-
     if keep_order:
         out_df = out_df.sort_values([index_col_1, index_col_2])
 
@@ -581,7 +537,9 @@ def cluster(
             cluster_starts_group,
             cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_group[sk].values, df_group[ek].values, min_dist=min_dist
+            df_group[sk].values.astype(int),
+            df_group[ek].values.astype(int),
+            min_dist=min_dist,
         )
 
         interval_counts = np.bincount(cluster_ids_group)
@@ -604,6 +562,7 @@ def cluster(
         clusters_group[ek] = cluster_ends_group
         clusters_group["n_intervals"] = interval_counts
         clusters_group = pd.DataFrame(clusters_group)
+
         clusters.append(clusters_group)
 
     df_nans = pd.isnull(df[[sk, ek] + group_list]).any(axis=1)
@@ -613,8 +572,11 @@ def cluster(
         )
         clusters.append(df.loc[df_nans])
 
-    assert np.all(cluster_ids >= 0)
     clusters = pd.concat(clusters).reset_index(drop=True)
+    if df_nans.sum() > 0:
+        clusters = clusters.astype({sk: pd.Int64Dtype(), ek: pd.Int64Dtype()})
+    assert np.all(cluster_ids >= 0)
+
     # reorder cluster columns to have chrom,start,end first
     clusters_names = list(clusters.keys())
     clusters = clusters[
@@ -684,7 +646,7 @@ def merge(df, min_dist=0, cols=None, on=None):
 
     # Allow users to specify the names of columns containing the interval coordinates.
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     df = df.copy()
     df.reset_index(inplace=True, drop=True)
@@ -703,18 +665,22 @@ def merge(df, min_dist=0, cols=None, on=None):
     clusters = []
 
     for group_keys, df_group_idxs in df_groups.items():
+        if pd.isna(pd.Series(group_keys)).any():
+            continue
         if df_group_idxs.empty:
             continue
-        df_group = df.loc[df_group_idxs]
 
+        df_group = df.loc[df_group_idxs]
         (
             cluster_ids_group,
             cluster_starts_group,
             cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_group[sk].values, df_group[ek].values, min_dist=min_dist
+            df_group[sk].values.astype(int),
+            df_group[ek].values.astype(int),
+            min_dist=min_dist
+            # df_group[sk].values, df_group[ek].values, min_dist=min_dist
         )
-
         interval_counts = np.bincount(cluster_ids_group)
         n_clusters = cluster_starts_group.shape[0]
 
@@ -734,7 +700,27 @@ def merge(df, min_dist=0, cols=None, on=None):
 
         clusters.append(clusters_group)
 
+    df_nans = pd.isnull(df[[sk, ek] + group_list]).any(axis=1)
+    df_has_nans = df_nans.sum()
+    if df_has_nans:
+        nan_intervals = pd.DataFrame(
+            [pd.NA] * df_has_nans,
+            columns=["n_intervals"],
+            index=df.loc[df_nans].index,
+        )
+        clusters.append(
+            pd.concat(
+                [df.loc[df_nans], nan_intervals],
+                axis=1,
+            )
+        )
+
     clusters = pd.concat(clusters).reset_index(drop=True)
+    if df_has_nans:
+        clusters = clusters.astype(
+            {sk: pd.Int64Dtype(), ek: pd.Int64Dtype(), "n_intervals": pd.Int64Dtype()}
+        )
+
     # reorder cluster columns to have chrom,start,end first
     clusters_names = list(clusters.keys())
     clusters = clusters[
@@ -1189,7 +1175,9 @@ def subtract(
         name_updates["index" + suffixes[0]] = "index" + suffixes[0]
         name_updates["index" + suffixes[1]] = "complement_index" + suffixes[1]
 
-    all_chroms = np.unique(list(pd.unique(df1[ck1])) + list(pd.unique(df2[ck2])))
+    all_chroms = np.unique(
+        list(pd.unique(df1[ck1].dropna())) + list(pd.unique(df2[ck2].dropna()))
+    )
 
     df_subtracted = overlap(
         df1,
@@ -1555,7 +1543,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
     _verify_columns(df, [ck, sk, ek])
 
     if view_df is None:
-        view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].values)}
+        view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].dropna().values)}
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=cols
     )
