@@ -637,8 +637,7 @@ def test_cluster():
     assert checks.is_bedframe(
         bioframe.cluster(df1), cols=["chrom", "cluster_start", "cluster_end"]
     )
-    assert checks.is_bedframe(
-        bioframe.cluster(df1))
+    assert checks.is_bedframe(bioframe.cluster(df1))
 
 
 def test_merge():
@@ -735,12 +734,12 @@ def test_merge():
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     assert bioframe.merge(df1).shape[0] == 4
-    assert bioframe.merge(df1)['start'].iloc[0] == 1
-    assert bioframe.merge(df1)['end'].iloc[0] == 12
+    assert bioframe.merge(df1)["start"].iloc[0] == 1
+    assert bioframe.merge(df1)["end"].iloc[0] == 12
     assert bioframe.merge(df1, on=["strand"]).shape[0] == df1.shape[0]
     assert bioframe.merge(df1, on=["animal"]).shape[0] == df1.shape[0]
-    assert bioframe.merge(df1, on=["animal"]).shape[1] == df1.shape[1]+1
-    assert checks.is_bedframe(bioframe.merge(df1, on=["strand","animal"]))
+    assert bioframe.merge(df1, on=["animal"]).shape[1] == df1.shape[1] + 1
+    assert checks.is_bedframe(bioframe.merge(df1, on=["strand", "animal"]))
 
 
 def test_complement():
@@ -816,6 +815,23 @@ def test_complement():
     )
     pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
 
+    ### test complement with NAs
+    df1 = pd.DataFrame(
+        [[pd.NA, pd.NA, pd.NA], ["chr1", 5, 15], [pd.NA, pd.NA, pd.NA]],
+        columns=["chrom", "start", "end"],
+    ).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
+
+    with pytest.raises(ValueError):  # no NAs allowed in chromsizes
+        bioframe.complement(
+            df1, [("chr1", pd.NA, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
+        )
+
 
 def test_closest():
     df1 = pd.DataFrame(
@@ -832,8 +848,7 @@ def test_closest():
     ### closest(df1,df2,k=1) ###
     d = """chrom  start  end chrom_  start_  end_  distance
         0    chr1        1      5    chr1        4      8         0"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype(
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
         {
             "start_": pd.Int64Dtype(),
             "end_": pd.Int64Dtype(),
@@ -845,8 +860,7 @@ def test_closest():
     ### closest(df1,df2, ignore_overlaps=True)) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
         0   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype(
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
         {
             "start_2": pd.Int64Dtype(),
             "end_2": pd.Int64Dtype(),
@@ -861,8 +875,7 @@ def test_closest():
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    1   5   chr1    4   8   0
             1   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype(
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
         {
             "start_2": pd.Int64Dtype(),
             "end_2": pd.Int64Dtype(),
@@ -877,8 +890,7 @@ def test_closest():
     d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    4   8   chr1    1   5   0
             1   chr1    10  11  chr1    1   5   5 """
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype(
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
         {
             "start_2": pd.Int64Dtype(),
             "end_2": pd.Int64Dtype(),
@@ -891,8 +903,7 @@ def test_closest():
     df2.iloc[0, 0] = "chrA"
     d = """chrom start   end     chrom_ start_ end_  distance
               0   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype(
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
         {
             "start_": pd.Int64Dtype(),
             "end_": pd.Int64Dtype(),
@@ -943,6 +954,43 @@ def test_closest():
         check_dtype=False,
         check_categorical=False,
     )
+
+    # closest should ignore null rows: code will need to be modified
+    # as for overlap if an on=[] option is added 
+    df1 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 1, 5],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 4, 8],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 10, 11],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+        0   chr1    1   5   chr1    10  11  5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_1": pd.Int64Dtype(),
+            "end_1": pd.Int64Dtype(),
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, 
+            suffixes=("_1", "_2"), ignore_overlaps=True,k=5)
+    )
+
 
 
 def test_coverage():

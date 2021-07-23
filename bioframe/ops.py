@@ -1018,7 +1018,9 @@ def closest(
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
-
+    checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
+    checks.is_bedframe(df2, raise_errors=True, cols=[ck2, sk2, ek2])
+    
     closest_df_idxs = _closest_intidxs(
         df1,
         df2,

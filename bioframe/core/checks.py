@@ -52,26 +52,26 @@ def is_bedframe(
 
     if not _verify_columns(df, [ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
-            raise TypeError("Invalid column names")
+            raise TypeError("Invalid bedFrame: Invalid column names")
         return False
 
     if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
-            raise TypeError("Invalid column dtypes")
+            raise TypeError("Invalid bedFrame: Invalid column dtypes")
         return False
 
     nan_intervals = pd.isnull(df[[ck1, sk1, ek1]])
     if (~(~nan_intervals.any(axis=1) | nan_intervals.all(axis=1))).any():
         if raise_errors:
             raise ValueError(
-                "Invalid null values: if any of chrom, start, end are null, then all must be null"
+                "Invalid bedFrame: Invalid null values (if any of chrom, start, end are null, then each must be null)"
             )
         return False
 
     if ((df[ek1] - df[sk1]) < 0).any():
         if raise_errors:
             raise ValueError(
-                "Invalid genomic interval dataframe: starts exceed ends for "
+                "Invalid bedFrame: starts exceed ends for "
                 + str(np.sum(((df[ek1] - df[sk1]) < 0)))
                 + " intervals"
             )
