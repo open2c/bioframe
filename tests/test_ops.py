@@ -956,7 +956,7 @@ def test_closest():
     )
 
     # closest should ignore null rows: code will need to be modified
-    # as for overlap if an on=[] option is added 
+    # as for overlap if an on=[] option is added
     df1 = pd.DataFrame(
         [
             [pd.NA, pd.NA, pd.NA],
@@ -987,10 +987,12 @@ def test_closest():
         }
     )
     pd.testing.assert_frame_equal(
-        df, bioframe.closest(df1, df2, 
-            suffixes=("_1", "_2"), ignore_overlaps=True,k=5)
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True, k=5)
     )
 
+    with pytest.raises(ValueError):  # inputs must be valid bedFrames
+        df1.iloc[0, 0] = "chr10"
+        bioframe.closest(df1, df2)
 
 
 def test_coverage():
@@ -1214,47 +1216,93 @@ def test_subtract():
         .reset_index(drop=True),
     )
 
+    # subtract should ignore null rows
+    df1 = pd.DataFrame(
+        [[pd.NA, pd.NA, pd.NA], ["chr1", 1, 5]],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 1, 5],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 4, 8],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 10, 11],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_subtracted = pd.DataFrame(
+        [
+            ["chr1", 1, 4],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(df_subtracted, bioframe.subtract(df1, df2))
+
+    df1 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert len(bioframe.subtract(df1, df2)) == 0  # empty df1 but valid chroms in df2
+
+    with pytest.raises(ValueError):  # no non-null chromosomes
+        bioframe.subtract(df1, df1)
+
+    df2 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    with pytest.raises(ValueError):  # no non-null chromosomes
+        bioframe.subtract(df1, df2)
+
 
 def test_setdiff():
 
+    cols1 = ["chrom1", "start", "end"]
+    cols2 = ["chrom2", "start", "end"]
     df1 = pd.DataFrame(
         [
             ["chr1", 8, 12, "+", "cat"],
             ["chr1", 8, 12, "-", "cat"],
             ["chrX", 1, 8, "+", "cat"],
         ],
-        columns=["chrom1", "start", "end", "strand", "animal"],
+        columns=cols1 + ["strand", "animal"],
     )
-
     df2 = pd.DataFrame(
         [
             ["chrX", 7, 10, "-", "dog"],
             ["chr1", 6, 10, "-", "cat"],
             ["chr1", 6, 10, "-", "cat"],
         ],
-        columns=["chrom2", "start", "end", "strand", "animal"],
+        columns=cols2 + ["strand", "animal"],
     )
 
-    assert (
-        len(
-            bioframe.setdiff(
-                df1,
-                df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
-                on=None,
-            )
+    assert len(
+        bioframe.setdiff(
+            df1,
+            df2,
+            cols1=cols1,
+            cols2=cols2,
+            on=None,
         )
-        == 0
-    )  # everything overlaps
+    ) == 0   # everything overlaps
 
     assert (
         len(
             bioframe.setdiff(
                 df1,
                 df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
+                cols1=cols1,
+                cols2=cols2,
                 on=["animal"],
             )
         )
@@ -1266,14 +1314,25 @@ def test_setdiff():
             bioframe.setdiff(
                 df1,
                 df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
+                cols1=cols1,
+                cols2=cols2,
                 on=["strand"],
             )
         )
         == 2
     )  # one overlaps, two remain
 
+    # setdiff should ignore nan rows
+    df1 = pd.concat([pd.DataFrame([pd.NA]),df1,pd.DataFrame([pd.NA])])[['chrom1','start','end','strand','animal']]
+    df1 = df1.astype({'start':pd.Int64Dtype(),
+         'end':pd.Int64Dtype(),})
+    df2 = pd.concat([pd.DataFrame([pd.NA]),df2,pd.DataFrame([pd.NA])])[['chrom2','start','end','strand','animal']]
+    df2 = df2.astype({'start':pd.Int64Dtype(),
+         'end':pd.Int64Dtype(),})
+
+    assert (2,5)==np.shape(bioframe.setdiff(df1,df1,cols1=cols1,cols2=cols1))
+    assert (2,5)==np.shape(bioframe.setdiff(df1,df2,cols1=cols1,cols2=cols2))
+    assert (4,5)==np.shape(bioframe.setdiff(df1,df2,on=['strand'],cols1=cols1,cols2=cols2))
 
 def test_count_overlaps():
     df1 = pd.DataFrame(

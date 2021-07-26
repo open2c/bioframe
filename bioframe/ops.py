@@ -1020,7 +1020,7 @@ def closest(
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
     checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
     checks.is_bedframe(df2, raise_errors=True, cols=[ck2, sk2, ek2])
-    
+
     closest_df_idxs = _closest_intidxs(
         df1,
         df2,
@@ -1180,6 +1180,7 @@ def subtract(
     all_chroms = np.unique(
         list(pd.unique(df1[ck1].dropna())) + list(pd.unique(df2[ck2].dropna()))
     )
+    if len(all_chroms)==0: raise ValueError('No chromosomes remain after dropping nulls')
 
     df_subtracted = overlap(
         df1,
