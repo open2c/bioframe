@@ -1432,8 +1432,7 @@ def test_count_overlaps():
 
     counts_nans_inserted_after = (
         pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
-    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
-    })[
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),})[
         ["chrom1", "start", "end", "strand", "animal", "count"]
     ]
 
@@ -1456,8 +1455,10 @@ def test_count_overlaps():
         ),
     )
 
-    assert (counts_nans['count'].values == counts_nans_inserted_after['count'].fillna(0).values).all()
-
+    assert (
+        counts_nans["count"].values
+        == counts_nans_inserted_after["count"].fillna(0).values
+    ).all()
 
 
 def test_pair_by_distance():
@@ -1643,6 +1644,27 @@ def test_assign_view():
         ),
     )
 
+    ### assign_view with NA values assigns a view of none
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            [pd.NA, pd.NA, pd.NA, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(
+        df, bioframe.assign_view(df, view_df, view_name_col="fruit").iloc[:, :-1]
+    )
+
+    assert (
+        bioframe.assign_view(df, view_df, view_name_col="fruit")["view_region"].values
+        == np.array(["apples", "oranges", None, "oranges", None], dtype=object)
+    ).all()
+
 
 def test_sort_bedframe():
 
@@ -1713,3 +1735,25 @@ def test_sort_bedframe():
         view_name_col="fruit",
         infer_assignment=False,
     )
+
+    ### sort_bedframe with NA entries:
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            [pd.NA, pd.NA, pd.NA, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    # NA put at end
+    assert pd.isna(bioframe.sort_bedframe(df)["chrom"].values[-1])
+    assert pd.isna(
+        bioframe.sort_bedframe(df, view_df, view_name_col="fruit")["chrom"].values[-1]
+    )
+    assert (
+        df.dtypes
+        == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes[:-1]
+    ).all()
