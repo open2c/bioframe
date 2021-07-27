@@ -825,12 +825,15 @@ def test_complement():
             "end": pd.Int64Dtype(),
         }
     )
+
     pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
 
     with pytest.raises(ValueError):  # no NAs allowed in chromsizes
         bioframe.complement(
             df1, [("chr1", pd.NA, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
         )
+
+    assert checks.is_bedframe(bioframe.complement(df1, chromsizes))
 
 
 def test_closest():
@@ -1286,15 +1289,18 @@ def test_setdiff():
         columns=cols2 + ["strand", "animal"],
     )
 
-    assert len(
-        bioframe.setdiff(
-            df1,
-            df2,
-            cols1=cols1,
-            cols2=cols2,
-            on=None,
+    assert (
+        len(
+            bioframe.setdiff(
+                df1,
+                df2,
+                cols1=cols1,
+                cols2=cols2,
+                on=None,
+            )
         )
-    ) == 0   # everything overlaps
+        == 0
+    )  # everything overlaps
 
     assert (
         len(
@@ -1323,16 +1329,31 @@ def test_setdiff():
     )  # one overlaps, two remain
 
     # setdiff should ignore nan rows
-    df1 = pd.concat([pd.DataFrame([pd.NA]),df1,pd.DataFrame([pd.NA])])[['chrom1','start','end','strand','animal']]
-    df1 = df1.astype({'start':pd.Int64Dtype(),
-         'end':pd.Int64Dtype(),})
-    df2 = pd.concat([pd.DataFrame([pd.NA]),df2,pd.DataFrame([pd.NA])])[['chrom2','start','end','strand','animal']]
-    df2 = df2.astype({'start':pd.Int64Dtype(),
-         'end':pd.Int64Dtype(),})
+    df1 = pd.concat([pd.DataFrame([pd.NA]), df1, pd.DataFrame([pd.NA])])[
+        ["chrom1", "start", "end", "strand", "animal"]
+    ]
+    df1 = df1.astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )
+    df2 = pd.concat([pd.DataFrame([pd.NA]), df2, pd.DataFrame([pd.NA])])[
+        ["chrom2", "start", "end", "strand", "animal"]
+    ]
+    df2 = df2.astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )
 
-    assert (2,5)==np.shape(bioframe.setdiff(df1,df1,cols1=cols1,cols2=cols1))
-    assert (2,5)==np.shape(bioframe.setdiff(df1,df2,cols1=cols1,cols2=cols2))
-    assert (4,5)==np.shape(bioframe.setdiff(df1,df2,on=['strand'],cols1=cols1,cols2=cols2))
+    assert (2, 5) == np.shape(bioframe.setdiff(df1, df1, cols1=cols1, cols2=cols1))
+    assert (2, 5) == np.shape(bioframe.setdiff(df1, df2, cols1=cols1, cols2=cols2))
+    assert (4, 5) == np.shape(
+        bioframe.setdiff(df1, df2, on=["strand"], cols1=cols1, cols2=cols2)
+    )
+
 
 def test_count_overlaps():
     df1 = pd.DataFrame(
@@ -1386,6 +1407,57 @@ def test_count_overlaps():
         )["count"].values
         == np.array([0, 0, 0])
     ).all()
+
+    # overlaps with pd.NA
+    counts_no_nans = bioframe.count_overlaps(
+        df1,
+        df2,
+        on=None,
+        cols1=("chrom1", "start", "end"),
+        cols2=("chrom2", "start2", "end2"),
+    )
+
+    df1_na = (pd.concat([pd.DataFrame([pd.NA]), df1, pd.DataFrame([pd.NA])])).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )[["chrom1", "start", "end", "strand", "animal"]]
+    df2_na = (pd.concat([pd.DataFrame([pd.NA]), df2, pd.DataFrame([pd.NA])])).astype(
+        {
+            "start2": pd.Int64Dtype(),
+            "end2": pd.Int64Dtype(),
+        }
+    )[["chrom2", "start2", "end2", "strand", "animal"]]
+
+    counts_nans_inserted_after = (
+        pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+    })[
+        ["chrom1", "start", "end", "strand", "animal", "count"]
+    ]
+
+    counts_nans = bioframe.count_overlaps(
+        df1_na,
+        df2_na,
+        on=None,
+        cols1=("chrom1", "start", "end"),
+        cols2=("chrom2", "start2", "end2"),
+    )
+
+    pd.testing.assert_frame_equal(
+        counts_nans,
+        bioframe.count_overlaps(
+            df1_na,
+            df2,
+            on=None,
+            cols1=("chrom1", "start", "end"),
+            cols2=("chrom2", "start2", "end2"),
+        ),
+    )
+
+    assert (counts_nans['count'].values == counts_nans_inserted_after['count'].fillna(0).values).all()
+
 
 
 def test_pair_by_distance():

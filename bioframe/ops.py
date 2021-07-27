@@ -1288,7 +1288,13 @@ def count_overlaps(
     -------
     df_counts : pandas.DataFrame
 
+    Notes
+    -------
+    Resets index.
+
     """
+
+    df1.reset_index(inplace=True, drop=True)
 
     df_counts = overlap(
         df1,
@@ -1537,6 +1543,10 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
     -------
     df_complement : pandas.DataFrame
 
+    Notes
+    ------
+    Discards null intervals in input, and df_complement has regular int dtype.
+
     """
 
     ### TODO add on=, so can do strand-specific complements...
@@ -1551,8 +1561,8 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
         view_df, view_name_col=view_name_col, cols=cols
     )
 
-    # associate intervals to region, required to enable single interval from df to
-    # overlap multiple intervals in view_df.
+    # associate intervals to regions, required to enable single interval from df to
+    # overlap multiple intervals in view_df. note this differs from the goal of assign_view.
     new_intervals = overlap(
         view_df,
         df,
@@ -1602,8 +1612,8 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
         df_group = df.loc[df_group_idxs]
 
         (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
-            df_group[sk].values,
-            df_group[ek].values,
+            df_group[sk].values.astype(int),
+            df_group[ek].values.astype(int),
             bounds=(region_start, region_end),
         )
 
