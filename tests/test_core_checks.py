@@ -348,9 +348,8 @@ def test_is_sorted():
     assert not is_sorted(df)
 
     bfs = sort_bedframe(
-        df, view_df=view_df, view_name_col="fruit", infer_assignment=True
-    )
-
+        df, view_df=view_df, view_name_col="fruit")
+    
     assert is_sorted(bfs, view_df=view_df, view_name_col="fruit")
 
     # view_df specifies a different ordering, so should not be sorted

@@ -1451,7 +1451,7 @@ def trim(
     df_view_col : str or None
         The column of 'df' used to specify view regions.
         The associated region in 'view_df' is then used for trimming.
-        If None, 'assign_view' will be used to assign view regions.
+        If None, :func:'bioframe.ops.assign_view' will be used to assign view regions.
         If no 'view_df' is provided, uses the 'chrom' column, df[cols[0]].
         Default None.
 
@@ -1654,19 +1654,20 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
 def sort_bedframe(
     df,
     view_df=None,
-    infer_assignment=True,
     reset_index=True,
-    df_view_col="view_region",
+    df_view_col=None,
     view_name_col="name",
     cols=None,
 ):
     """
     Sorts a bedframe 'df'.
 
-    If no viewFrame, 'view_df', is provided, sorts by ``cols``.
-    If view_df is provided, sorts df[df_view_col] by view_df[view_name_col].
-    If view_df is provided but a column matching df_view_col is not in df, attempts
-    to assign interavls to the view region with the largest overlap and then sorts.
+    If 'view_df' is not provided, sorts by ``cols`` (e.g. "chrom", "start", "end").
+    If 'view_df' is provided and 'df_view_col' is not provided, uses 
+    :func:`bioframe.ops.assign_view` with ``df_view_col='view_region'`` 
+    to assign intervals to the view regions with the largest overlap and then sorts.
+    If 'view_df' and 'df_view_col' are both provided, checks if the latter
+    are cataloged in 'view_name_col', and then sorts.
 
     df : pandas.DataFrame
         Valid bedframe.
@@ -1674,16 +1675,14 @@ def sort_bedframe(
     view_df : pandas.DataFrame
         Valid input to make a viewframe.
 
-    infer_assignment : bool
-        If True, tries to assign df intervals to the view region with the largest overlap.
-        Default True.
-
     reset_index : bool
         Default True.
 
     df_view_col:
-        Column from df used to associate interviews with view regions.
-        Default `view_region`.
+        Column from 'df' used to associate intervals with view regions.
+        The associated region in 'view_df' is then used for sorting.
+        If None, :func:'bioframe.ops.assign_view' will be used to assign view regions.
+        Default None.
 
     view_name_col:
         Column from view_df with names of regions.
@@ -1712,9 +1711,10 @@ def sort_bedframe(
             view_df, view_name_col=view_name_col, cols=cols
         )
 
-        if infer_assignment and (
-            not _verify_columns(out_df, [df_view_col], return_as_bool=True)
-        ):
+        if df_view_col is None:
+            if _verify_columns(out_df, ["view_region"], return_as_bool=True):
+                raise ValueError("column view_region already exists in input df")
+            df_view_col = "view_region"
             out_df = assign_view(
                 out_df,
                 view_df,
@@ -1723,18 +1723,18 @@ def sort_bedframe(
                 cols=cols,
             )
 
-        if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
-            raise ValueError("no df_view_col not present in df, cannot sort by view")
-
-        if not checks.is_cataloged(
-            out_df[pd.isna(out_df[df_view_col].values) == False],
-            view_df,
-            df_view_col=df_view_col,
-            view_name_col=view_name_col,
-        ):
-            raise ValueError(
-                "intervals in df not cataloged in view_df, cannot sort by view"
-            )
+        else:
+            if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
+                raise ValueError("column 'df_view_col' not in input df, cannot sort by view")
+            if not checks.is_cataloged(
+                out_df[pd.isna(out_df[df_view_col].values) == False],
+                view_df,
+                df_view_col=df_view_col,
+                view_name_col=view_name_col,
+            ):
+                raise ValueError(
+                    "intervals in df not cataloged in view_df, cannot sort by view"
+                )
 
         view_cat = pd.CategoricalDtype(
             categories=view_df[view_name_col].values, ordered=True

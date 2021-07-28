@@ -412,7 +412,6 @@ def is_tiling(
 def is_sorted(
     df,
     view_df=None,
-    infer_assignment=True,
     reset_index=True,
     df_view_col="view_region",
     view_name_col="name",
@@ -454,7 +453,6 @@ def is_sorted(
     df_sorted = sort_bedframe(
         df.copy(),
         view_df=view_df,
-        infer_assignment=infer_assignment,
         reset_index=reset_index,
         df_view_col=df_view_col,
         view_name_col=view_name_col,

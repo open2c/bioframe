@@ -1742,7 +1742,7 @@ def test_sort_bedframe():
         columns=["chrom", "start", "end", "strand"],
     )
 
-    ### sorting just by chrom,start,end
+    # sorting just by chrom,start,end
     df_sorted = pd.DataFrame(
         [
             ["chr1", 0, 10, "+"],
@@ -1755,7 +1755,8 @@ def test_sort_bedframe():
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
 
-    ### drops unassigned chromosomes when infer_assignment is true
+    # when a view_df is provided, regions without assigned views 
+    # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
         [
             ["chrX", 0, 5, "+", "oranges"],
@@ -1781,14 +1782,14 @@ def test_sort_bedframe():
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
 
-    ### chr2 is not in the view, so if infer_assignment=False this should raise a ValueError
+    ### 'df' has no column 'view_region', so this should raise a ValueError
     assert pytest.raises(
         ValueError,
         bioframe.sort_bedframe,
         df,
         view_df,
         view_name_col="fruit",
-        infer_assignment=False,
+        df_view_col='view_region'
     )
 
     ### sort_bedframe with NA entries:
