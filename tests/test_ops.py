@@ -160,7 +160,12 @@ def test_trim():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
+    with pytest.raises(ValueError):
+        bioframe.trim(df, view_df=view_df)
+    # df_view_col already exists, so need to specify it:
+    pd.testing.assert_frame_equal(
+        df_trimmed, bioframe.trim(df, view_df=view_df, df_view_col="view_region")
+    )
 
     ### trim with view_df interpreted from dictionary for chromsizes
     chromsizes = {"chr1": 20, "chrX_0": 5}
@@ -233,29 +238,35 @@ def test_trim():
         [
             ["chr1", 0, 12, "chr1p"],
             ["chr1", 13, 26, "chr1q"],
-            ["chrX", 1, 8, "chrX_0"],
+            ["chrX", 1, 12, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "name"],
     )
     df = pd.DataFrame(
         [
-            ["chr1", -6, 12, "chr1p"],
-            ["chr1", 0, 12, "chr1p"],
-            [pd.NA, pd.NA, pd.NA, pd.NA],
-            ["chrX", 1, 8, "chrX_0"],
+            ["chr1", -6, 12],
+            ["chr1", 0, 12],
+            [pd.NA, pd.NA, pd.NA],
+            ["chrX", 1, 20],
         ],
-        columns=["chrom", "start", "end", "view_region"],
+        columns=["chrom", "start", "end"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     df_trimmed = pd.DataFrame(
         [
             ["chr1", 0, 12, "chr1p"],
             ["chr1", 0, 12, "chr1p"],
             [pd.NA, pd.NA, pd.NA, pd.NA],
-            ["chrX", 1, 8, "chrX_0"],
+            ["chrX", 1, 12, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
+    # infer df_view_col with assign_view and ignore NAs
+    pd.testing.assert_frame_equal(
+        df_trimmed,
+        bioframe.trim(df, view_df=view_df, df_view_col=None, return_view_columns=True)[
+            ["chrom", "start", "end", "view_region"]
+        ],
+    )
 
 
 def test_expand():
@@ -1006,8 +1017,6 @@ def test_coverage():
     d = """chrom    start   end coverage
          0  chr1    3   8   5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    print(df)
-    print(bioframe.coverage(df1, df2))
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
     ### coverage of interval on different chrom returns zero for coverage and n_overlaps
@@ -1023,11 +1032,46 @@ def test_coverage():
     df2 = pd.DataFrame(
         [["chr1", 3, 6], ["chr1", 5, 8]], columns=["chrom", "start", "end"]
     )
-
     d = """chrom    start   end coverage
          0  chr1     3       8     5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+
+    ### coverage of NA interval returns zero for coverage
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 10, 20],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 3, 8],
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    df2 = pd.DataFrame(
+        [["chr1", 3, 6], ["chr1", 5, 8], [pd.NA, pd.NA, pd.NA]],
+        columns=["chrom", "start", "end"],
+    )
+    df1 = bioframe.sanitize_bedframe(df1)
+    df2 = bioframe.sanitize_bedframe(df2)
+
+    df_coverage = pd.DataFrame(
+        [
+            ["chr1", 10, 20, 0],
+            [pd.NA, pd.NA, pd.NA, 0],
+            ["chr1", 3, 8, 5],
+            [pd.NA, pd.NA, pd.NA, 0],
+        ],
+        columns=["chrom", "start", "end", "coverage"],
+    ).astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), "coverage": pd.Int64Dtype()}
+    )
+    pd.testing.assert_frame_equal(df_coverage, bioframe.coverage(df1, df2))
+
+    ### coverage without return_input returns a single column dataFrame
+    assert (
+        bioframe.coverage(df1, df2, return_input=False)["coverage"].values
+        == np.array([0, 0, 5, 0])
+    ).all()
 
 
 def test_subtract():
@@ -1459,6 +1503,17 @@ def test_count_overlaps():
         counts_nans["count"].values
         == counts_nans_inserted_after["count"].fillna(0).values
     ).all()
+
+    ### coverage without return_input returns a single column dataFrame
+    pd.testing.assert_frame_equal(
+        bioframe.count_overlaps(
+            df1_na,
+            df2_na,
+            cols1=("chrom1", "start", "end"),
+            cols2=("chrom2", "start2", "end2"),
+            return_input=False,
+        )
+        , pd.DataFrame(counts_nans["count"]))
 
 
 def test_pair_by_distance():

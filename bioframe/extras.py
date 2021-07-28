@@ -97,7 +97,6 @@ def make_chromarms(
         cols1=(ck1, sk1, ek1),
         cols2=(ck2, "start", "end"),
         return_index=True,
-        keep_order=True,
     )
     if df_chromarms["sub_index_"].max() > 1:
         raise ValueError(

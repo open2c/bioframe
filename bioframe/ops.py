@@ -101,6 +101,11 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     Returns
     -------
     df_expanded : pandas.DataFrame
+
+    Notes
+    -----
+    See :func:`bioframe.trim` for trimming interals after expansion.
+
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
@@ -310,7 +315,7 @@ def overlap(
 
     return_index : bool
         If True, return indicies of overlapping pairs as two new columns
-        (`index`+suffixes[0] and `index`+suffixes[1]). Default False.
+        ('index'+suffixes[0] and 'index'+suffixes[1]). Default False.
 
     return_overlap : bool
         If True, return overlapping intervals for the overlapping pairs
@@ -322,7 +327,7 @@ def overlap(
     keep_order : bool, optional
         If True and how='left', sort the output dataframe to preserve the order
         of the intervals in df1. Cannot be used with how='right'/'outer'/'inner'.
-        Default True for how='left'.
+        Default True for how='left', and None otherwise.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -733,7 +738,6 @@ def merge(df, min_dist=0, cols=None, on=None):
 def coverage(
     df1,
     df2,
-    keep_order=True,
     suffixes=("", "_"),
     return_input=True,
     cols1=None,
@@ -743,8 +747,8 @@ def coverage(
     Quantify the coverage of intervals from 'df1' by intervals from 'df2'.
 
     For every interval in 'df1' find the number of base pairs covered by intervals in 'df2'.
-    Note this only quantifies whether a basepair in 'df1' was covered, not the number
-    of intervals in 'df2' that cover it.
+    Note this only quantifies whether a basepair in 'df1' was covered, as 'df2' is merged
+    before calculating coverage.
 
     Parameters
     ----------
@@ -753,10 +757,6 @@ def coverage(
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
-
-    keep_order : bool, optional
-        Sort the output dataframe to preserve the order of the intervals in
-        the input dataframes. Disable to increase performance.
 
     return_input : bool
         If True, return input as well as computed coverage
@@ -770,40 +770,38 @@ def coverage(
     -------
     df_coverage : pandas.DataFrame
 
+    Notes
+    ------
+    Resets index.
+
     """
 
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
 
+    df1.reset_index(inplace=True, drop=True)
+
     df2_merged = merge(df2, cols=cols2)
 
-    overlap_idxs = overlap(
+    df_overlap = overlap(
         df1,
         df2_merged,
         how="left",
         suffixes=suffixes,
-        keep_order=keep_order,
+        keep_order=True,
         return_index=True,
         return_overlap=True,
         cols1=cols1,
         cols2=cols2,
     )
 
-    overlap_idxs["overlap"] = (
-        overlap_idxs["overlap_end"] - overlap_idxs["overlap_start"]
-    )
+    df_overlap["overlap"] = df_overlap["overlap_end"] - df_overlap["overlap_start"]
 
-    coverage_sparse_df = overlap_idxs.groupby("index" + suffixes[0]).agg(
-        {"overlap": "sum"}
-    )
-
-    out_df = {}
-    out_df["coverage"] = (
-        pd.Series(np.zeros_like(df1[sk1]), index=df1.index)
-        .add(coverage_sparse_df["overlap"], fill_value=0)
+    out_df = pd.DataFrame(
+        df_overlap.groupby("index" + suffixes[0])
+        .agg({"overlap": "sum"})["overlap"]
         .astype(df1[sk1].dtype)
-    )
-    out_df = pd.DataFrame(out_df)
+    ).rename(columns={"overlap":"coverage"}).reset_index(drop=True)
 
     if return_input:
         out_df = pd.concat([df1, out_df], axis="columns")
@@ -1129,7 +1127,6 @@ def subtract(
     df1,
     df2,
     return_index=False,
-    keep_order=True,
     suffixes=("", "_"),
     cols1=None,
     cols2=None,
@@ -1146,6 +1143,10 @@ def subtract(
         Whether to return the indices of the original intervals ('index'+suffixes[0]),
         and the indices of any sub-intervals split by subtraction ('sub_index'+suffixes[1]).
         Default False.
+
+    suffixes : (str,str)
+        Suffixes for returned indices. Only alters output if return_index is True.
+        Default ("","_").
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -1180,7 +1181,8 @@ def subtract(
     all_chroms = np.unique(
         list(pd.unique(df1[ck1].dropna())) + list(pd.unique(df2[ck2].dropna()))
     )
-    if len(all_chroms)==0: raise ValueError('No chromosomes remain after dropping nulls')
+    if len(all_chroms) == 0:
+        raise ValueError("No chromosomes remain after dropping nulls")
 
     df_subtracted = overlap(
         df1,
@@ -1191,7 +1193,7 @@ def subtract(
         suffixes=suffixes,
         return_index=return_index,
         return_overlap=True,
-        keep_order=keep_order,
+        keep_order=True,
         cols1=cols1,
         cols2=cols2,
     )[list(name_updates)]
@@ -1249,7 +1251,7 @@ def count_overlaps(
     df1,
     df2,
     suffixes=("", "_"),
-    keep_order=True,
+    return_input=True,
     cols1=None,
     cols2=None,
     on=None,
@@ -1262,17 +1264,11 @@ def count_overlaps(
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
 
-    how : {'left', 'right', 'outer', 'inner'}, default 'left'
-
-    return_input : bool
-        If True, return columns from input dfs. Default True.
-
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
 
-    keep_order : bool, optional
-        Sort the output dataframe to preserve the order of the intervals in
-        the input dataframes. Disable to increase performance.
+    return_input : bool
+        If True, return columns from input dfs. Default True.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -1301,28 +1297,24 @@ def count_overlaps(
         df2,
         how="left",
         return_input=False,
-        keep_order=keep_order,
+        keep_order=True,
         suffixes=suffixes,
         return_index=True,
         on=on,
         cols1=cols1,
         cols2=cols2,
     )
-    df_counts = pd.concat(
-        [
-            df1,
-            pd.DataFrame(
-                df_counts.groupby(["index" + suffixes[0]])["index" + suffixes[1]]
-                .count()
-                .values,
-                columns=["count"],
-            ),
-        ],
-        axis=1,
-        names=["count"],
+
+    out_df = pd.DataFrame(
+        df_counts.groupby(["index" + suffixes[0]])["index" + suffixes[1]]
+        .count()
+        .values,
+        columns=["count"],
     )
 
-    return df_counts
+    if return_input:
+        out_df = pd.concat([df1, out_df], axis="columns")
+    return out_df
 
 
 def pair_by_distance(
@@ -1435,13 +1427,15 @@ def pair_by_distance(
 def trim(
     df,
     view_df=None,
-    df_view_col="view_region",
+    df_view_col=None,
     view_name_col="name",
     return_view_columns=False,
     cols=None,
 ):
     """
     Trim each interval to fall within regions specified in the viewframe 'view_df'.
+
+    Intervals that fall outside of view regions are replaced with nulls.
 
     Parameters
     ----------
@@ -1454,11 +1448,12 @@ def trim(
         If no view_df is provided, intervals are truncated at zero to avoid
         negative values.
 
-    df_view_col : str
-        The column of df used to specify view regions.
-        The associated region in view_df is then used for trimming.
-        If no view_df is provided, uses the chrom column, df[cols[0]].
-        Default "view_region".
+    df_view_col : str or None
+        The column of 'df' used to specify view regions.
+        The associated region in 'view_df' is then used for trimming.
+        If None, 'assign_view' will be used to assign view regions.
+        If no 'view_df' is provided, uses the 'chrom' column, df[cols[0]].
+        Default None.
 
     view_name_col : str
         Column of df with region names. Default 'name'.
@@ -1475,7 +1470,9 @@ def trim(
     """
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    df_columns = df.columns
+    _verify_columns(df, [ck, sk, ek])
+    df_columns = list(df.columns)
+    df_trimmed = df.copy()
 
     if view_df is None:
         df_view_col = ck
@@ -1484,21 +1481,34 @@ def trim(
             for i in set(df[df_view_col].copy().dropna().values)
         }
 
-    _verify_columns(df, [ck, sk, ek])
-    _verify_columns(df, [df_view_col])
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=cols
     )
 
-    checks.is_cataloged(
-        df,
-        view_df,
-        raise_errors=True,
-        df_view_col=df_view_col,
-        view_name_col=view_name_col,
-    )
+    if df_view_col is None:
+        if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
+            raise ValueError("column view_region already exists in input df")
 
-    df_trimmed = df.copy()
+        df_trimmed = assign_view(
+            df_trimmed,
+            view_df,
+            drop_unassigned=False,
+            df_view_col="view_region",
+            view_name_col="name",
+            cols=None,
+        )
+        df_view_col = "view_region"
+        df_columns.append(df_view_col)
+    else:
+        _verify_columns(df_trimmed, [df_view_col])
+        checks.is_cataloged(
+            df_trimmed,
+            view_df,
+            raise_errors=True,
+            df_view_col=df_view_col,
+            view_name_col=view_name_col,
+        )
+
     df_trimmed = df_trimmed.merge(
         view_df,
         how="left",
@@ -1506,6 +1516,11 @@ def trim(
         right_on=view_name_col,
         suffixes=("", "_view"),
     )
+
+    unassigned_intervals = pd.isnull(df_trimmed[df_view_col].values)
+    if unassigned_intervals.any():
+        df_trimmed.loc[unassigned_intervals, [ck, sk, ek]] = pd.NA
+        df_trimmed.astype({sk: pd.Int64Dtype(), ek: pd.Int64Dtype()})
 
     lower_vector = df_trimmed[sk + "_view"].values
     upper_vector = df_trimmed[ek + "_view"].values

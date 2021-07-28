@@ -258,7 +258,7 @@ class EncodeClient:
                 self._meta["File assembly"].dropna().unique().tolist()
             )
 
-            if table_assemblies != self.KNOWN_ASSEMBLIES:
+            if not set(table_assemblies).issubset( set( self.KNOWN_ASSEMBLIES)):
                 raise ValueError(
                     "Table assemblies do not match known assemblies, "
                     "check ENCODE metadata version"
