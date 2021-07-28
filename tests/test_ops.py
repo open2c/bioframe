@@ -1512,97 +1512,9 @@ def test_count_overlaps():
             cols1=("chrom1", "start", "end"),
             cols2=("chrom2", "start2", "end2"),
             return_input=False,
-        )
-        , pd.DataFrame(counts_nans["count"]))
-
-
-def test_pair_by_distance():
-    df = pd.DataFrame(
-        [
-            ["chr1", 1, 3, "+", "cat"],
-            ["chr1", 6, 8, "+", "skunk"],
-            ["chr1", 9, 11, "-", "dog"],
-        ],
-        columns=["chrom", "start", "end", "strand", "animal"],
+        ),
+        pd.DataFrame(counts_nans["count"]),
     )
-
-    # Distance between midpoints, from_ends=False
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[6, 8, 9, 11]])
-    ).all()
-
-    # Distance between regions ends, from_ends=True
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=True,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8]])
-    ).all()
-
-    # Distance between midpoints is large
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=6,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
-    ).all()
-
-    # Distance between midpoints is large
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [1, 3, 9, 11], [6, 8, 9, 11]])
-    ).all()
-
-    # Do not allow interjacent regions
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=None,
-            max_interjacent=0,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
-    ).all()
-
-    # Strictly one interjacent region
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=1,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 9, 11]])
-    ).all()
 
 
 def test_assign_view():
@@ -1755,7 +1667,7 @@ def test_sort_bedframe():
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
 
-    # when a view_df is provided, regions without assigned views 
+    # when a view_df is provided, regions without assigned views
     # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
         [
@@ -1789,7 +1701,7 @@ def test_sort_bedframe():
         df,
         view_df,
         view_name_col="fruit",
-        df_view_col='view_region'
+        df_view_col="view_region",
     )
 
     ### sort_bedframe with NA entries:

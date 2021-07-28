@@ -797,11 +797,15 @@ def coverage(
 
     df_overlap["overlap"] = df_overlap["overlap_end"] - df_overlap["overlap_start"]
 
-    out_df = pd.DataFrame(
-        df_overlap.groupby("index" + suffixes[0])
-        .agg({"overlap": "sum"})["overlap"]
-        .astype(df1[sk1].dtype)
-    ).rename(columns={"overlap":"coverage"}).reset_index(drop=True)
+    out_df = (
+        pd.DataFrame(
+            df_overlap.groupby("index" + suffixes[0])
+            .agg({"overlap": "sum"})["overlap"]
+            .astype(df1[sk1].dtype)
+        )
+        .rename(columns={"overlap": "coverage"})
+        .reset_index(drop=True)
+    )
 
     if return_input:
         out_df = pd.concat([df1, out_df], axis="columns")
@@ -1663,8 +1667,8 @@ def sort_bedframe(
     Sorts a bedframe 'df'.
 
     If 'view_df' is not provided, sorts by ``cols`` (e.g. "chrom", "start", "end").
-    If 'view_df' is provided and 'df_view_col' is not provided, uses 
-    :func:`bioframe.ops.assign_view` with ``df_view_col='view_region'`` 
+    If 'view_df' is provided and 'df_view_col' is not provided, uses
+    :func:`bioframe.ops.assign_view` with ``df_view_col='view_region'``
     to assign intervals to the view regions with the largest overlap and then sorts.
     If 'view_df' and 'df_view_col' are both provided, checks if the latter
     are cataloged in 'view_name_col', and then sorts.
@@ -1725,7 +1729,9 @@ def sort_bedframe(
 
         else:
             if not _verify_columns(out_df, [df_view_col], return_as_bool=True):
-                raise ValueError("column 'df_view_col' not in input df, cannot sort by view")
+                raise ValueError(
+                    "column 'df_view_col' not in input df, cannot sort by view"
+                )
             if not checks.is_cataloged(
                 out_df[pd.isna(out_df[df_view_col].values) == False],
                 view_df,

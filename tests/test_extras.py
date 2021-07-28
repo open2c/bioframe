@@ -9,8 +9,6 @@ import bioframe
 
 testdir = op.realpath(op.dirname(__file__))
 
-### todo: test make_chromarms(chromsizes, mids, binsize=None, suffixes=("p", "q")):
-
 
 def test_make_chromarms():
 
@@ -166,3 +164,103 @@ def test_frac_gc():
 
 ### todo: test frac_gene_coverage(bintable, mrna):
 ### currently broken
+
+
+def test_pair_by_distance():
+    df = pd.DataFrame(
+        [
+            ["chr1", 1, 3, "+", "cat"],
+            ["chr1", 6, 8, "+", "skunk"],
+            ["chr1", 9, 11, "-", "dog"],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    )
+
+    # Distance between midpoints
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=4,
+            min_interjacent=None,
+            max_interjacent=None,
+            relative_to="midpoints",
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[6, 8, 9, 11]])
+    ).all()
+
+    # Distance between regions endpoints
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=4,
+            min_interjacent=None,
+            max_interjacent=None,
+            relative_to="endpoints",
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8]])
+    ).all()
+
+    # Distance between midpoints is large
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=6,
+            min_interjacent=None,
+            max_interjacent=None,
+            relative_to="midpoints",
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
+    ).all()
+
+    # Distance between midpoints is large
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=None,
+            max_interjacent=None,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [1, 3, 9, 11], [6, 8, 9, 11]])
+    ).all()
+
+    # Do not allow interjacent regions
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=None,
+            max_interjacent=0,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
+    ).all()
+
+    # Strictly one interjacent region
+    assert (
+        bioframe.pair_by_distance(
+            df,
+            min_sep=1,
+            max_sep=9,
+            min_interjacent=1,
+            max_interjacent=None,
+        )[["start_1", "end_1", "start_2", "end_2"]].values
+        == np.array([[1, 3, 9, 11]])
+    ).all()
+
+    # no negative min_sep
+    with pytest.raises(ValueError):
+        bioframe.pair_by_distance(df, min_sep=-1, max_sep=9)    
+
+    # no min_sep > max_sep
+    with pytest.raises(ValueError):
+        bioframe.pair_by_distance(df, min_sep=12, max_sep=9)
+
+    # no min_interjacent > max_interjacent
+    with pytest.raises(ValueError):
+        bioframe.pair_by_distance(
+            df, min_sep=0, max_sep=9, min_interjacent=10, max_interjacent=9
+        )
