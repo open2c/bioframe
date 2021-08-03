@@ -1662,6 +1662,7 @@ def sort_bedframe(
     reset_index=True,
     df_view_col="view_region",
     view_name_col="name",
+    natsort = False,
     cols=None,
 ):
     """
@@ -1688,11 +1689,15 @@ def sort_bedframe(
     df_view_col:
         Column from df used to associate interviews with view regions.
         Default `view_region`.
-
+    
     view_name_col:
         Column from view_df with names of regions.
         Default `name`.
-
+    
+    natsort: bool
+        Return in natural sort
+        Default False.
+        
     Returns
     -------
     out_df : sorted bedframe
@@ -1709,7 +1714,13 @@ def sort_bedframe(
 
     out_df = df.copy()
     if view_df is None:
-        out_df.sort_values([ck1, sk1, ek1], inplace=True)
+        
+        if natsort:
+            region_name = out_df.loc[:, ck1] +':'+out_df.loc[:, sk1].astype(str) + '-'+out_df.loc[:, ek1].astype(str)
+            out_df = out_df.iloc[arrops.argnatsort(region_name)]
+            
+        else:
+            out_df.sort_values([ck1, sk1, ek1], inplace=True)
 
     else:
         view_df = construction.make_viewframe(
