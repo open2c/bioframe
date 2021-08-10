@@ -54,6 +54,10 @@ def make_chromarms(
 
     """
     columns_to_drop = ["index", "sub_index_"]
+    if len(cols_chroms) == 2:
+        ck1, sk1 = cols_chroms
+    elif len(cols_chroms) == 3:
+        ck1, sk1, ek1 = cols_chroms
 
     if isinstance(chromsizes, pd.Series):
         df_chroms = (
@@ -65,7 +69,6 @@ def make_chromarms(
         raise ValueError("unknown input type for chromsizes")
 
     if len(cols_chroms) == 2:
-        ck1, sk1 = cols_chroms
         _verify_columns(df_chroms, [ck1, sk1])
         columns_to_drop += [sk1]
         df_chroms["end"] = df_chroms[sk1].values
@@ -106,8 +109,8 @@ def make_chromarms(
     df_chromarms["name"] = df_chromarms[ck1] + [
         suffixes[i] for i in df_chromarms["sub_index_"].values
     ]
-    df_chromarms.drop(columns=columns_to_drop, inplace=True)
-    return df_chromarms
+    #df_chromarms.drop(columns=columns_to_drop, inplace=True)
+    return df_chromarms[[ck1, sk1, ek1, 'name']]
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
