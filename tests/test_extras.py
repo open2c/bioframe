@@ -28,6 +28,7 @@ def test_make_chromarms():
         columns=["chromosome", "lo", "hi", "name"],
     )
 
+    # test passing 3 columns
     pd.testing.assert_frame_equal(
         df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}),
         bioframe.make_chromarms(
@@ -37,6 +38,20 @@ def test_make_chromarms():
             cols_mids=["chromosome", "loc"],
         ),
     )
+
+    # test passing 2 columns
+    pd.testing.assert_frame_equal(
+        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}).rename(columns={"lo":"start","hi":"end"}),
+        bioframe.make_chromarms(
+            df1,
+            df2,
+            cols_chroms=["chromosome", "hi"],
+            cols_mids=["chromosome", "loc"],
+        ),
+    )
+
+    # todo: test for passing pd.series !
+
 
 
 def test_binnify():

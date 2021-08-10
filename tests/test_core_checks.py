@@ -71,7 +71,10 @@ def test_is_contained():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    assert not is_contained(df, view_df)
+    assert not is_contained(df, view_df, df_view_col="name")
+
+    ### is contained because passing df_view_col=None infers view assignment
+    assert is_contained(df, view_df, df_view_col=None)
 
     ### not contained because first two intervals fall outside the view regions
     df = pd.DataFrame(

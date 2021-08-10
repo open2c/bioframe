@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from . import construction
 from .specs import _get_default_colnames, _verify_columns, _verify_column_dtypes
+from .. import ops
 
 __all__ = [
     "is_bedframe",
@@ -247,7 +248,7 @@ def is_contained(
     df,
     view_df,
     raise_errors=False,
-    df_view_col="view_region",
+    df_view_col=None,
     view_name_col="name",
     cols=None,
 ):
@@ -281,6 +282,18 @@ def is_contained(
     from ..ops import trim
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+
+    if df_view_col is None:
+        try:
+            df_view_assigned = ops.overlap(df, view_df)
+            assert (df_view_assigned["end"]<=df_view_assigned["end_"]).all()
+            assert (df_view_assigned["start"]>=df_view_assigned["start_"]).all()
+        except AssertionError:
+            if raise_errors:
+                raise AssertionError("df not contained in view_df")
+            else:
+                return False
+        return True 
 
     if not is_cataloged(
         df, view_df, df_view_col=df_view_col, view_name_col=view_name_col
