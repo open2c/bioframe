@@ -1439,7 +1439,9 @@ def trim(
     """
     Trim each interval to fall within regions specified in the viewframe 'view_df'.
 
-    Intervals that fall outside of view regions are replaced with nulls.
+    Intervals that fall outside of view regions are replaced with nulls. 
+    If no 'view_df' is provided, intervals are truncated at zero to avoid
+        negative values.
 
     Parameters
     ----------
@@ -1448,9 +1450,6 @@ def trim(
     view_df : None or pandas.DataFrame
         View specifying region start and ends for trimming. Attepts to
         convert dictionary and pd.Series formats to viewFrames.
-
-        If no view_df is provided, intervals are truncated at zero to avoid
-        negative values.
 
     df_view_col : str or None
         The column of 'df' used to specify view regions.
@@ -1477,6 +1476,7 @@ def trim(
     _verify_columns(df, [ck, sk, ek])
     df_columns = list(df.columns)
     df_trimmed = df.copy()
+    inferred_view = False
 
     if view_df is None:
         df_view_col = ck
@@ -1484,25 +1484,28 @@ def trim(
             i: np.iinfo(np.int64).max
             for i in set(df[df_view_col].copy().dropna().values)
         }
+        inferred_view = True
 
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=cols
     )
 
-    if df_view_col is None:
+    if inferred_view:
+        print('correct')
+        pass
+    elif (df_view_col is None):
         if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
             raise ValueError("column view_region already exists in input df")
+        df_view_col = "view_region"
 
         df_trimmed = assign_view(
             df_trimmed,
             view_df,
             drop_unassigned=False,
-            df_view_col="view_region",
-            view_name_col="name",
-            cols=None,
+            df_view_col=df_view_col,
+            view_name_col=view_name_col,
+            cols=cols,
         )
-        df_view_col = "view_region"
-        df_columns.append(df_view_col)
     else:
         _verify_columns(df_trimmed, [df_view_col])
         checks.is_cataloged(
@@ -1513,6 +1516,8 @@ def trim(
             view_name_col=view_name_col,
         )
 
+    if inferred_view:
+        view_name_col = ck
     df_trimmed = df_trimmed.merge(
         view_df,
         how="left",

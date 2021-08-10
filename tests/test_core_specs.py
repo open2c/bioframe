@@ -26,10 +26,10 @@ def test_update_default_colnames():
 
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 1, "chr1"],
-            ["chr1", 10, 12, "chr1"],
-            ["chr1", 14, 100, "chr1"],
-            ["chrX", 0, 100, "chrX"],
+            ["chr1", 0, 1, "chr1:0-100"],
+            ["chr1", 10, 12, "chr1:0-100"],
+            ["chr1", 14, 100, "chr1:0-100"],
+            ["chrX", 0, 100, "chrX:0-100"],
         ],
         columns=list(new_names) + ["view_region"],
     )

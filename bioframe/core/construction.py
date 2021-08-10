@@ -16,7 +16,7 @@ __all__ = [
 ### conversions from various input formats into dataframes ###
 
 
-def from_dict(regions, name_col="name", cols=None):
+def from_dict(regions, cols=None):
     """
     Makes a dataframe from a dictionary of {str,int} pairs, interpreted as chromosome names.
 
@@ -43,25 +43,22 @@ def from_dict(regions, name_col="name", cols=None):
     data = []
     for k, v in dict(regions).items():
         chrom = k
-        name = k
         if np.isscalar(v):
             start = 0
             end = v
         else:
             raise ValueError("Unsupported dict format: {type(v)}")
-        data.append([chrom, start, end, name])
-    return pd.DataFrame(data, columns=[ck1, sk1, ek1, name_col])
+        data.append([chrom, start, end])
+    return pd.DataFrame(data, columns=[ck1, sk1, ek1])
 
 
-def from_series(regions, name_col="name", cols=None):
+def from_series(regions, cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     chroms = regions.index.values
     data = {
         ck1: chroms,
         sk1: 0,
-        ek1: regions.values,
-        name_col: regions.index.values,
-    }
+        ek1: regions.values}
     return pd.DataFrame(data)
 
 
@@ -70,7 +67,6 @@ def from_list(regions, name_col="name", cols=None):
     df = pd.DataFrame(regions)
     if df.shape[1] == 3:
         df.columns = [ck1, sk1, ek1]
-        df[name_col] = df[ck1].values.copy()
     elif df.shape[1] == 4:
         df.columns = [ck1, sk1, ek1, name_col]
     else:
@@ -78,15 +74,17 @@ def from_list(regions, name_col="name", cols=None):
     return df
 
 
-def from_ucsc_string_list(region_list, name_col="name", cols=None):
+def from_ucsc_string_list(region_list, cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     parsed = [parse_region_string(i) for i in region_list]
     df = pd.DataFrame(parsed, columns=[ck1, sk1, ek1])
-    df[name_col] = region_list
     return df
 
 
-def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", cols=None):
+def from_any(regions, 
+    fill_null=False,
+     name_col="name",
+      cols=None):
     """
     Attempts to make a genomic interval dataframe with columns [chr, start, end, name_col] from a variety of input types.
 
@@ -101,16 +99,12 @@ def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", col
             - pandas series where the index is interpreted as chromosomes and values are interpreted as end
             - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
 
-    names_as_ucsc : bool
-        replaces values in name_col with UCSC strings made from (chrom,start,end).
-        Default False.
-
     fill_null : False or dictionary
         Accepts a dictionary of {str:int} pairs, interpreted as chromosome sizes.
         Kept or backwards compatibility. Default False.
 
     name_col : str
-        Column name. Default "name".
+        Column name. Only used if 4 column list is provided. Default "name".
 
     cols : (str,str,str)
         Names for dataframe columns.
@@ -130,21 +124,21 @@ def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", col
             regions[name_col].values[0]
         ):
             out_df = from_ucsc_string_list(
-                regions[name_col].values, name_col=name_col, cols=[ck1, sk1, ek1]
+                regions[name_col].values, cols=[ck1, sk1, ek1]
             )
         else:
             raise ValueError("Unknown dataFrame format: check column names")
 
     elif type(regions) is dict:
-        out_df = from_dict(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+        out_df = from_dict(regions, cols=[ck1, sk1, ek1])
 
     elif type(regions) is pd.core.series.Series:
-        out_df = from_series(regions, name_col=name_col, cols=[ck1, sk1, ek1])
+        out_df = from_series(regions, cols=[ck1, sk1, ek1])
 
     elif type(regions) is list:
         if len(np.shape(regions)) == 1 and type(regions[0]) is str:
             out_df = from_ucsc_string_list(
-                regions, name_col=name_col, cols=[ck1, sk1, ek1]
+                regions, cols=[ck1, sk1, ek1]
             )
         else:
             out_df = from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
@@ -163,9 +157,6 @@ def from_any(regions, names_as_ucsc=False, fill_null=False, name_col="name", col
             out_df[ek1] = ends
         except:
             raise ValueError("could not fill ends with provided chromsizes")
-
-    if names_as_ucsc:
-        out_df = add_ucsc_name_column(out_df, name_col=name_col, cols=cols)
 
     return out_df
 
@@ -190,7 +181,6 @@ def add_ucsc_name_column(reg_df, name_col="name", cols=None):
 def make_viewframe(
     regions,
     check_bounds=None,
-    view_names_as_ucsc=False,
     view_name_col="name",
     cols=None,
 ):
@@ -242,7 +232,7 @@ def make_viewframe(
                 "Invalid input to make a viewFrame, regions not contained by bounds"
             )
 
-    if view_names_as_ucsc:
+    if not view_name_col in view_df.columns:
         view_df = add_ucsc_name_column(view_df, name_col=view_name_col, cols=cols)
 
     if checks.is_viewframe(

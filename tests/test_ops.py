@@ -184,33 +184,33 @@ def test_trim():
             ["chrX_0", 1, 5],
         ],
         columns=["chrom", "startFunky", "end"],
-    )
+    ).astype({'startFunky':pd.Int64Dtype(),'end':pd.Int64Dtype()})
     pd.testing.assert_frame_equal(
         df_trimmed,
         bioframe.trim(
             df,
             view_df=chromsizes,
-            df_view_col="chrom",
             cols=["chrom", "startFunky", "end"],
+            return_view_columns=False
         ),
     )
 
     ### trim with default limits=None and negative values
     df = pd.DataFrame(
         [
-            ["chr1", -4, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
-            ["chrX", -5, -1, "chrX_0"],
+            ["chr1", -4, 12],
+            ["chr1", 13, 26],
+            ["chrX", -5, -1],
         ],
-        columns=["chrom", "start", "end", "region"],
+        columns=["chrom", "start", "end"],
     )
     df_trimmed = pd.DataFrame(
         [
-            ["chr1", 0, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
-            ["chrX", 0, 0, "chrX_0"],
+            ["chr1", 0, 12],
+            ["chr1", 13, 26],
+            ["chrX", 0, 0],
         ],
-        columns=["chrom", "start", "end", "region"],
+        columns=["chrom", "start", "end"],
     )
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
 
@@ -763,10 +763,10 @@ def test_complement():
 
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 1, "chr1"],
-            ["chr1", 10, 12, "chr1"],
-            ["chr1", 14, 100, "chr1"],
-            ["chrX", 0, 100, "chrX"],
+            ["chr1", 0, 1, "chr1:0-100"],
+            ["chr1", 10, 12, "chr1:0-100"],
+            ["chr1", 14, 100, "chr1:0-100"],
+            ["chrX", 0, 100, "chrX:0-100"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -779,11 +779,11 @@ def test_complement():
     df1.iloc[0, 0] = "chrX"
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 3, "chr1"],
-            ["chr1", 10, 12, "chr1"],
-            ["chr1", 14, 100, "chr1"],
-            ["chrX", 0, 1, "chrX"],
-            ["chrX", 5, 100, "chrX"],
+            ["chr1", 0, 3, "chr1:0-100"],
+            ["chr1", 10, 12, "chr1:0-100"],
+            ["chr1", 14, 100, "chr1:0-100"],
+            ["chrX", 0, 1, "chrX:0-100"],
+            ["chrX", 5, 100, "chrX:0-100"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -796,7 +796,8 @@ def test_complement():
         [["chr1", -5, 5], ["chr1", 10, 20]], columns=["chrom", "start", "end"]
     )
     df1_complement = pd.DataFrame(
-        [["chr1", 5, 10, "chr1"], ["chr1", 20, np.iinfo(np.int64).max, "chr1"]],
+        [["chr1", 5, 10, "chr1:0-9223372036854775807"], 
+        ["chr1", 20, np.iinfo(np.int64).max, "chr1:0-9223372036854775807"]],
         columns=["chrom", "start", "end", "view_region"],
     )
     pd.testing.assert_frame_equal(bioframe.complement(df1), df1_complement)
@@ -808,7 +809,7 @@ def test_complement():
     chromsizes = {"chr1": 15}
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 5, 10, "chr1"],
+            ["chr1", 5, 10, "chr1:0-15"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
