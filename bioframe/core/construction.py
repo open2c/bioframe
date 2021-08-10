@@ -234,7 +234,7 @@ def make_viewframe(
         if not checks.is_contained(
             view_df,
             bounds_df,
-            df_view_col=view_name_col,
+            df_view_col=None,
             view_name_col="bounds",
             cols=cols,
         ):
