@@ -56,8 +56,8 @@ def parse_region_string(s):
     ----------
     s : str
         UCSC-style string, e.g. "chr5:10,100,000-30,000,000". Ensembl and FASTA
-        style sequence names are allowed. End coordinate must be greater than or
-        equal to start.
+        style sequence names are allowed. Start coordinate must >0 and end coordinate
+        must be greater than or equal to start.
 
     Returns
     -------
@@ -142,6 +142,7 @@ def parse_region(reg, chromsizes=None):
 
     Genomic regions are represented as half-open intervals (0-based starts,
     1-based ends) along the length coordinate of a contig/scaffold/chromosome.
+    Start must be >= 0, and end coordinate must be >= start.
 
     Parameters
     ----------

@@ -11,7 +11,7 @@ The philosophy underlying bioframe is to enable flexible operations: instead of 
 
 Bioframe implements a variety of genomic interval operations directly on dataframes. Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
-Read the [docs](https://bioframe.readthedocs.io/en/latest/) and explore the [jupyter notebooks](https://github.com/open2c/bioframe/tree/master/docs/notebooks/)
+Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html).
 
 ## Installation
 The following are required before installing bioframe:
@@ -66,7 +66,7 @@ For this input dataframe, with intervals all on the same chromosome:
 
 <img src="./docs/figs/merge_df1.png" width=60%> 
 
-See this [jupyter notebook](https://github.com/open2c/bioframe/tree/main/docs/notebooks/intervals_tutorial.ipynb) for visualizations of other interval operations in bioframe.
+See the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html) for visualizations of other interval operations in bioframe.
 
 ## File I/O
 
@@ -78,7 +78,7 @@ ctcf_motif_calls = bioframe.read_table(jaspar_url, schema='jaspar', skiprows=1)
 ```
 
 ## Tutorials
-See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/notebooks/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/tutorials/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
 
 ## Projects currently using bioframe:
 * [cooler](https://github.com/open2c/cooler)
