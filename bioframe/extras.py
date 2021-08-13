@@ -450,18 +450,18 @@ def pair_by_distance(
 
     # Select only the pairs that are separated by
     # at least min_interjacent intervals and no more than max_interjacent intervals
-    idxs["interjacent"] = np.abs(idxs.index_1 - idxs.index_2) - 1
+    idxs["interjacent"] = np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
     idxs = idxs.query(
         f"interjacent<={max_interjacent} and interjacent>={min_interjacent}"
     )
 
     left_ivals = (
-        df.iloc[idxs["index_1"].values]
+        df.iloc[idxs[f"index{suffixes[0]}"].values]
         .rename(columns=lambda x: x + suffixes[0])
         .reset_index(drop=True)
     )
     right_ivals = (
-        df.iloc[idxs["index_2"].values]
+        df.iloc[idxs[f"index{suffixes[1]}"].values]
         .rename(columns=lambda x: x + suffixes[1])
         .reset_index(drop=True)
     )
