@@ -143,7 +143,7 @@ def from_any(regions,
         else:
             out_df = from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
     else:
-        raise ValueError("Unknown input format: {type(regions)}")
+        raise ValueError(f"Unknown input format: {type(regions)}")
 
     if fill_null:
         try:
