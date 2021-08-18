@@ -55,10 +55,7 @@ def from_dict(regions, cols=None):
 def from_series(regions, cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     chroms = regions.index.values
-    data = {
-        ck1: chroms,
-        sk1: 0,
-        ek1: regions.values}
+    data = {ck1: chroms, sk1: 0, ek1: regions.values}
     return pd.DataFrame(data)
 
 
@@ -81,10 +78,7 @@ def from_ucsc_string_list(region_list, cols=None):
     return df
 
 
-def from_any(regions, 
-    fill_null=False,
-     name_col="name",
-      cols=None):
+def from_any(regions, fill_null=False, name_col="name", cols=None):
     """
     Attempts to make a genomic interval dataframe with columns [chr, start, end, name_col] from a variety of input types.
 
@@ -98,6 +92,7 @@ def from_any(regions,
             - dictionary of {str:int} key value pairs
             - pandas series where the index is interpreted as chromosomes and values are interpreted as end
             - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
+            - tuple of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
 
     fill_null : False or dictionary
         Accepts a dictionary of {str:int} pairs, interpreted as chromosome sizes.
@@ -135,11 +130,20 @@ def from_any(regions,
     elif type(regions) is pd.core.series.Series:
         out_df = from_series(regions, cols=[ck1, sk1, ek1])
 
+    elif type(regions) is tuple:
+        if np.shape(regions) == (3,):
+            out_df = from_list([regions], name_col=name_col, cols=[ck1, sk1, ek1])
+
+        elif len(np.shape(regions)) == 1 and type(regions[0]) is str:
+            out_df = from_ucsc_string_list(regions, cols=[ck1, sk1, ek1])
+        else:
+            out_df = from_list(list(regions), name_col=name_col, cols=[ck1, sk1, ek1])
+
     elif type(regions) is list:
-        if len(np.shape(regions)) == 1 and type(regions[0]) is str:
-            out_df = from_ucsc_string_list(
-                regions, cols=[ck1, sk1, ek1]
-            )
+        if np.shape(regions) == (3,):
+            out_df = from_list([regions], name_col=name_col, cols=[ck1, sk1, ek1])
+        elif len(np.shape(regions)) == 1 and type(regions[0]) is str:
+            out_df = from_ucsc_string_list(regions, cols=[ck1, sk1, ek1])
         else:
             out_df = from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
     else:

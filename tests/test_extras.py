@@ -41,7 +41,9 @@ def test_make_chromarms():
 
     # test passing 2 columns
     pd.testing.assert_frame_equal(
-        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}).rename(columns={"lo":"start","hi":"end"}),
+        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}).rename(
+            columns={"lo": "start", "hi": "end"}
+        ),
         bioframe.make_chromarms(
             df1,
             df2,
@@ -51,7 +53,6 @@ def test_make_chromarms():
     )
 
     # todo: test for passing pd.series !
-
 
 
 def test_binnify():
@@ -268,7 +269,7 @@ def test_pair_by_distance():
 
     # no negative min_sep
     with pytest.raises(ValueError):
-        bioframe.pair_by_distance(df, min_sep=-1, max_sep=9)    
+        bioframe.pair_by_distance(df, min_sep=-1, max_sep=9)
 
     # no min_sep > max_sep
     with pytest.raises(ValueError):

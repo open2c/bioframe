@@ -15,9 +15,9 @@ Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guid
 
 ## Installation
 The following are required before installing bioframe:
-* Python 3.6+
+* Python 3.7+
 * `numpy`
-* `pandas>=1.0.3`
+* `pandas>=1.3`
 
 ```sh
 pip install bioframe

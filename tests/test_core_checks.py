@@ -98,8 +98,6 @@ def test_is_contained():
     )
     assert is_contained(df, view_df)
 
-    
-
 
 def test_is_overlapping():
     ### interval on chr1 overlaps
