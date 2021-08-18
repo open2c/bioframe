@@ -6,11 +6,11 @@ Requirements
 
 The following are required before installing `bioframe <https://github.com/open2c/bioframe>`_ :
 
--  Python 3.4+
+-  Python 3.7+
 
 -  :py:mod:`numpy`
 
--  :py:mod:`pandas`
+-  :py:mod:`pandas 1.3+`
 
 Installation
 ------------

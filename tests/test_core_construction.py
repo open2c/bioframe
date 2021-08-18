@@ -29,20 +29,29 @@ def test_any():
         {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
     )
     parsed = from_any(df)
-    assert not 'name' in parsed.columns
+    assert not "name" in parsed.columns
     assert parsed.iloc[0]["chrom"] == "chr0"
 
     # re-create dataframe from UCSC name alone
-    df2 = pd.DataFrame({"regions": 
-        construction.add_ucsc_name_column(parsed, name_col="regions")['regions'].values})
-    assert (from_any(df2,name_col='regions')[['chrom','start','end']] == parsed).all().all()
+    df2 = pd.DataFrame(
+        {
+            "regions": construction.add_ucsc_name_column(parsed, name_col="regions")[
+                "regions"
+            ].values
+        }
+    )
+    assert (
+        (from_any(df2, name_col="regions")[["chrom", "start", "end"]] == parsed)
+        .all()
+        .all()
+    )
 
     # re-parsing results yields the same
     assert (from_any(parsed) == parsed).all().all()
 
     # extra columns don't get overwritten
-    df['name'] = 'test-value'
-    assert (from_any(df)['name'] == df['name']).all()
+    df["name"] = "test-value"
+    assert (from_any(df)["name"] == df["name"]).all()
 
     # None or False will be parsed
     assert from_any([("chr1", None, 5)], fill_null={"chr1": 10})["start"].values[0] == 0
@@ -67,6 +76,22 @@ def test_any():
 
     with pytest.raises(ValueError):
         from_any([("chr1", 5, None)], fill_null={"chr2": 40})
+
+    # input tuple of tuples
+    p2 = from_any((("chr1", 5, 10), ("chrX", 10, 20)))
+    assert list(p2.values[0]) == ["chr1", 5, 10]
+
+    # input tuple of lists
+    p2 = from_any((["chr1", 5, 10], ["chrX", 10, 20]))
+    assert list(p2.values[0]) == ["chr1", 5, 10]
+
+    # input tuple of ucsc strings
+    p2 = from_any(("chr1:5-10",))
+    assert list(p2.values[0]) == ["chr1", 5, 10]
+
+    # input single tuple
+    p2 = from_any(("chr1", 5, 10))
+    assert list(p2.values[0]) == ["chr1", 5, 10]
 
 
 def test_sanitize_bedframe():
@@ -147,10 +172,13 @@ def test_sanitize_bedframe():
 def test_make_viewframe():
 
     # test dict input
-    view_df =  pd.DataFrame(
-        [['chrTESTX',0,10,'chrTESTX:0-10'],
-        ['chrTESTX_p',0,12,'chrTESTX_p:0-12']],
-        columns=['chrom','start','end','name'])
+    view_df = pd.DataFrame(
+        [
+            ["chrTESTX", 0, 10, "chrTESTX:0-10"],
+            ["chrTESTX_p", 0, 12, "chrTESTX_p:0-12"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
     pd.testing.assert_frame_equal(
         view_df.copy(),
         construction.make_viewframe({"chrTESTX": 10, "chrTESTX_p": 12}),
@@ -186,35 +214,27 @@ def test_make_viewframe():
     pd.testing.assert_frame_equal(view_df.copy(), construction.make_viewframe(view_df))
 
     # if you provide unique names, this is accepted unchanged by make_viewframe
-    view_df =  pd.DataFrame(
-        [['chrTESTX',0,10,'chrTEST_1'],
-        ['chrTESTY',0,12,'chrTEST_2']],
-        columns=['chrom','start','end','name'])
+    view_df = pd.DataFrame(
+        [["chrTESTX", 0, 10, "chrTEST_1"], ["chrTESTY", 0, 12, "chrTEST_2"]],
+        columns=["chrom", "start", "end", "name"],
+    )
 
-    region_list = [("chrTESTX", 0, 10,'chrTEST_1'),
-                   ("chrTESTY", 0, 12,'chrTEST_2')]
+    region_list = [("chrTESTX", 0, 10, "chrTEST_1"), ("chrTESTY", 0, 12, "chrTEST_2")]
+
+    pd.testing.assert_frame_equal(
+        view_df.copy(), construction.make_viewframe(region_list)
+    )
+
+    pd.testing.assert_frame_equal(view_df.copy(), construction.make_viewframe(view_df))
 
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(region_list))
+        construction.make_viewframe(
+            view_df, check_bounds={"chrTESTX": 11, "chrTESTY": 13}
+        ),
+    )
 
-    pd.testing.assert_frame_equal(
-        view_df.copy(),
-        construction.make_viewframe(view_df))
-
-    pd.testing.assert_frame_equal(
-        view_df.copy(),
-        construction.make_viewframe(view_df, 
-            check_bounds= {"chrTESTX":11,"chrTESTY":13}))
-
-    with pytest.raises(ValueError): 
-        construction.make_viewframe(view_df, 
-            check_bounds= {"chrTESTX":9,"chrTESTY":13})
-
-
-
-
-
-
-
-
+    with pytest.raises(ValueError):
+        construction.make_viewframe(
+            view_df, check_bounds={"chrTESTX": 9, "chrTESTY": 13}
+        )
