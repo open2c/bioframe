@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from contextlib import closing
+import subprocess
 import tempfile
 import json
 import io
@@ -569,9 +570,6 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
         is to use the fourth column.
 
     """
-    import tempfile
-    import subprocess
-
     is_bed6 = True
     for col in ["chrom", "start", "end", "name", "score", "strand"]:
         if col not in df.columns:
