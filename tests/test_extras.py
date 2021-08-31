@@ -198,8 +198,8 @@ def test_pair_by_distance():
             df,
             min_sep=1,
             max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
+            min_intervening=None,
+            max_intervening=None,
             relative_to="midpoints",
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[6, 8, 9, 11]])
@@ -211,8 +211,8 @@ def test_pair_by_distance():
             df,
             min_sep=1,
             max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
+            min_intervening=None,
+            max_intervening=None,
             relative_to="endpoints",
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 6, 8]])
@@ -224,8 +224,8 @@ def test_pair_by_distance():
             df,
             min_sep=1,
             max_sep=6,
-            min_interjacent=None,
-            max_interjacent=None,
+            min_intervening=None,
+            max_intervening=None,
             relative_to="midpoints",
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
@@ -237,32 +237,32 @@ def test_pair_by_distance():
             df,
             min_sep=1,
             max_sep=9,
-            min_interjacent=None,
-            max_interjacent=None,
+            min_intervening=None,
+            max_intervening=None,
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 6, 8], [1, 3, 9, 11], [6, 8, 9, 11]])
     ).all()
 
-    # Do not allow interjacent regions
+    # Do not allow intervening regions
     assert (
         bioframe.pair_by_distance(
             df,
             min_sep=1,
             max_sep=9,
-            min_interjacent=None,
-            max_interjacent=0,
+            min_intervening=None,
+            max_intervening=0,
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
     ).all()
 
-    # Strictly one interjacent region
+    # Strictly one intervening region
     assert (
         bioframe.pair_by_distance(
             df,
             min_sep=1,
             max_sep=9,
-            min_interjacent=1,
-            max_interjacent=None,
+            min_intervening=1,
+            max_intervening=None,
         )[["start_1", "end_1", "start_2", "end_2"]].values
         == np.array([[1, 3, 9, 11]])
     ).all()
@@ -275,8 +275,8 @@ def test_pair_by_distance():
     with pytest.raises(ValueError):
         bioframe.pair_by_distance(df, min_sep=12, max_sep=9)
 
-    # no min_interjacent > max_interjacent
+    # no min_intervening > max_intervening
     with pytest.raises(ValueError):
         bioframe.pair_by_distance(
-            df, min_sep=0, max_sep=9, min_interjacent=10, max_interjacent=9
+            df, min_sep=0, max_sep=9, min_intervening=10, max_intervening=9
         )
