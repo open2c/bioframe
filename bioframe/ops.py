@@ -20,7 +20,6 @@ __all__ = [
     "subtract",
     "setdiff",
     "count_overlaps",
-    "pair_by_distance",
     "trim",
     "complement",
     "sort_bedframe",
