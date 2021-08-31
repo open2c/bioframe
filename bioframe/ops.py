@@ -966,10 +966,14 @@ def closest(
         If True, return the closest non-overlapping interval.
 
     ignore_upstream : bool
-        If True, ignore intervals in `df2` that are upstream of intervals in `df1`.
+        If True, ignore intervals in `df2` that are upstream (relative to the 
+        reference strand) of intervals in `df1`. Currently, we are not taking 
+        the feature strands into account.
 
     ignore_downstream : bool
-        If True, ignore intervals in `df2` that are downstream of intervals in `df1`.
+        If True, ignore intervals in `df2` that are downstream (relative to the 
+        reference strand) of intervals in `df1`. Currently, we are not taking 
+        the feature strands into account.
 
     tie_breaking_col : str
         A column in `df2` to use for breaking ties when multiple intervals
