@@ -355,8 +355,8 @@ def pair_by_distance(
     df,
     min_sep,
     max_sep,
-    min_interjacent=None,
-    max_interjacent=None,
+    min_intervening=None,
+    max_intervening=None,
     relative_to="midpoints",
     cols=None,
     suffixes=("_1", "_2"),
@@ -372,8 +372,8 @@ def pair_by_distance(
     min_sep, max_sep : int
         Minimum and maximum separation between intervals in bp.
         Min > 0 and Max >= Min. 
-    min_interjacent, max_interjacent : int
-        Minimum and maximum number of interjacent intervals separating pairs.
+    min_intervening, max_intervening : int
+        Minimum and maximum number of intervening intervals separating pairs.
         Min > 0 and Max >= Min. 
     relative_to : str,
         Whether to calculate distances between interval "midpoints" or "endpoints".
@@ -403,14 +403,14 @@ def pair_by_distance(
     if min_sep < 0:
         raise ValueError("min_sep must be >=0")
 
-    if min_interjacent is None:
-        min_interjacent = 0
-    if max_interjacent is None:
-        max_interjacent = df.index.max()
-    if min_interjacent > max_interjacent:
-        raise ValueError("min_interjacent must be less or equal to max_interjacent")
-    if min_interjacent < 0:
-        raise ValueError("min_interjacent must be >=0")
+    if min_intervening is None:
+        min_intervening = 0
+    if max_intervening is None:
+        max_intervening = df.index.max()
+    if min_intervening > max_intervening:
+        raise ValueError("min_intervening must be less or equal to max_intervening")
+    if min_intervening < 0:
+        raise ValueError("min_intervening must be >=0")
 
     mids = (df[sk] + df[ek]) // 2
 
@@ -449,10 +449,10 @@ def pair_by_distance(
     )
 
     # Select only the pairs that are separated by
-    # at least min_interjacent intervals and no more than max_interjacent intervals
-    idxs["interjacent"] = np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
+    # at least min_intervening intervals and no more than max_intervening intervals
+    idxs["intervening"] = np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
     idxs = idxs.query(
-        f"interjacent<={max_interjacent} and interjacent>={min_interjacent}"
+        f"intervening<={max_intervening} and intervening>={min_intervening}"
     )
 
     left_ivals = (
