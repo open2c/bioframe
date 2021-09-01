@@ -1,0 +1,8 @@
+name	length	unit	role	aliases
+chrI	15072423	primary	assembled	NC_003279.7,I
+chrII	15279345	primary	assembled	NC_003280.9,II
+chrIII	13783700	primary	assembled	NC_003281.9,III
+chrIV	17493793	primary	assembled	NC_003282.7,IV
+chrV	20924149	primary	assembled	NC_003283.10,V
+chrX	17718866	primary	assembled	NC_003284.8,X
+chrM	13794	non-nuclear	assembled	NC_001328.1,MT,MtDNA
