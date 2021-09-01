@@ -1,0 +1,16 @@
+name	length	type	molecule	unit	aliases
+chr2L	23011544	assembled	chr2	primary	2L,NT_033779.4,AE014134.5
+chr2R	21146708	assembled	chr2	primary	2R,NT_033778.3,AE013599.4
+chr3L	24543557	assembled	chr3	primary	3L,NT_037436.3,AE014296.4
+chr3R	27905053	assembled	chr3	primary	3R,NT_033777.2,AE014297.2
+chr4	1351857	assembled	chr4	primary	4,NC_004353.3,AE014135.3
+chrX	22422827	assembled	chrX	primary	X,NC_004354.3,AE014298.4
+chrM	19517	assembled	chrM	non-nuclear	MT,NS_000188.1,FA000001.1
+chr2LHet	368872	unlocalized	chr2	primary	2LHet,NW_001848855.1,CM000456.1
+chr2RHet	3288761	unlocalized	chr2	primary	2RHet,NW_001848856.1,CM000457.1
+chr3LHet	2555491	unlocalized	chr3	primary	3LHet,NW_001848857.1,CM000458.1
+chr3RHet	2517507	unlocalized	chr3	primary	3RHet,NW_001848858.1,CM000459.1
+chrXHet	204112	unlocalized	chrX	primary	XHet,NW_001848859.1,CM000460.1
+chrYHet	347038	unlocalized	chrY	primary	YHet,NW_001848860.1,CM000461.1
+chrU	10049037	unplaced		primary	Un,NC_001709.1
+chrUextra	29004656	unplaced		primary	
