@@ -6,6 +6,8 @@ import pytest
 
 import bioframe
 
+import bioframe.core.checks as checks
+
 # import pyranges as pr
 
 # def bioframe_to_pyranges(df):
@@ -108,6 +110,26 @@ def test_select():
         df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
     )
 
+    ### select from a DataFrame with NaNs
+    colnames = ["chrom", "start", "end", "view_region"]
+    df = pd.DataFrame(
+        [
+            ["chr1", -6, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=colnames,
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    df_result = pd.DataFrame(
+        [["chr1", -6, 12, "chr1p"]],
+        columns=colnames,
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    region1 = "chr1:0-1"
+    pd.testing.assert_frame_equal(
+        df_result, bioframe.select(df, region1).reset_index(drop=True)
+    )
+
 
 def test_trim():
 
@@ -138,7 +160,12 @@ def test_trim():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df, view_df=view_df))
+    with pytest.raises(ValueError):
+        bioframe.trim(df, view_df=view_df)
+    # df_view_col already exists, so need to specify it:
+    pd.testing.assert_frame_equal(
+        df_trimmed, bioframe.trim(df, view_df=view_df, df_view_col="view_region")
+    )
 
     ### trim with view_df interpreted from dictionary for chromsizes
     chromsizes = {"chr1": 20, "chrX_0": 5}
@@ -157,35 +184,89 @@ def test_trim():
             ["chrX_0", 1, 5],
         ],
         columns=["chrom", "startFunky", "end"],
-    )
+    ).astype({"startFunky": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(
         df_trimmed,
         bioframe.trim(
             df,
             view_df=chromsizes,
-            df_view_col="chrom",
             cols=["chrom", "startFunky", "end"],
+            return_view_columns=False,
         ),
     )
 
     ### trim with default limits=None and negative values
     df = pd.DataFrame(
         [
-            ["chr1", -4, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
-            ["chrX", -5, -1, "chrX_0"],
+            ["chr1", -4, 12],
+            ["chr1", 13, 26],
+            ["chrX", -5, -1],
         ],
-        columns=["chrom", "start", "end", "region"],
+        columns=["chrom", "start", "end"],
     )
     df_trimmed = pd.DataFrame(
         [
+            ["chr1", 0, 12],
+            ["chr1", 13, 26],
+            ["chrX", 0, 0],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
+
+    ### trim when there are NaN intervals
+    df = pd.DataFrame(
+        [
+            ["chr1", -4, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
+            ["chrX", -5, -1, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "region"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    df_trimmed = pd.DataFrame(
+        [
             ["chr1", 0, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
+            [pd.NA, pd.NA, pd.NA, "chr1q"],
             ["chrX", 0, 0, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "region"],
-    )
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_trimmed, bioframe.trim(df))
+
+    ### trim with view_df and NA intervals
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 12, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", -6, 12],
+            ["chr1", 0, 12],
+            [pd.NA, pd.NA, pd.NA],
+            ["chrX", 1, 20],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    df_trimmed = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 0, 12, "chr1p"],
+            [pd.NA, pd.NA, pd.NA, pd.NA],
+            ["chrX", 1, 12, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    # infer df_view_col with assign_view and ignore NAs
+    pd.testing.assert_frame_equal(
+        df_trimmed,
+        bioframe.trim(df, view_df=view_df, df_view_col=None, return_view_columns=True)[
+            ["chrom", "start", "end", "view_region"]
+        ],
+    )
 
 
 def test_expand():
@@ -238,9 +319,28 @@ def test_expand():
     fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
     d = """chrom  start  end
          0  chr1      -1    7
-         1  chr1     47   57
+         1  chr1     48   58
          2  chr2    50  250"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(df, fake_expanded)
+
+    # expand with NA and non-integer multiplicative pad
+    d = """chrom  start  end
+         0  chr1      1    5
+         1  NA     NA   NA
+         2  chr2    100  200"""
+    fake_bioframe = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
+    mult = 1.10
+    fake_expanded = bioframe.expand(fake_bioframe, pad=None, scale=mult)
+    d = """chrom  start  end
+         0  chr1      1   5
+         1  NA     NA   NA
+         2  chr2    95  205"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
+    )
     pd.testing.assert_frame_equal(df, fake_expanded)
 
 
@@ -373,6 +473,100 @@ def test_overlap():
     )
     assert len(b) == 3
 
+    ### test keep_order and NA handling
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+"],
+            [pd.NA, pd.NA, pd.NA, "-"],
+            ["chrX", 1, 8, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [["chr1", 6, 10, "+"], [pd.NA, pd.NA, pd.NA, "-"], ["chrX", 7, 10, "-"]],
+        columns=["chrom2", "start2", "end2", "strand"],
+    ).astype({"start2": pd.Int64Dtype(), "end2": pd.Int64Dtype()})
+
+    assert df1.equals(
+        bioframe.overlap(
+            df1, df2, how="left", keep_order=True, cols2=["chrom2", "start2", "end2"]
+        )[["chrom", "start", "end", "strand"]]
+    )
+    assert ~df1.equals(
+        bioframe.overlap(
+            df1, df2, how="left", keep_order=False, cols2=["chrom2", "start2", "end2"]
+        )[["chrom", "start", "end", "strand"]]
+    )
+
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+", pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chrX", 1, 8, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [["chr1", 6, 10, pd.NA, "tiger"]],
+        columns=["chrom2", "start2", "end2", "strand", "animal"],
+    ).astype({"start2": pd.Int64Dtype(), "end2": pd.Int64Dtype()})
+
+    assert (
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            cols2=["chrom2", "start2", "end2"],
+            return_index=True,
+            keep_order=False,
+        ).shape
+        == (3, 12)
+    )
+
+    ### result of overlap should still have bedframe-like properties
+    overlap_df = bioframe.overlap(
+        df1,
+        df2,
+        how="outer",
+        cols2=["chrom2", "start2", "end2"],
+        return_index=True,
+        suffixes=("", ""),
+    )
+    assert checks.is_bedframe(
+        overlap_df[df1.columns],
+    )
+    assert checks.is_bedframe(
+        overlap_df[df2.columns], cols=["chrom2", "start2", "end2"]
+    )
+
+    overlap_df = bioframe.overlap(
+        df1,
+        df2,
+        how="innter",
+        cols2=["chrom2", "start2", "end2"],
+        return_index=True,
+        suffixes=("", ""),
+    )
+    assert checks.is_bedframe(
+        overlap_df[df1.columns],
+    )
+    assert checks.is_bedframe(
+        overlap_df[df2.columns], cols=["chrom2", "start2", "end2"]
+    )
+
+    # test keep_order incompatible if how!= 'left'
+    with pytest.raises(ValueError):
+        bioframe.overlap(
+            df1,
+            df2,
+            how="outer",
+            on=["animal"],
+            cols2=["chrom2", "start2", "end2"],
+            keep_order=True,
+        )
+
 
 def test_cluster():
     df1 = pd.DataFrame(
@@ -430,6 +624,31 @@ def test_cluster():
         bioframe.cluster(df1, on=["location", "animal"])["cluster"].values
         == np.array([0, 2, 1, 3])
     ).all()
+
+    ### test cluster with NAs
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 1, 8, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chr1", 8, 12, "+", pd.NA],
+            ["chr1", 1, 8, np.nan, pd.NA],
+            [pd.NA, np.nan, pd.NA, "-", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert bioframe.cluster(df1)["cluster"].max() == 3
+    assert bioframe.cluster(df1, on=["strand"])["cluster"].max() == 4
+    pd.testing.assert_frame_equal(df1, bioframe.cluster(df1)[df1.columns])
+
+    assert checks.is_bedframe(
+        bioframe.cluster(df1, on=["strand"]),
+        cols=["chrom", "cluster_start", "cluster_end"],
+    )
+    assert checks.is_bedframe(
+        bioframe.cluster(df1), cols=["chrom", "cluster_start", "cluster_end"]
+    )
+    assert checks.is_bedframe(bioframe.cluster(df1))
 
 
 def test_merge():
@@ -513,6 +732,26 @@ def test_merge():
         df.reset_index(drop=True), bioframe.merge(df)[["chrom", "start", "end"]]
     )
 
+    # test merge with NAs
+    df1 = pd.DataFrame(
+        [
+            ["chrX", 1, 8, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA, "-", pd.NA],
+            ["chr1", 8, 12, "+", pd.NA],
+            ["chr1", 1, 8, np.nan, pd.NA],
+            [pd.NA, np.nan, pd.NA, "-", pd.NA],
+        ],
+        columns=["chrom", "start", "end", "strand", "animal"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert bioframe.merge(df1).shape[0] == 4
+    assert bioframe.merge(df1)["start"].iloc[0] == 1
+    assert bioframe.merge(df1)["end"].iloc[0] == 12
+    assert bioframe.merge(df1, on=["strand"]).shape[0] == df1.shape[0]
+    assert bioframe.merge(df1, on=["animal"]).shape[0] == df1.shape[0]
+    assert bioframe.merge(df1, on=["animal"]).shape[1] == df1.shape[1] + 1
+    assert checks.is_bedframe(bioframe.merge(df1, on=["strand", "animal"]))
+
 
 def test_complement():
     ### complementing a df with no intervals in chrX by a view with chrX should return entire chrX region
@@ -524,10 +763,10 @@ def test_complement():
 
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 1, "chr1"],
-            ["chr1", 10, 12, "chr1"],
-            ["chr1", 14, 100, "chr1"],
-            ["chrX", 0, 100, "chrX"],
+            ["chr1", 0, 1, "chr1:0-100"],
+            ["chr1", 10, 12, "chr1:0-100"],
+            ["chr1", 14, 100, "chr1:0-100"],
+            ["chrX", 0, 100, "chrX:0-100"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -540,11 +779,11 @@ def test_complement():
     df1.iloc[0, 0] = "chrX"
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 3, "chr1"],
-            ["chr1", 10, 12, "chr1"],
-            ["chr1", 14, 100, "chr1"],
-            ["chrX", 0, 1, "chrX"],
-            ["chrX", 5, 100, "chrX"],
+            ["chr1", 0, 3, "chr1:0-100"],
+            ["chr1", 10, 12, "chr1:0-100"],
+            ["chr1", 14, 100, "chr1:0-100"],
+            ["chrX", 0, 1, "chrX:0-100"],
+            ["chrX", 5, 100, "chrX:0-100"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -557,7 +796,10 @@ def test_complement():
         [["chr1", -5, 5], ["chr1", 10, 20]], columns=["chrom", "start", "end"]
     )
     df1_complement = pd.DataFrame(
-        [["chr1", 5, 10, "chr1"], ["chr1", 20, np.iinfo(np.int64).max, "chr1"]],
+        [
+            ["chr1", 5, 10, "chr1:0-9223372036854775807"],
+            ["chr1", 20, np.iinfo(np.int64).max, "chr1:0-9223372036854775807"],
+        ],
         columns=["chrom", "start", "end", "view_region"],
     )
     pd.testing.assert_frame_equal(bioframe.complement(df1), df1_complement)
@@ -569,7 +811,7 @@ def test_complement():
     chromsizes = {"chr1": 15}
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 5, 10, "chr1"],
+            ["chr1", 5, 10, "chr1:0-15"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -587,6 +829,26 @@ def test_complement():
     )
     pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
 
+    ### test complement with NAs
+    df1 = pd.DataFrame(
+        [[pd.NA, pd.NA, pd.NA], ["chr1", 5, 15], [pd.NA, pd.NA, pd.NA]],
+        columns=["chrom", "start", "end"],
+    ).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )
+
+    pd.testing.assert_frame_equal(bioframe.complement(df1, chromsizes), df1_complement)
+
+    with pytest.raises(ValueError):  # no NAs allowed in chromsizes
+        bioframe.complement(
+            df1, [("chr1", pd.NA, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
+        )
+
+    assert checks.is_bedframe(bioframe.complement(df1, chromsizes))
+
 
 def test_closest():
     df1 = pd.DataFrame(
@@ -603,40 +865,68 @@ def test_closest():
     ### closest(df1,df2,k=1) ###
     d = """chrom  start  end chrom_  start_  end_  distance
         0    chr1        1      5    chr1        4      8         0"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),
-        'distance':pd.Int64Dtype()})
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### closest(df1,df2, ignore_overlaps=True)) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
         0   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), ignore_overlaps=True))
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True)
+    )
 
     ### closest(df1,df2,k=2) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    1   5   chr1    4   8   0
             1   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, suffixes=('_1','_2'), k=2))
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), k=2)
+    )
 
     ### closest(df2,df1) ###
     d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
             0   chr1    4   8   chr1    1   5   0
             1   chr1    10  11  chr1    1   5   5 """
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_2':pd.Int64Dtype(),'end_2':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
-    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=('_1','_2')))
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=("_1", "_2")))
 
     ### change first interval to new chrom ###
     df2.iloc[0, 0] = "chrA"
     d = """chrom start   end     chrom_ start_ end_  distance
               0   chr1    1   5   chr1    10  11  5"""
-    df = pd.read_csv(StringIO(d), sep=r"\s+")
-    df = df.astype({'start_':pd.Int64Dtype(),'end_':pd.Int64Dtype(),'distance':pd.Int64Dtype()})
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
     ### test other return arguments ###
@@ -676,8 +966,50 @@ def test_closest():
     df_cat = pd.CategoricalDtype(categories=["chrX", "chr1"], ordered=True)
     df = df.astype({"chrom": df_cat})
     pd.testing.assert_frame_equal(
-        df_closest, bioframe.closest(df, suffixes=('_1','_2')), check_dtype=False, check_categorical=False
+        df_closest,
+        bioframe.closest(df, suffixes=("_1", "_2")),
+        check_dtype=False,
+        check_categorical=False,
     )
+
+    # closest should ignore null rows: code will need to be modified
+    # as for overlap if an on=[] option is added
+    df1 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 1, 5],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 4, 8],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 10, 11],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
+        0   chr1    1   5   chr1    10  11  5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_1": pd.Int64Dtype(),
+            "end_1": pd.Int64Dtype(),
+            "start_2": pd.Int64Dtype(),
+            "end_2": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True, k=5)
+    )
+
+    with pytest.raises(ValueError):  # inputs must be valid bedFrames
+        df1.iloc[0, 0] = "chr10"
+        bioframe.closest(df1, df2)
 
 
 def test_coverage():
@@ -688,8 +1020,6 @@ def test_coverage():
     d = """chrom    start   end coverage
          0  chr1    3   8   5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    print(df)
-    print(bioframe.coverage(df1, df2))
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
     ### coverage of interval on different chrom returns zero for coverage and n_overlaps
@@ -705,11 +1035,46 @@ def test_coverage():
     df2 = pd.DataFrame(
         [["chr1", 3, 6], ["chr1", 5, 8]], columns=["chrom", "start", "end"]
     )
-
     d = """chrom    start   end coverage
          0  chr1     3       8     5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
+
+    ### coverage of NA interval returns zero for coverage
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 10, 20],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 3, 8],
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+    df2 = pd.DataFrame(
+        [["chr1", 3, 6], ["chr1", 5, 8], [pd.NA, pd.NA, pd.NA]],
+        columns=["chrom", "start", "end"],
+    )
+    df1 = bioframe.sanitize_bedframe(df1)
+    df2 = bioframe.sanitize_bedframe(df2)
+
+    df_coverage = pd.DataFrame(
+        [
+            ["chr1", 10, 20, 0],
+            [pd.NA, pd.NA, pd.NA, 0],
+            ["chr1", 3, 8, 5],
+            [pd.NA, pd.NA, pd.NA, 0],
+        ],
+        columns=["chrom", "start", "end", "coverage"],
+    ).astype(
+        {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), "coverage": pd.Int64Dtype()}
+    )
+    pd.testing.assert_frame_equal(df_coverage, bioframe.coverage(df1, df2))
+
+    ### coverage without return_input returns a single column dataFrame
+    assert (
+        bioframe.coverage(df1, df2, return_input=False)["coverage"].values
+        == np.array([0, 0, 5, 0])
+    ).all()
 
 
 def test_subtract():
@@ -734,7 +1099,7 @@ def test_subtract():
     df_result = pd.DataFrame(
         [["chr1", 4, 5, "sea-creature"], ["chr1", 6, 7, "sea-creature"]],
         columns=["chrom", "start", "end", "animal"],
-    )
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(
         df_result,
         bioframe.subtract(df1, df2)
@@ -754,7 +1119,7 @@ def test_subtract():
         columns=["chrom", "start", "end", "animal"],
     )
     pd.testing.assert_frame_equal(
-        df_result,
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df1, df2)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
@@ -785,6 +1150,10 @@ def test_subtract():
         [["chr1", 4, 5, "+"], ["chr1", 6, 7, "+"]],
         columns=funny_cols + ["strand"],
     )
+    df_result = df_result.astype(
+        {funny_cols[1]: pd.Int64Dtype(), funny_cols[2]: pd.Int64Dtype()}
+    )
+
     pd.testing.assert_frame_equal(
         df_result,
         bioframe.subtract(df1, df2, cols1=funny_cols, cols2=funny_cols2)
@@ -818,74 +1187,13 @@ def test_subtract():
     assert bioframe.subtract(df1, df1).empty
 
     pd.testing.assert_frame_equal(
-        df_subtracted,
+        df_subtracted.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df1, df2),
         check_dtype=False,
         check_categorical=False,
     )
 
-
-def test_setdiff():
-
-    df1 = pd.DataFrame(
-        [
-            ["chr1", 8, 12, "+", "cat"],
-            ["chr1", 8, 12, "-", "cat"],
-            ["chrX", 1, 8, "+", "cat"],
-        ],
-        columns=["chrom1", "start", "end", "strand", "animal"],
-    )
-
-    df2 = pd.DataFrame(
-        [
-            ["chrX", 7, 10, "-", "dog"],
-            ["chr1", 6, 10, "-", "cat"],
-            ["chr1", 6, 10, "-", "cat"],
-        ],
-        columns=["chrom2", "start", "end", "strand", "animal"],
-    )
-
-    assert (
-        len(
-            bioframe.setdiff(
-                df1,
-                df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
-                on=None,
-            )
-        )
-        == 0
-    )  # everything overlaps
-
-    assert (
-        len(
-            bioframe.setdiff(
-                df1,
-                df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
-                on=["animal"],
-            )
-        )
-        == 1
-    )  # two overlap, one remains
-
-    assert (
-        len(
-            bioframe.setdiff(
-                df1,
-                df2,
-                cols1=("chrom1", "start", "end"),
-                cols2=("chrom2", "start", "end"),
-                on=["strand"],
-            )
-        )
-        == 2
-    )  # one overlaps, two remain
-
-
-def test_split():
+    ## test transferred from deprecated bioframe.split
     df1 = pd.DataFrame(
         [["chrX", 3, 8], ["chr1", 4, 7], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
@@ -898,6 +1206,8 @@ def test_split():
         ],
         columns=["chrom", "pos"],
     )
+    df2["start"] = df2["pos"]
+    df2["end"] = df2["pos"]
 
     df_result = (
         pd.DataFrame(
@@ -913,16 +1223,17 @@ def test_split():
         )
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True)
+        .astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
     )
 
     pd.testing.assert_frame_equal(
         df_result,
-        bioframe.split(df1, df2)
+        bioframe.subtract(df1, df2)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
     )
 
-    # Test the case when a chromosome is missing from points.
+    # Test the case when a chromosome should not be split (now implemented with subtract)
     df1 = pd.DataFrame(
         [
             ["chrX", 3, 8],
@@ -932,6 +1243,8 @@ def test_split():
     )
 
     df2 = pd.DataFrame([["chrX", 4]], columns=["chrom", "pos"])
+    df2["start"] = df2["pos"].values
+    df2["end"] = df2["pos"].values
 
     df_result = (
         pd.DataFrame(
@@ -947,41 +1260,146 @@ def test_split():
     )
 
     pd.testing.assert_frame_equal(
-        df_result,
-        bioframe.split(df1, df2)
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df1, df2)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
     )
 
-    ### test the case where columns have different names
+    # subtract should ignore null rows
     df1 = pd.DataFrame(
-        [["chrX", 3, 8]],
-        columns=["chromosome", "lo", "hi"],
-    )
+        [[pd.NA, pd.NA, pd.NA], ["chr1", 1, 5]],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
-    df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
-
-    df_result = pd.DataFrame(
+    df2 = pd.DataFrame(
         [
-            ["chrX", 3, 4, "chrX:3-4_p"],
-            ["chrX", 4, 8, "chrX:4-8_q"],
+            ["chrX", 1, 5],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 4, 8],
+            [pd.NA, pd.NA, pd.NA],
+            ["chr1", 10, 11],
         ],
-        columns=["chromosome", "lo", "hi", "name"],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_subtracted = pd.DataFrame(
+        [
+            ["chr1", 1, 4],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(df_subtracted, bioframe.subtract(df1, df2))
+
+    df1 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    assert len(bioframe.subtract(df1, df2)) == 0  # empty df1 but valid chroms in df2
+
+    with pytest.raises(ValueError):  # no non-null chromosomes
+        bioframe.subtract(df1, df1)
+
+    df2 = pd.DataFrame(
+        [
+            [pd.NA, pd.NA, pd.NA],
+            [pd.NA, pd.NA, pd.NA],
+        ],
+        columns=["chrom", "start", "end"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    with pytest.raises(ValueError):  # no non-null chromosomes
+        bioframe.subtract(df1, df2)
+
+
+def test_setdiff():
+
+    cols1 = ["chrom1", "start", "end"]
+    cols2 = ["chrom2", "start", "end"]
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+", "cat"],
+            ["chr1", 8, 12, "-", "cat"],
+            ["chrX", 1, 8, "+", "cat"],
+        ],
+        columns=cols1 + ["strand", "animal"],
+    )
+    df2 = pd.DataFrame(
+        [
+            ["chrX", 7, 10, "-", "dog"],
+            ["chr1", 6, 10, "-", "cat"],
+            ["chr1", 6, 10, "-", "cat"],
+        ],
+        columns=cols2 + ["strand", "animal"],
     )
 
-    pd.testing.assert_frame_equal(
-        df_result,
-        bioframe.split(
-            df1,
-            df2,
-            cols=["chromosome", "lo", "hi"],
-            cols_points=["chromosome", "loc"],
-            add_names=True,
-            suffixes=["_p", "_q"],
-        ),
+    assert (
+        len(
+            bioframe.setdiff(
+                df1,
+                df2,
+                cols1=cols1,
+                cols2=cols2,
+                on=None,
+            )
+        )
+        == 0
+    )  # everything overlaps
+
+    assert (
+        len(
+            bioframe.setdiff(
+                df1,
+                df2,
+                cols1=cols1,
+                cols2=cols2,
+                on=["animal"],
+            )
+        )
+        == 1
+    )  # two overlap, one remains
+
+    assert (
+        len(
+            bioframe.setdiff(
+                df1,
+                df2,
+                cols1=cols1,
+                cols2=cols2,
+                on=["strand"],
+            )
+        )
+        == 2
+    )  # one overlaps, two remain
+
+    # setdiff should ignore nan rows
+    df1 = pd.concat([pd.DataFrame([pd.NA]), df1, pd.DataFrame([pd.NA])])[
+        ["chrom1", "start", "end", "strand", "animal"]
+    ]
+    df1 = df1.astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )
+    df2 = pd.concat([pd.DataFrame([pd.NA]), df2, pd.DataFrame([pd.NA])])[
+        ["chrom2", "start", "end", "strand", "animal"]
+    ]
+    df2 = df2.astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
     )
 
-    # test adding UCSC column
+    assert (2, 5) == np.shape(bioframe.setdiff(df1, df1, cols1=cols1, cols2=cols1))
+    assert (2, 5) == np.shape(bioframe.setdiff(df1, df2, cols1=cols1, cols2=cols2))
+    assert (4, 5) == np.shape(
+        bioframe.setdiff(df1, df2, on=["strand"], cols1=cols1, cols2=cols2)
+    )
 
 
 def test_count_overlaps():
@@ -1037,94 +1455,69 @@ def test_count_overlaps():
         == np.array([0, 0, 0])
     ).all()
 
-
-def test_pair_by_distance():
-    df = pd.DataFrame(
-        [
-            ["chr1", 1, 3, "+", "cat"],
-            ["chr1", 6, 8, "+", "skunk"],
-            ["chr1", 9, 11, "-", "dog"],
-        ],
-        columns=["chrom", "start", "end", "strand", "animal"],
+    # overlaps with pd.NA
+    counts_no_nans = bioframe.count_overlaps(
+        df1,
+        df2,
+        on=None,
+        cols1=("chrom1", "start", "end"),
+        cols2=("chrom2", "start2", "end2"),
     )
 
-    # Distance between midpoints, from_ends=False
+    df1_na = (pd.concat([pd.DataFrame([pd.NA]), df1, pd.DataFrame([pd.NA])])).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )[["chrom1", "start", "end", "strand", "animal"]]
+    df2_na = (pd.concat([pd.DataFrame([pd.NA]), df2, pd.DataFrame([pd.NA])])).astype(
+        {
+            "start2": pd.Int64Dtype(),
+            "end2": pd.Int64Dtype(),
+        }
+    )[["chrom2", "start2", "end2", "strand", "animal"]]
+
+    counts_nans_inserted_after = (
+        pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),})[
+        ["chrom1", "start", "end", "strand", "animal", "count"]
+    ]
+
+    counts_nans = bioframe.count_overlaps(
+        df1_na,
+        df2_na,
+        on=None,
+        cols1=("chrom1", "start", "end"),
+        cols2=("chrom2", "start2", "end2"),
+    )
+
+    pd.testing.assert_frame_equal(
+        counts_nans,
+        bioframe.count_overlaps(
+            df1_na,
+            df2,
+            on=None,
+            cols1=("chrom1", "start", "end"),
+            cols2=("chrom2", "start2", "end2"),
+        ),
+    )
+
     assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[6, 8, 9, 11]])
+        counts_nans["count"].values
+        == counts_nans_inserted_after["count"].fillna(0).values
     ).all()
 
-    # Distance between regions ends, from_ends=True
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=4,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=True,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8]])
-    ).all()
-
-    # Distance between midpoints is large
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=6,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
-    ).all()
-
-    # Distance between midpoints is large
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=None,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [1, 3, 9, 11], [6, 8, 9, 11]])
-    ).all()
-
-    # Do not allow interjacent regions
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=None,
-            max_interjacent=0,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 6, 8], [6, 8, 9, 11]])
-    ).all()
-
-    # Strictly one interjacent region
-    assert (
-        bioframe.pair_by_distance(
-            df,
-            min_sep=1,
-            max_sep=9,
-            min_interjacent=1,
-            max_interjacent=None,
-            from_ends=False,
-        )[["start_1", "end_1", "start_2", "end_2"]].values
-        == np.array([[1, 3, 9, 11]])
-    ).all()
+    ### coverage without return_input returns a single column dataFrame
+    pd.testing.assert_frame_equal(
+        bioframe.count_overlaps(
+            df1_na,
+            df2_na,
+            cols1=("chrom1", "start", "end"),
+            cols2=("chrom2", "start2", "end2"),
+            return_input=False,
+        ),
+        pd.DataFrame(counts_nans["count"]),
+    )
 
 
 def test_assign_view():
@@ -1221,6 +1614,27 @@ def test_assign_view():
         ),
     )
 
+    ### assign_view with NA values assigns a view of none
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            [pd.NA, pd.NA, pd.NA, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(
+        df, bioframe.assign_view(df, view_df, view_name_col="fruit").iloc[:, :-1]
+    )
+
+    assert (
+        bioframe.assign_view(df, view_df, view_name_col="fruit")["view_region"].values
+        == np.array(["apples", "oranges", None, "oranges", None], dtype=object)
+    ).all()
+
 
 def test_sort_bedframe():
 
@@ -1243,7 +1657,7 @@ def test_sort_bedframe():
         columns=["chrom", "start", "end", "strand"],
     )
 
-    ### sorting just by chrom,start,end
+    # sorting just by chrom,start,end
     df_sorted = pd.DataFrame(
         [
             ["chr1", 0, 10, "+"],
@@ -1256,7 +1670,8 @@ def test_sort_bedframe():
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
 
-    ### drops unassigned chromosomes when infer_assignment is true
+    # when a view_df is provided, regions without assigned views
+    # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
         [
             ["chrX", 0, 5, "+", "oranges"],
@@ -1282,12 +1697,34 @@ def test_sort_bedframe():
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
 
-    ### chr2 is not in the view, so if infer_assignment=False this should raise a ValueError
+    ### 'df' has no column 'view_region', so this should raise a ValueError
     assert pytest.raises(
         ValueError,
         bioframe.sort_bedframe,
         df,
         view_df,
         view_name_col="fruit",
-        infer_assignment=False,
+        df_view_col="view_region",
     )
+
+    ### sort_bedframe with NA entries:
+    df = pd.DataFrame(
+        [
+            ["chr1", 0, 10, "+"],
+            ["chrX", 5, 10, "+"],
+            [pd.NA, pd.NA, pd.NA, "+"],
+            ["chrX", 0, 5, "+"],
+            ["chr2", 5, 10, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    # NA put at end
+    assert pd.isna(bioframe.sort_bedframe(df)["chrom"].values[-1])
+    assert pd.isna(
+        bioframe.sort_bedframe(df, view_df, view_name_col="fruit")["chrom"].values[-1]
+    )
+    assert (
+        df.dtypes
+        == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes[:-1]
+    ).all()

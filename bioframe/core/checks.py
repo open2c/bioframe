@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from . import construction
 from .specs import _get_default_colnames, _verify_columns, _verify_column_dtypes
+from .. import ops
 
 __all__ = [
     "is_bedframe",
@@ -26,7 +27,8 @@ def is_bedframe(
     This includes:
 
     - chrom, start, end columns
-    - columns have valid dtypes (object/string/categorical, int, int)
+    - columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype, int/pd.Int64Dtype)
+    - for each interval, if any of chrom, start, end are null, then all are null
     - all starts < ends.
 
     Parameters
@@ -51,18 +53,26 @@ def is_bedframe(
 
     if not _verify_columns(df, [ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
-            raise TypeError("Invalid column names")
+            raise TypeError("Invalid bedFrame: Invalid column names")
         return False
 
     if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
-            raise TypeError("Invalid column dtypes")
+            raise TypeError("Invalid bedFrame: Invalid column dtypes")
+        return False
+
+    nan_intervals = pd.isnull(df[[ck1, sk1, ek1]])
+    if (~(~nan_intervals.any(axis=1) | nan_intervals.all(axis=1))).any():
+        if raise_errors:
+            raise ValueError(
+                "Invalid bedFrame: Invalid null values (if any of chrom, start, end are null, then each must be null)"
+            )
         return False
 
     if ((df[ek1] - df[sk1]) < 0).any():
         if raise_errors:
             raise ValueError(
-                "Invalid genomic interval dataframe: starts exceed ends for "
+                "Invalid bedFrame: starts exceed ends for "
                 + str(np.sum(((df[ek1] - df[sk1]) < 0)))
                 + " intervals"
             )
@@ -112,7 +122,9 @@ def is_cataloged(
             raise ValueError(f"Could not find ‘{view_name_col}’ column in view_df")
         return False
 
-    if not set(df[df_view_col].values).issubset(set(view_df[view_name_col].values)):
+    if not set(df[df_view_col].copy().dropna().values).issubset(
+        set(view_df[view_name_col].values)
+    ):
         if raise_errors is True:
             raise ValueError(
                 "The following regions in df[df_view_col] not in view_df[view_name_col]: \n"
@@ -236,7 +248,7 @@ def is_contained(
     df,
     view_df,
     raise_errors=False,
-    df_view_col="view_region",
+    df_view_col=None,
     view_name_col="name",
     cols=None,
 ):
@@ -270,6 +282,18 @@ def is_contained(
     from ..ops import trim
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+
+    if df_view_col is None:
+        try:
+            df_view_assigned = ops.overlap(df, view_df)
+            assert (df_view_assigned["end"]<=df_view_assigned["end_"]).all()
+            assert (df_view_assigned["start"]>=df_view_assigned["start_"]).all()
+        except AssertionError:
+            if raise_errors:
+                raise AssertionError("df not contained in view_df")
+            else:
+                return False
+        return True 
 
     if not is_cataloged(
         df, view_df, df_view_col=df_view_col, view_name_col=view_name_col
@@ -401,7 +425,6 @@ def is_tiling(
 def is_sorted(
     df,
     view_df=None,
-    infer_assignment=True,
     reset_index=True,
     df_view_col="view_region",
     view_name_col="name",
@@ -443,7 +466,6 @@ def is_sorted(
     df_sorted = sort_bedframe(
         df.copy(),
         view_df=view_df,
-        infer_assignment=infer_assignment,
         reset_index=reset_index,
         df_view_col=df_view_col,
         view_name_col=view_name_col,

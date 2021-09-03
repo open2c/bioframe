@@ -1,0 +1,36 @@
+name	length	type	molecule	unit	aliases
+chr1	197195432	assembled	chr1	primary	1,CM000994.1,NC_000067.5
+chr2	181748087	assembled	chr2	primary	2,CM000995.1,NC_000068.6
+chr3	159599783	assembled	chr3	primary	3,CM000996.1,NC_000069.5
+chr4	155630120	assembled	chr4	primary	4,CM000997.1,NC_000070.5
+chr5	152537259	assembled	chr5	primary	5,CM000998.1,NC_000071.5
+chr6	149517037	assembled	chr6	primary	6,CM000999.1,NC_000072.5
+chr7	152524553	assembled	chr7	primary	7,CM001000.1,NC_000073.5
+chr8	131738871	assembled	chr8	primary	8,CM001001.1,NC_000074.5
+chr9	124076172	assembled	chr9	primary	9,CM001002.1,NC_000075.5
+chr10	129993255	assembled	chr10	primary	10,CM001003.1,NC_000076.5
+chr11	121843856	assembled	chr11	primary	11,CM001004.1,NC_000077.5
+chr12	121257530	assembled	chr12	primary	12,CM001005.1,NC_000078.5
+chr13	120284312	assembled	chr13	primary	13,CM001006.1,NC_000079.5
+chr14	125194864	assembled	chr14	primary	14,CM001007.1,NC_000080.5
+chr15	103494974	assembled	chr15	primary	15,CM001008.1,NC_000081.5
+chr16	98319150	assembled	chr16	primary	16,CM001009.1,NC_000082.5
+chr17	95272651	assembled	chr17	primary	17,CM001010.1,NC_000083.5
+chr18	90772031	assembled	chr18	primary	18,CM001011.1,NC_000084.5
+chr19	61342430	assembled	chr19	primary	19,CM001012.1,NC_000085.5
+chrX	166650296	assembled	chrX	primary	X,CM001013.1,NC_000086.6
+chrY	15902555	assembled	chrY	primary	Y,CM001014.1,NC_000087.6
+chrM	16299	assembled	chrM	non-nuclear	MT,AY172335.1,NC_005089.1
+chr1_random	1231697	unlocalized	chr1	primary	
+chr3_random	41899	unlocalized	chr3	primary	
+chr4_random	160594	unlocalized	chr4	primary	
+chr5_random	357350	unlocalized	chr5	primary	
+chr7_random	362490	unlocalized	chr7	primary	
+chr8_random	849593	unlocalized	chr8	primary	
+chr9_random	449403	unlocalized	chr9	primary	
+chr13_random	400311	unlocalized	chr13	primary	
+chr16_random	3994	unlocalized	chr16	primary	
+chr17_random	628739	unlocalized	chr17	primary	
+chrX_random	1785075	unlocalized	chrX	primary	
+chrY_random	58682461	unlocalized	chrY	primary	
+chrUn_random	5900358	unplaced		primary	
