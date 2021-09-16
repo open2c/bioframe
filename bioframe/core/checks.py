@@ -471,8 +471,8 @@ def is_sorted(
         view_name_col=view_name_col,
         cols=cols,
     )
-
-    if df.equals(df_sorted):
+    
+    if df.equals(df_sorted[df.columns]):
         return True
     else:
         return False
