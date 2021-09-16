@@ -472,7 +472,7 @@ def is_sorted(
         cols=cols,
     )
 
-    if df.equals(df_sorted):
+    if df.equals(df_sorted[df.columns]):
         return True
     else:
         return False
