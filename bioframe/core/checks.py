@@ -472,7 +472,10 @@ def is_sorted(
         cols=cols,
     )
 
-    if df.equals(df_sorted[df.columns]):
+    # make sure columns and dtypes are identical
+    df_sorted = df_sorted[df.columns].astype(df.dtypes)
+
+    if df.equals(df_sorted):
         return True
     else:
         return False
