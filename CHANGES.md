@@ -1,12 +1,12 @@
 # Release notes
 
-## [v0.3.0](https://github.com/open2c/bioframe/compare/v0.3.1...v0.3.2)
+## [v0.3.1](https://github.com/open2c/bioframe/compare/v0.3.0...v0.3.1)
 
 Date : 2021-11-15
 
 API changes:
 
-* `bioframe.is_sorted` supports checking sort against a given ordering on chromosomes.
+* `bioframe.sort_bedframe` does not append columns or modify their dtypes.
 
 
 ## [v0.3.0](https://github.com/open2c/bioframe/compare/v0.2.0...v0.3.0)
