@@ -1669,7 +1669,7 @@ def test_sort_bedframe():
     )
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
-
+    
     # when a view_df is provided, regions without assigned views
     # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
@@ -1696,7 +1696,18 @@ def test_sort_bedframe():
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
+    
+    # also test if sorting after assiging view to df denovo works,
+    # which is triggered by df_view_col = None:
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df)
+    )
 
+    # also test if sorting after assiging view to df from chromsizes-like dictionary works:
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df={"chrX":20, "chr1":10})
+    )
+    
     ### 'df' has no column 'view_region', so this should raise a ValueError
     assert pytest.raises(
         ValueError,
