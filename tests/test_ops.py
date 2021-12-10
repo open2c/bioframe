@@ -1654,10 +1654,10 @@ def test_sort_bedframe():
 
     df = pd.DataFrame(
         [
+            ["chr2", 5, 10, "+"],
             ["chr1", 0, 10, "+"],
             ["chrX", 5, 10, "+"],
             ["chrX", 0, 5, "+"],
-            ["chr2", 5, 10, "+"],
         ],
         columns=["chrom", "start", "end", "strand"],
     )
@@ -1674,34 +1674,34 @@ def test_sort_bedframe():
     )
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
-
+    
     # when a view_df is provided, regions without assigned views
     # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
         [
-            ["chrX", 0, 5, "+", "oranges"],
-            ["chrX", 5, 10, "+", "oranges"],
-            ["chr1", 0, 10, "+", "apples"],
-            ["chr2", 5, 10, "+", pd.NA],
+            ["chrX", 0, 5, "+"],
+            ["chrX", 5, 10, "+"],
+            ["chr1", 0, 10, "+"],
+            ["chr2", 5, 10, "+"],
         ],
-        columns=["chrom", "start", "end", "strand", "view_region"],
-    )
-    df_view_cat = pd.CategoricalDtype(
-        categories=["oranges", "grapefruit", "apples"], ordered=True
-    )
-    df_sorted = df_sorted.astype(
-        {
-            "chrom": str,
-            "start": pd.Int64Dtype(),
-            "end": pd.Int64Dtype(),
-            "view_region": df_view_cat,
-        }
+        columns=["chrom", "start", "end", "strand"],
     )
 
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
+    
+    # also test if sorting after assiging view to df denovo works,
+    # which is triggered by df_view_col = None:
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df)
+    )
 
+    # also test if sorting after assiging view to df from chromsizes-like dictionary works:
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df={"chrX":20, "chr1":10})
+    )
+    
     ### 'df' has no column 'view_region', so this should raise a ValueError
     assert pytest.raises(
         ValueError,
@@ -1731,5 +1731,5 @@ def test_sort_bedframe():
     )
     assert (
         df.dtypes
-        == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes[:-1]
+        == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()

@@ -1,0 +1,8 @@
+name	length	type	molecule	unit	aliases
+chrI	15072423	assembled	chrI	primary	NC_003279.7,I
+chrII	15279345	assembled	chrII	primary	NC_003280.9,II
+chrIII	13783700	assembled	chrIII	primary	NC_003281.9,III
+chrIV	17493793	assembled	chrIV	primary	NC_003282.7,IV
+chrV	20924149	assembled	chrV	primary	NC_003283.10,V
+chrX	17718866	assembled	chrX	primary	NC_003284.8,X
+chrM	13794	assembled	chrM	non-nuclear	NC_001328.1,MT,MtDNA

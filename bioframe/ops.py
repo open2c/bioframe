@@ -1577,19 +1577,21 @@ def sort_bedframe(
     df : pandas.DataFrame
         Valid bedframe.
 
-    view_df : pandas.DataFrame
-        Valid input to make a viewframe.
+    view_df : pandas.DataFrame | dict-like
+        Valid input to make a viewframe. When it is dict-like
+        :func:'bioframe.make_viewframe' will be used to convert
+        to viewframe. If view_df is not provided df is sorted by chrom and start.
 
     reset_index : bool
         Default True.
 
-    df_view_col:
+    df_view_col: None | str
         Column from 'df' used to associate intervals with view regions.
         The associated region in 'view_df' is then used for sorting.
-        If None, :func:'bioframe.ops.assign_view' will be used to assign view regions.
+        If None, :func:'bioframe.assign_view' will be used to assign view regions.
         Default None.
 
-    view_name_col:
+    view_name_col: str
         Column from view_df with names of regions.
         Default `name`.
 
@@ -1648,6 +1650,9 @@ def sort_bedframe(
         )
         out_df[df_view_col] = out_df[df_view_col].astype({df_view_col: view_cat})
         out_df.sort_values([df_view_col, ck1, sk1, ek1], inplace=True)
+
+    # make sure no columns get appended and dtypes are preserved
+    out_df = out_df[df.columns].astype(df.dtypes)
 
     if reset_index:
         out_df.reset_index(inplace=True, drop=True)

@@ -428,7 +428,7 @@ def is_sorted(
     df,
     view_df=None,
     reset_index=True,
-    df_view_col="view_region",
+    df_view_col=None,
     view_name_col="name",
     cols=None,
 ):
@@ -441,14 +441,19 @@ def is_sorted(
     ----------
     df : pandas.DataFrame
 
-    view_df : pandas.DataFrame or None
+    view_df : pandas.DataFrame | dict-like
         Optional view to pass to ``sort_bedframe``.
+        When it is dict-like :func:'bioframe.make_viewframe' will
+        be used to convert to viewframe. If view_df is not provided
+        df is assumed to be sorted by chrom and start.
 
     reset_index : bool
         Optional argument to pass to ``sort_bedframe``.
 
-    df_view_col: str
+    df_view_col: None | str
         Name of column from df that indicates region in view.
+        If None, :func:'bioframe.assign_view' will be used to assign view regions.
+        Default None.
 
     view_name_col: str
         Name of column from view that specifies unique region name.
@@ -473,9 +478,6 @@ def is_sorted(
         view_name_col=view_name_col,
         cols=cols,
     )
-
-    # make sure columns and dtypes are identical
-    df_sorted = df_sorted[df.columns].astype(df.dtypes)
 
     if df.equals(df_sorted):
         return True

@@ -13,6 +13,8 @@ Bioframe implements a variety of genomic interval operations directly on datafra
 
 Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html).
 
+If you use ***bioframe*** in your work, please cite via its zenodo DOI 10.5281/zenodo.5703622
+
 ## Installation
 The following are required before installing bioframe:
 * Python 3.7+
