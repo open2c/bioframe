@@ -12,7 +12,7 @@ import glob
 
 import pkg_resources
 
-from .schemas import SCHEMAS
+from .schemas import SCHEMAS, UCSC_MRNA_FIELDS
 from .fileops import (
     read_table,
     read_chromsizes,
@@ -203,6 +203,6 @@ class UCSCClient:
         url = urljoin(self._db_url, "gap.txt.gz")
         return read_table(
             url,
-            schema=UCSC_MRNA_FIELDS,,
+            schema=UCSC_MRNA_FIELDS,
             **kwargs,
         )
