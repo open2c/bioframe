@@ -16,7 +16,6 @@ from .schemas import SCHEMAS
 from .fileops import (
     read_table,
     read_chromsizes,
-    read_gapfile,
     extract_centromeres,
 )
 

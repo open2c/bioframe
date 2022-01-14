@@ -37,16 +37,30 @@ __all__ = [
 ]
 
 
-def read_table(filepath_or, schema=None, **kwargs):
+def read_table(filepath_or, schema=None, schema_is_strict=False, **kwargs):
     """
     Read a tab-delimited file into a data frame.
 
     Equivalent to :func:`pandas.read_table` but supports an additional
     `schema` argument to populate column names for common genomic formats.
 
+    Parameters
+    ----------
+    filepath_or : str, path object or file-like object
+        Any valid string path is acceptable. The string could be a URL
+    schema : str
+        Schema to use for table column names.
+    schema_is_strict : bool
+        Whether to check if columns are filled with NAs.
+
+    Returns
+    -------
+    df : pandas.DataFrame of intervals
+
     """
     kwargs.setdefault("sep", "\t")
     kwargs.setdefault("header", None)
+    kwargs.setdefault("index_col", False)
     if isinstance(filepath_or, str) and filepath_or.endswith(".gz"):
         kwargs.setdefault("compression", "gzip")
     if schema is not None:
@@ -56,7 +70,15 @@ def read_table(filepath_or, schema=None, **kwargs):
             if isinstance(schema, str):
                 raise ValueError("TSV schema not found: '{}'".format(schema))
             kwargs.setdefault("names", schema)
-    return pd.read_csv(filepath_or, **kwargs)
+    df = pd.read_csv(filepath_or, **kwargs)
+    if schema_is_strict:
+        if (df.notna().sum(axis=0) == 0).any():
+            raise ValueError(
+                "one or more columns are all NA,"
+                + " check agreement between number of fields in schema"
+                + " and number of columns in input file"
+            )
+    return df
 
 
 def read_chromsizes(
