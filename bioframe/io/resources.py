@@ -92,26 +92,38 @@ def fetch_chromsizes(
 
 
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
-    """"""
-    # the priority goes as
-    # - Local
-    # - centromeres.txt
-    # - cytoBandIdeo
-    # - cytoBand
-    # - gap.txt
+    """
+    Extract centromere locations for a given assembly 'db' from a variety
+    of file formats in UCSC (centromeres, cytoband, gap) depending on
+    availability, returning a DataFrame.
 
-    # if db in CENTROMERES:
-    #     return CENTROMERES[db]
+    Parameters
+    ----------
 
-    # if not _check_connectivity("http://www.google.com"):
-    #     raise ConnectionError("No internet connection!")
+    db : str
 
-    # if not _check_connectivity("https://hgdownload.cse.ucsc.edu"):
-    #     raise ConnectionError(
-    #         "No connection to the genome database at hgdownload.cse.ucsc.edu!"
-    #     )
+    merge : bool
+        Whether to merge all centromere intervals per chromosome into
+        one consolidated centromere interval.
+        Default True.
+
+    Returns
+    -------
+    DataFrame with centromere 'chrom', 'start', 'end', 'mid'.
+
+    Notes
+    -----
+    the priority goes as
+    - Local (not implemented)
+    - centromeres.txt
+    - cytoBandIdeo
+    - cytoBand
+    - gap.txt
+
+    """
 
     if provider == "local":
+        raise NotImplementedError("local method not currently implemented")
         fpath = f"data/{db}.centromeres"
         if pkg_resources.resource_exists("bioframe.io", fpath):
             return read_chromsizes(
@@ -137,6 +149,8 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
                 pass
         else:
             raise ValueError("No source for centromere data found.")
+    else:
+        raise NotImplementedError("currently UCSC is only implemented provider")
 
     return extract_centromeres(df, schema=schema, merge=merge)
 
@@ -156,28 +170,6 @@ class UCSCClient:
         as_bed=False,
         **kwargs,
     ):
-        """
-        Fetch chromsizes from the UCSC database.
-
-        Parameters
-        ----------
-        filter_chroms : bool, optional
-            Filter for chromosome names given in ``chrom_patterns``.
-        chrom_patterns : sequence, optional
-            Sequence of regular expressions to capture desired sequence names.
-        natsort : bool, optional
-            Sort each captured group of names in natural order. Default is True.
-        as_bed : bool, optional
-            If True, return chromsizes as an interval dataframe (chrom, start, end).
-        **kwargs :
-            Passed to :func:`pandas.read_csv`
-
-        Returns
-        -------
-        Series of integer bp lengths indexed by sequence name or an interval dataframe.
-
-        """
-
         url = urljoin(self._db_url, "chromInfo.txt.gz")
         return read_chromsizes(
             url,
@@ -194,7 +186,12 @@ class UCSCClient:
 
     def fetch_gaps(self, **kwargs):
         url = urljoin(self._db_url, "gap.txt.gz")
-        return read_gapfile(url, **kwargs)
+        return read_table(
+            url,
+            schema="gap",
+            usecols=["chrom", "start", "end", "length", "type", "bridge"],
+            **kwargs,
+        )
 
     def fetch_cytoband(self, ideo=False, **kwargs):
         if ideo:

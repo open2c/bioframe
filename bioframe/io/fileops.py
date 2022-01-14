@@ -20,7 +20,7 @@ except ImportError:
 
 from ..core.stringops import parse_region
 from ..core.arrops import argnatsort
-from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+from .schemas import SCHEMAS, BAM_FIELDS
 
 
 __all__ = [
@@ -68,8 +68,8 @@ def read_chromsizes(
     **kwargs
 ):
     """
-    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
-    database, where ``db`` is a genome assembly name.
+    Read a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
+    database, where ``db`` is a genome assembly name, as a `pandas.Series`.
 
     Parameters
     ----------
@@ -136,20 +136,10 @@ def read_chromsizes(
     return chromtable
 
 
-def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
-    gap = pd.read_csv(
-        filepath_or_fp,
-        sep="\t",
-        names=GAP_FIELDS,
-        usecols=["chrom", "start", "end", "length", "type", "bridge"],
-        **kwargs
-    )
-    if chroms is not None:
-        gap = gap[gap.chrom.isin(chroms)]
-    return gap
-
-
 def read_tabix(fp, chrom=None, start=None, end=None):
+    """
+    Read a tabix-indexed file into dataFrame.
+    """
     import pysam
 
     with closing(pysam.TabixFile(fp)) as f:
@@ -173,6 +163,9 @@ def read_pairix(
     dtypes=None,
     **kwargs
 ):
+    """
+    Read a pairix-indexed file into DataFrame.
+    """
     import pypairix
     import cytoolz as toolz
 
@@ -216,6 +209,9 @@ def read_pairix(
 
 
 def read_bam(fp, chrom=None, start=None, end=None):
+    """
+    Read bam records into a DataFrame.
+    """
     import pysam
 
     with closing(pysam.AlignmentFile(fp, "rb")) as f:
@@ -242,6 +238,11 @@ def read_bam(fp, chrom=None, start=None, end=None):
 
 
 def extract_centromeres(df, schema=None, merge=True):
+    """
+    Attempts to extract centromere locations from a variety of file formats,
+    returning 'chrom', 'start', 'end', 'mid' in a pandas.DataFrame.
+    """
+
     if schema == "centromeres":
         cens = df
     elif schema == "cytoband":
