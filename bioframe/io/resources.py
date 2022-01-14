@@ -24,8 +24,6 @@ __all__ = [
     "fetch_chromsizes",
     "fetch_centromeres",
     "UCSCClient",
-    "EncodeClient",
-    "FDNClient",
 ]
 
 
@@ -204,5 +202,3 @@ class UCSCClient:
         else:
             url = urljoin(self._db_url, "cytoBand.txt.gz")
         return read_table(url, schema="cytoband")
-
-

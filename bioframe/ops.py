@@ -965,13 +965,13 @@ def closest(
         If True, return the closest non-overlapping interval.
 
     ignore_upstream : bool
-        If True, ignore intervals in `df2` that are upstream (relative to the 
-        reference strand) of intervals in `df1`. Currently, we are not taking 
+        If True, ignore intervals in `df2` that are upstream (relative to the
+        reference strand) of intervals in `df1`. Currently, we are not taking
         the feature strands into account.
 
     ignore_downstream : bool
-        If True, ignore intervals in `df2` that are downstream (relative to the 
-        reference strand) of intervals in `df1`. Currently, we are not taking 
+        If True, ignore intervals in `df2` that are downstream (relative to the
+        reference strand) of intervals in `df1`. Currently, we are not taking
         the feature strands into account.
 
     tie_breaking_col : str
@@ -1335,7 +1335,7 @@ def trim(
     """
     Trim each interval to fall within regions specified in the viewframe 'view_df'.
 
-    Intervals that fall outside of view regions are replaced with nulls. 
+    Intervals that fall outside of view regions are replaced with nulls.
     If no 'view_df' is provided, intervals are truncated at zero to avoid
         negative values.
 
@@ -1387,9 +1387,9 @@ def trim(
     )
 
     if inferred_view:
-        print('correct')
+        print("correct")
         pass
-    elif (df_view_col is None):
+    elif df_view_col is None:
         if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
             raise ValueError("column view_region already exists in input df")
         df_view_col = "view_region"

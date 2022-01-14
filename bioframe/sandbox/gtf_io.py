@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def parse_gtf_attributes(attrs, kv_sep="=", item_sep=";", quotechar='"', **kwargs):
     item_lists = attrs.str.split(item_sep)
     item_lists = item_lists.apply(

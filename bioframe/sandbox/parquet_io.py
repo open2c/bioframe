@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def to_parquet(
     pieces,
     outpath,
