@@ -198,3 +198,11 @@ class UCSCClient:
         else:
             url = urljoin(self._db_url, "cytoBand.txt.gz")
         return read_table(url, schema="cytoband")
+    
+    def fetch_mrna(self, **kwargs):
+        url = urljoin(self._db_url, "gap.txt.gz")
+        return read_table(
+            url,
+            schema=UCSC_MRNA_FIELDS,,
+            **kwargs,
+        )

@@ -322,7 +322,8 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
 
 def frac_gene_coverage(df, ucsc_mrna):
     """
-    Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
+    Calculate number and fraction of overlaps by predicted and verified 
+    RNA isoforms for a set of intervals stored in a dataframe.
 
     Parameters
     ----------
