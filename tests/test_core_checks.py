@@ -55,9 +55,9 @@ def test_is_contained():
 
     view_df = pd.DataFrame(
         [
-            ["chr1", 0, 12, "chr1p"],
-            ["chr1", 13, 26, "chr1q"],
-            ["chrX", 1, 8, "chrX_0"],
+            ["chr1", 0, 20, "chr1p"],
+            ["chr1", 21, 30, "chr1q"],
+            ["chrX", 1, 10, "chrX_0"],
         ],
         columns=["chrom", "start", "end", "name"],
     )
@@ -71,12 +71,9 @@ def test_is_contained():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
-    assert not is_contained(df, view_df, df_view_col="name")
+    assert not is_contained(df, view_df, df_view_col="view_region")
 
-    ### is contained because passing df_view_col=None infers view assignment
-    assert is_contained(df, view_df, df_view_col=None)
-
-    ### not contained because first two intervals fall outside the view regions
+    ### not contained because second interval falls outside the view regions
     df = pd.DataFrame(
         [
             ["chr1", 14, 15, "chr1p"],
@@ -87,7 +84,6 @@ def test_is_contained():
     )
     assert not is_contained(df, view_df)
 
-    ### is contained
     df = pd.DataFrame(
         [
             ["chr1", 12, 12, "chr1p"],
@@ -96,7 +92,27 @@ def test_is_contained():
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
+    # is contained, because assignments are inferred
     assert is_contained(df, view_df)
+
+    # is not contained, because assignments are not inferred
+    assert not is_contained(df, view_df, df_view_col="view_region")
+
+    ### second interval falls completely out of the view
+    df = pd.DataFrame(
+        [
+            ["chr1", 12, 12, "chr1p"],
+            ["chr1", 100, 101, "chr1q"],
+        ],
+        columns=["chrom", "start", "end", "view_region"],
+    )
+    # fails due to NAs after overlap to infer the regions
+    with pytest.raises(AssertionError):
+        is_contained(df, view_df, raise_errors=True)
+
+    # fails due to some of the intervals being trimmed
+    with pytest.raises(ValueError):
+        is_contained(df, view_df, df_view_col="view_region", raise_errors=True)
 
 
 def test_is_overlapping():
@@ -169,7 +185,7 @@ def test_is_tiling():
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert is_tiling(df1, chromsizes) is True
 
-    ### not contained, since (chr1,0,9) is associated with chr1q
+    ### not tiling, since (chr1,0,9) is associated with chr1q
     df1 = pd.DataFrame(
         [
             ["chr1", 0, 9, "chr1q"],
@@ -181,7 +197,7 @@ def test_is_tiling():
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert is_tiling(df1, chromsizes) is False
 
-    ### not contained, contains overlaps
+    ### not tiling, contains overlaps
     df1 = pd.DataFrame(
         [
             ["chr1", 0, 9, "chr1p"],
@@ -193,7 +209,7 @@ def test_is_tiling():
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert is_tiling(df1, chromsizes) is False
 
-    ### not covering
+    ### not tiling, since it doesn't cover
     df1 = pd.DataFrame(
         [
             ["chr1", 11, 12, "chr1q"],

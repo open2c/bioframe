@@ -1479,7 +1479,12 @@ def test_count_overlaps():
 
     counts_nans_inserted_after = (
         pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
-    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),})[
+    ).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )[
         ["chrom1", "start", "end", "strand", "animal", "count"]
     ]
 

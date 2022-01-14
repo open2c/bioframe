@@ -286,6 +286,8 @@ def is_contained(
     if df_view_col is None:
         try:
             df_view_assigned = ops.overlap(df, view_df)
+            assert (df_view_assigned['end_'].isna()).sum()==0
+            assert (df_view_assigned['start_'].isna()).sum()==0
             assert (df_view_assigned["end"]<=df_view_assigned["end_"]).all()
             assert (df_view_assigned["start"]>=df_view_assigned["start_"]).all()
         except AssertionError:
