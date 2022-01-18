@@ -43,8 +43,7 @@ def select(df, region, cols=None):
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -94,8 +93,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. Default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. Default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1360,13 +1358,11 @@ def trim(
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1388,13 +1384,14 @@ def trim(
         }
         inferred_view = True
 
+    if inferred_view:
+        view_name_col = ck
     ckv, skv, ekv = _get_default_colnames() if cols_view is None else cols_view
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
     ).rename(columns=dict(zip([ckv, skv, ekv], [ck, sk, ek])))
 
     if inferred_view:
-        print("correct")
         pass
     elif df_view_col is None:
         if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
@@ -1420,8 +1417,6 @@ def trim(
             view_name_col=view_name_col,
         )
 
-    if inferred_view:
-        view_name_col = ck
     df_trimmed = df_trimmed.merge(
         view_df,
         how="left",
@@ -1469,8 +1464,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1613,13 +1607,11 @@ def sort_bedframe(
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1723,13 +1715,11 @@ def assign_view(
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
