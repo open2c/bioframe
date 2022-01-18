@@ -1384,15 +1384,13 @@ def trim(
         }
         inferred_view = True
 
-    if inferred_view:
-        view_name_col = ck
     ckv, skv, ekv = _get_default_colnames() if cols_view is None else cols_view
     view_df = construction.make_viewframe(
         view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
     ).rename(columns=dict(zip([ckv, skv, ekv], [ck, sk, ek])))
 
     if inferred_view:
-        pass
+        view_name_col = ck
     elif df_view_col is None:
         if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
             raise ValueError("column view_region already exists in input df")
