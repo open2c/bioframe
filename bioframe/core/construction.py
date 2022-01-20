@@ -185,6 +185,7 @@ def add_ucsc_name_column(reg_df, name_col="name", cols=None):
 def make_viewframe(
     regions,
     check_bounds=None,
+    name_style=None,
     view_name_col="name",
     cols=None,
 ):
@@ -200,6 +201,10 @@ def make_viewframe(
             - a pandas series of chromosomes lengths with index specifying region names
             - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
             - a pandas DataFrame, skips to validation step
+
+    name_style : None or "ucsc"
+        If None and no column view_name_col, propagate values from cols[0]
+        If "ucsc" and no column view_name_col, create UCSC style names
 
     check_bounds : None, or chromosome sizes provided as any of valid formats above
         Optional, if provided checks if regions in the view are contained by regions
@@ -237,7 +242,12 @@ def make_viewframe(
             )
 
     if not view_name_col in view_df.columns:
-        view_df = add_ucsc_name_column(view_df, name_col=view_name_col, cols=cols)
+        if name_style is None:
+            view_df[view_name_col] = view_df[ck1].values
+        elif name_style.lower() == "ucsc":
+            view_df = add_ucsc_name_column(view_df, name_col=view_name_col, cols=cols)
+        else:
+            raise ValueError("unknown value for name_style")
 
     if checks.is_viewframe(
         view_df, view_name_col=view_name_col, cols=cols, raise_errors=True

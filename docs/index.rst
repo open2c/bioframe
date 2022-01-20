@@ -15,6 +15,7 @@ bioframe
 
    guide-quickstart
    guide-intervalops.md
+   guide-io.ipynb
    guide-performance.ipynb
    guide-recipes.md
    guide-definitions

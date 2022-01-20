@@ -777,10 +777,10 @@ def test_complement():
 
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 1, "chr1:0-100"],
-            ["chr1", 10, 12, "chr1:0-100"],
-            ["chr1", 14, 100, "chr1:0-100"],
-            ["chrX", 0, 100, "chrX:0-100"],
+            ["chr1", 0, 1, "chr1"],
+            ["chr1", 10, 12, "chr1"],
+            ["chr1", 14, 100, "chr1"],
+            ["chrX", 0, 100, "chrX"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -805,11 +805,11 @@ def test_complement():
     df1.iloc[0, 0] = "chrX"
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 0, 3, "chr1:0-100"],
-            ["chr1", 10, 12, "chr1:0-100"],
-            ["chr1", 14, 100, "chr1:0-100"],
-            ["chrX", 0, 1, "chrX:0-100"],
-            ["chrX", 5, 100, "chrX:0-100"],
+            ["chr1", 0, 3, "chr1"],
+            ["chr1", 10, 12, "chr1"],
+            ["chr1", 14, 100, "chr1"],
+            ["chrX", 0, 1, "chrX"],
+            ["chrX", 5, 100, "chrX"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -823,8 +823,8 @@ def test_complement():
     )
     df1_complement = pd.DataFrame(
         [
-            ["chr1", 5, 10, "chr1:0-9223372036854775807"],
-            ["chr1", 20, np.iinfo(np.int64).max, "chr1:0-9223372036854775807"],
+            ["chr1", 5, 10, "chr1"],
+            ["chr1", 20, np.iinfo(np.int64).max, "chr1"],
         ],
         columns=["chrom", "start", "end", "view_region"],
     )
@@ -834,7 +834,9 @@ def test_complement():
     df1 = pd.DataFrame(
         [["chr1", -5, 5], ["chr1", 10, 20]], columns=["chrom", "start", "end"]
     )
-    chromsizes = {"chr1": 15}
+    chromsizes = bioframe.make_viewframe(
+        {"chr1": 15}, name_style="ucsc", view_name_col="VR"
+    )
     df1_complement = pd.DataFrame(
         [
             ["chr1", 5, 10, "chr1:0-15"],
@@ -1505,12 +1507,7 @@ def test_count_overlaps():
 
     counts_nans_inserted_after = (
         pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
-    ).astype(
-        {
-            "start": pd.Int64Dtype(),
-            "end": pd.Int64Dtype(),
-        }
-    )[
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),})[
         ["chrom1", "start", "end", "strand", "animal", "count"]
     ]
 
@@ -1713,7 +1710,7 @@ def test_sort_bedframe():
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
 
     # when a view_df is provided, regions without assigned views
-    # are placed last and view_region is returned as a categorical
+    # are placed last
     df_sorted = pd.DataFrame(
         [
             ["chrX", 0, 5, "+"],
@@ -1724,6 +1721,7 @@ def test_sort_bedframe():
         columns=["chrom", "start", "end", "strand"],
     )
 
+    # test if sorting after assiging view to df denovo works,
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
@@ -1740,9 +1738,10 @@ def test_sort_bedframe():
         ),
     )
 
-    # also test if sorting after assiging view to df denovo works,
-    # which is triggered by df_view_col = None:
-    pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df, view_df))
+    # also test if sorting after assigning view to df denovo works with default view_name_col
+    pd.testing.assert_frame_equal(
+        df_sorted, bioframe.sort_bedframe(df, view_df.rename(columns={"fruit": "name"}))
+    )
 
     # also test if sorting after assiging view to df from chromsizes-like dictionary works:
     pd.testing.assert_frame_equal(

@@ -109,8 +109,8 @@ def make_chromarms(
     df_chromarms["name"] = df_chromarms[ck1] + [
         suffixes[i] for i in df_chromarms["sub_index_"].values
     ]
-    #df_chromarms.drop(columns=columns_to_drop, inplace=True)
-    return df_chromarms[[ck1, sk1, ek1, 'name']]
+    # df_chromarms.drop(columns=columns_to_drop, inplace=True)
+    return df_chromarms[[ck1, sk1, ek1, "name"]]
 
 
 def binnify(chromsizes, binsize, rel_ids=False):
@@ -322,7 +322,8 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
 
 def frac_gene_coverage(df, ucsc_mrna):
     """
-    Calculate number and fraction of overlaps by genes for a set of intervals stored in a dataframe.
+    Calculate number and fraction of overlaps by predicted and verified 
+    RNA isoforms for a set of intervals stored in a dataframe.
 
     Parameters
     ----------
@@ -371,10 +372,10 @@ def pair_by_distance(
         A BED-like dataframe.
     min_sep, max_sep : int
         Minimum and maximum separation between intervals in bp.
-        Min > 0 and Max >= Min. 
+        Min > 0 and Max >= Min.
     min_intervening, max_intervening : int
         Minimum and maximum number of intervening intervals separating pairs.
-        Min > 0 and Max >= Min. 
+        Min > 0 and Max >= Min.
     relative_to : str,
         Whether to calculate distances between interval "midpoints" or "endpoints".
         Default "midpoints".
@@ -450,7 +451,9 @@ def pair_by_distance(
 
     # Select only the pairs that are separated by
     # at least min_intervening intervals and no more than max_intervening intervals
-    idxs["intervening"] = np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
+    idxs["intervening"] = (
+        np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
+    )
     idxs = idxs.query(
         f"intervening<={max_intervening} and intervening>={min_intervening}"
     )
