@@ -181,15 +181,16 @@ def test_make_viewframe():
     )
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe({"chrTESTX": 10, "chrTESTX_p": 12},
-            name_style='ucsc'),
+        construction.make_viewframe(
+            {"chrTESTX": 10, "chrTESTX_p": 12}, name_style="ucsc"
+        ),
     )
 
     # test list input
     region_list = [("chrTESTX", 0, 10), ("chrTESTX_p", 0, 12)]
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(region_list, name_style='ucsc'),
+        construction.make_viewframe(region_list, name_style="ucsc"),
     )
 
     # test pd.Series input
@@ -208,7 +209,7 @@ def test_make_viewframe():
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(chromsizes, name_style='UCSC'),
+        construction.make_viewframe(chromsizes, name_style="UCSC"),
     )
 
     # test pd.DataFrame input

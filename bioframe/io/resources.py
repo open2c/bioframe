@@ -112,12 +112,15 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
 
     Notes
     -----
-    the priority goes as
+    The priority goes as
     - Local (not implemented)
     - centromeres.txt
     - cytoBandIdeo
     - cytoBand
     - gap.txt
+
+    Currently only works for human assemblies.
+
 
     """
 
