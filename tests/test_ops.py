@@ -7,6 +7,7 @@ import pytest
 import bioframe
 
 import bioframe.core.checks as checks
+from bioframe.core.construction import make_viewframe
 
 # import pyranges as pr
 
@@ -162,9 +163,22 @@ def test_trim():
     )
     with pytest.raises(ValueError):
         bioframe.trim(df, view_df=view_df)
+
     # df_view_col already exists, so need to specify it:
     pd.testing.assert_frame_equal(
         df_trimmed, bioframe.trim(df, view_df=view_df, df_view_col="view_region")
+    )
+
+    # non-default columns in view
+    funky_view = view_df.rename(columns={"chrom": "chr"})
+    pd.testing.assert_frame_equal(
+        df_trimmed,
+        bioframe.trim(
+            df,
+            view_df=funky_view,
+            df_view_col="view_region",
+            cols_view=["chr", "start", "end"],
+        ),
     )
 
     ### trim with view_df interpreted from dictionary for chromsizes
@@ -773,6 +787,18 @@ def test_complement():
 
     pd.testing.assert_frame_equal(
         bioframe.complement(df1, view_df=df1_chromsizes), df1_complement
+    )
+
+    # non-default columns in view
+    funky_view = make_viewframe(df1_chromsizes, cols=["chr", "start", "end"])
+
+    pd.testing.assert_frame_equal(
+        bioframe.complement(
+            df1,
+            view_df=funky_view,
+            cols_view=["chr", "start", "end"],
+        ),
+        df1_complement,
     )
 
     ### test complement with two chromosomes ###
@@ -1551,6 +1577,17 @@ def test_assign_view():
     )
     pd.testing.assert_frame_equal(df_assigned, bioframe.assign_view(df, view_df))
 
+    # non-default columns in view
+    funky_view = view_df.rename(columns={"chrom": "chr"})
+    pd.testing.assert_frame_equal(
+        df_assigned,
+        bioframe.assign_view(
+            df,
+            view_df=funky_view,
+            cols_view=["chr", "start", "end"],
+        ),
+    )
+
     # assignment with funny view_name_col and an interval on chr2 not cataloged in the view_df
     view_df = pd.DataFrame(
         [
@@ -1674,7 +1711,7 @@ def test_sort_bedframe():
     )
 
     pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df))
-    
+
     # when a view_df is provided, regions without assigned views
     # are placed last and view_region is returned as a categorical
     df_sorted = pd.DataFrame(
@@ -1691,13 +1728,28 @@ def test_sort_bedframe():
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df, view_name_col="fruit")
     )
-    
+
+    # non-default columns in view
+    funky_view = view_df.rename(columns={"chrom": "chr"})
+    pd.testing.assert_frame_equal(
+        df_sorted,
+        bioframe.sort_bedframe(
+            df,
+            view_df=funky_view,
+            view_name_col="fruit",
+            cols_view=["chr", "start", "end"],
+        ),
+    )
+
+    # also test if sorting after assiging view to df denovo works,
+    # which is triggered by df_view_col = None:
+    pd.testing.assert_frame_equal(df_sorted, bioframe.sort_bedframe(df, view_df))
 
     # also test if sorting after assiging view to df from chromsizes-like dictionary works:
     pd.testing.assert_frame_equal(
-        df_sorted, bioframe.sort_bedframe(df, view_df={"chrX":20, "chr1":10})
+        df_sorted, bioframe.sort_bedframe(df, view_df={"chrX": 20, "chr1": 10})
     )
-    
+
     ### 'df' has no column 'view_region', so this should raise a ValueError
     assert pytest.raises(
         ValueError,
@@ -1726,6 +1778,5 @@ def test_sort_bedframe():
         bioframe.sort_bedframe(df, view_df, view_name_col="fruit")["chrom"].values[-1]
     )
     assert (
-        df.dtypes
-        == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
+        df.dtypes == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()
