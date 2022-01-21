@@ -181,24 +181,26 @@ def test_make_viewframe():
     )
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe({"chrTESTX": 10, "chrTESTX_p": 12}),
+        construction.make_viewframe(
+            {"chrTESTX": 10, "chrTESTX_p": 12}, name_style="ucsc"
+        ),
     )
 
     # test list input
     region_list = [("chrTESTX", 0, 10), ("chrTESTX_p", 0, 12)]
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(region_list),
+        construction.make_viewframe(region_list, name_style="ucsc"),
     )
 
     # test pd.Series input
     chromsizes = pd.Series(data=[5, 8], index=["chrTESTXq", "chrTEST_2p"])
     d = """      chrom  start  end        name
-    0  chrTESTXq      0    5   chrTESTXq:0-5
-    1   chrTEST_2p      0    8  chrTEST_2p:0-8"""
+    0  chrTESTXq      0    5   chrTESTXq
+    1   chrTEST_2p      0    8  chrTEST_2p"""
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
-        view_df.copy(), construction.make_viewframe(chromsizes)
+        view_df.copy(), construction.make_viewframe(chromsizes, name_style=None)
     )
 
     d = """          chrom   start   end name
@@ -207,7 +209,7 @@ def test_make_viewframe():
     view_df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
         view_df.copy(),
-        construction.make_viewframe(chromsizes),
+        construction.make_viewframe(chromsizes, name_style="UCSC"),
     )
 
     # test pd.DataFrame input

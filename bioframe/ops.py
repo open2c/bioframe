@@ -43,8 +43,7 @@ def select(df, region, cols=None):
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -94,8 +93,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. Default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. Default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -965,13 +963,13 @@ def closest(
         If True, return the closest non-overlapping interval.
 
     ignore_upstream : bool
-        If True, ignore intervals in `df2` that are upstream (relative to the 
-        reference strand) of intervals in `df1`. Currently, we are not taking 
+        If True, ignore intervals in `df2` that are upstream (relative to the
+        reference strand) of intervals in `df1`. Currently, we are not taking
         the feature strands into account.
 
     ignore_downstream : bool
-        If True, ignore intervals in `df2` that are downstream (relative to the 
-        reference strand) of intervals in `df1`. Currently, we are not taking 
+        If True, ignore intervals in `df2` that are downstream (relative to the
+        reference strand) of intervals in `df1`. Currently, we are not taking
         the feature strands into account.
 
     tie_breaking_col : str
@@ -1331,11 +1329,12 @@ def trim(
     view_name_col="name",
     return_view_columns=False,
     cols=None,
+    cols_view=None,
 ):
     """
     Trim each interval to fall within regions specified in the viewframe 'view_df'.
 
-    Intervals that fall outside of view regions are replaced with nulls. 
+    Intervals that fall outside of view regions are replaced with nulls.
     If no 'view_df' is provided, intervals are truncated at zero to avoid
         negative values.
 
@@ -1344,7 +1343,7 @@ def trim(
     df : pandas.DataFrame
 
     view_df : None or pandas.DataFrame
-        View specifying region start and ends for trimming. Attepts to
+        View specifying region start and ends for trimming. Attempts to
         convert dictionary and pd.Series formats to viewFrames.
 
     df_view_col : str or None
@@ -1359,8 +1358,11 @@ def trim(
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    cols_view : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1382,14 +1384,14 @@ def trim(
         }
         inferred_view = True
 
+    ckv, skv, ekv = _get_default_colnames() if cols_view is None else cols_view
     view_df = construction.make_viewframe(
-        view_df, view_name_col=view_name_col, cols=cols
-    )
+        view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
+    ).rename(columns=dict(zip([ckv, skv, ekv], [ck, sk, ek])))
 
     if inferred_view:
-        print('correct')
-        pass
-    elif (df_view_col is None):
+        view_name_col = ck
+    elif df_view_col is None:
         if _verify_columns(df_trimmed, ["view_region"], return_as_bool=True):
             raise ValueError("column view_region already exists in input df")
         df_view_col = "view_region"
@@ -1401,6 +1403,7 @@ def trim(
             df_view_col=df_view_col,
             view_name_col=view_name_col,
             cols=cols,
+            cols_view=cols,
         )
     else:
         _verify_columns(df_trimmed, [df_view_col])
@@ -1412,8 +1415,6 @@ def trim(
             view_name_col=view_name_col,
         )
 
-    if inferred_view:
-        view_name_col = ck
     df_trimmed = df_trimmed.merge(
         view_df,
         how="left",
@@ -1439,7 +1440,7 @@ def trim(
         return df_trimmed[df_columns]
 
 
-def complement(df, view_df=None, view_name_col="name", cols=None):
+def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None):
     """
     Find genomic regions in a viewFrame 'view_df' that are not covered by any interval in the dataFrame 'df'.
 
@@ -1459,6 +1460,10 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
+    cols_view : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+
     Returns
     -------
     df_complement : pandas.DataFrame
@@ -1477,9 +1482,11 @@ def complement(df, view_df=None, view_name_col="name", cols=None):
 
     if view_df is None:
         view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].dropna().values)}
+
+    ckv, skv, ekv = _get_default_colnames() if cols_view is None else cols_view
     view_df = construction.make_viewframe(
-        view_df, view_name_col=view_name_col, cols=cols
-    )
+        view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
+    ).rename(columns=dict(zip([ckv, skv, ekv], [ck, sk, ek])))
 
     # associate intervals to regions, required to enable single interval from df to
     # overlap multiple intervals in view_df. note this differs from the goal of assign_view.
@@ -1563,6 +1570,7 @@ def sort_bedframe(
     df_view_col=None,
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Sorts a bedframe 'df'.
@@ -1595,6 +1603,14 @@ def sort_bedframe(
         Column from view_df with names of regions.
         Default `name`.
 
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    cols_view : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+
     Returns
     -------
     out_df : sorted bedframe
@@ -1614,9 +1630,10 @@ def sort_bedframe(
         out_df.sort_values([ck1, sk1, ek1], inplace=True)
 
     else:
+        ckv, skv, ekv = _get_default_colnames() if cols_view is None else cols_view
         view_df = construction.make_viewframe(
-            view_df, view_name_col=view_name_col, cols=cols
-        )
+            view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
+        ).rename(columns=dict(zip([ckv, skv, ekv], [ck1, sk1, ek1])))
 
         if df_view_col is None:
             if _verify_columns(out_df, ["view_region"], return_as_bool=True):
@@ -1628,6 +1645,7 @@ def sort_bedframe(
                 df_view_col=df_view_col,
                 view_name_col=view_name_col,
                 cols=cols,
+                cols_view=cols,
             )
 
         else:
@@ -1667,6 +1685,7 @@ def assign_view(
     df_view_col="view_region",
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Associates genomic intervals in bedframe ``df`` with regions in viewframe ``view_df``, based on their largest overlap.
@@ -1676,7 +1695,7 @@ def assign_view(
     df : pandas.DataFrame
 
     view_df : pandas.DataFrame
-        ViewFrame specifying region start and ends for trimming. Attepts to
+        ViewFrame specifying region start and ends for assignment. Attempts to
         convert dictionary and pd.Series formats to viewFrames.
 
     drop_unassigned : bool
@@ -1694,8 +1713,11 @@ def assign_view(
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals, provided separately for each set. The default
-        values are 'chrom', 'start', 'end'.
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    cols_view : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -1714,7 +1736,7 @@ def assign_view(
 
     checks.is_bedframe(df, raise_errors=True, cols=cols)
     view_df = construction.make_viewframe(
-        view_df, view_name_col=view_name_col, cols=cols
+        view_df, view_name_col=view_name_col, cols=cols_view
     )
 
     overlap_view = overlap(
@@ -1726,7 +1748,7 @@ def assign_view(
         keep_order=False,
         return_index=True,
         cols1=cols,
-        cols2=cols,
+        cols2=cols_view,
     )
 
     overlap_columns = overlap_view.columns

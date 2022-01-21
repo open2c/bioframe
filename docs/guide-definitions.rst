@@ -1,7 +1,7 @@
-.. _Technical_Notes:
+.. _Definitions:
 
-Technical Notes
-===============
+Definitions
+===========
 
         
 Interval:

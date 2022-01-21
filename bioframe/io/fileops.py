@@ -20,7 +20,7 @@ except ImportError:
 
 from ..core.stringops import parse_region
 from ..core.arrops import argnatsort
-from .schemas import SCHEMAS, BAM_FIELDS, GAP_FIELDS, UCSC_MRNA_FIELDS
+from .schemas import SCHEMAS, BAM_FIELDS
 
 
 __all__ = [
@@ -34,21 +34,33 @@ __all__ = [
     "to_bigwig",
     "read_bigbed",
     "to_bigbed",
-    "read_parquet",
-    "to_parquet",
 ]
 
 
-def read_table(filepath_or, schema=None, **kwargs):
+def read_table(filepath_or, schema=None, schema_is_strict=False, **kwargs):
     """
     Read a tab-delimited file into a data frame.
 
     Equivalent to :func:`pandas.read_table` but supports an additional
     `schema` argument to populate column names for common genomic formats.
 
+    Parameters
+    ----------
+    filepath_or : str, path object or file-like object
+        Any valid string path is acceptable. The string could be a URL
+    schema : str
+        Schema to use for table column names.
+    schema_is_strict : bool
+        Whether to check if columns are filled with NAs.
+
+    Returns
+    -------
+    df : pandas.DataFrame of intervals
+
     """
     kwargs.setdefault("sep", "\t")
     kwargs.setdefault("header", None)
+    kwargs.setdefault("index_col", False)
     if isinstance(filepath_or, str) and filepath_or.endswith(".gz"):
         kwargs.setdefault("compression", "gzip")
     if schema is not None:
@@ -58,22 +70,15 @@ def read_table(filepath_or, schema=None, **kwargs):
             if isinstance(schema, str):
                 raise ValueError("TSV schema not found: '{}'".format(schema))
             kwargs.setdefault("names", schema)
-    return pd.read_csv(filepath_or, **kwargs)
-
-
-def parse_gtf_attributes(attrs, kv_sep="=", item_sep=";", quotechar='"', **kwargs):
-    item_lists = attrs.str.split(item_sep)
-    item_lists = item_lists.apply(
-        lambda items: [item.strip().split(kv_sep) for item in items]
-    )
-    stripchars = quotechar + " "
-    item_lists = item_lists.apply(
-        lambda items: [
-            map(lambda x: x.strip(stripchars), item) for item in items if len(item) == 2
-        ]
-    )
-    kv_records = item_lists.apply(dict)
-    return pd.DataFrame.from_records(kv_records, **kwargs)
+    df = pd.read_csv(filepath_or, **kwargs)
+    if schema_is_strict:
+        if (df.notna().sum(axis=0) == 0).any():
+            raise ValueError(
+                "one or more columns are all NA,"
+                + " check agreement between number of fields in schema"
+                + " and number of columns in input file"
+            )
+    return df
 
 
 def read_chromsizes(
@@ -85,8 +90,8 @@ def read_chromsizes(
     **kwargs
 ):
     """
-    Parse a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
-    database, where ``db`` is a genome assembly name.
+    Read a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
+    database, where ``db`` is a genome assembly name, as a `pandas.Series`.
 
     Parameters
     ----------
@@ -153,33 +158,10 @@ def read_chromsizes(
     return chromtable
 
 
-def read_gapfile(filepath_or_fp, chroms=None, **kwargs):
-    gap = pd.read_csv(
-        filepath_or_fp,
-        sep="\t",
-        names=GAP_FIELDS,
-        usecols=["chrom", "start", "end", "length", "type", "bridge"],
-        **kwargs
-    )
-    if chroms is not None:
-        gap = gap[gap.chrom.isin(chroms)]
-    return gap
-
-
-def read_ucsc_mrnafile(filepath_or_fp, chroms=None, **kwargs):
-    mrna = pd.read_csv(
-        filepath_or_fp,
-        sep="\t",
-        names=UCSC_MRNA_FIELDS,
-        # usecols=['chrom', 'start', 'end', 'length', 'type', 'bridge'],
-        **kwargs
-    )
-    if chroms is not None:
-        mrna = mrna[mrna.chrom.isin(chroms)]
-    return mrna
-
-
 def read_tabix(fp, chrom=None, start=None, end=None):
+    """
+    Read a tabix-indexed file into dataFrame.
+    """
     import pysam
 
     with closing(pysam.TabixFile(fp)) as f:
@@ -203,6 +185,9 @@ def read_pairix(
     dtypes=None,
     **kwargs
 ):
+    """
+    Read a pairix-indexed file into DataFrame.
+    """
     import pypairix
     import cytoolz as toolz
 
@@ -246,6 +231,9 @@ def read_pairix(
 
 
 def read_bam(fp, chrom=None, start=None, end=None):
+    """
+    Read bam records into a DataFrame.
+    """
     import pysam
 
     with closing(pysam.AlignmentFile(fp, "rb")) as f:
@@ -272,6 +260,11 @@ def read_bam(fp, chrom=None, start=None, end=None):
 
 
 def extract_centromeres(df, schema=None, merge=True):
+    """
+    Attempts to extract centromere locations from a variety of file formats,
+    returning 'chrom', 'start', 'end', 'mid' in a pandas.DataFrame.
+    """
+
     if schema == "centromeres":
         cens = df
     elif schema == "cytoband":
@@ -602,127 +595,3 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
             stderr=subprocess.PIPE,
         )
     return p
-
-
-def to_parquet(
-    pieces,
-    outpath,
-    row_group_size=None,
-    compression="snappy",
-    use_dictionary=True,
-    version=2.0,
-    **kwargs
-):
-    """
-    Save an iterable of dataframe chunks to a single Apache Parquet file. For
-    more info about Parquet, see https://arrow.apache.org/docs/python/parquet.html.
-
-    Parameters
-    ----------
-    pieces : DataFrame or iterable of DataFrame
-        Chunks to write
-    outpath : str
-        Path to output file
-    row_group_size : int
-        Number of rows per row group
-    compression : {'snappy', 'gzip', 'brotli', 'none'}, optional
-        Compression algorithm. Can be set on a per-column basis with a
-        dictionary of column names to compression lib.
-    use_dictionary : bool, optional
-        Use dictionary encoding. Can be set on a per-column basis with a list
-        of column names.
-
-    See also
-    --------
-    pyarrow.parquet.write_table
-    pyarrow.parquet.ParquetFile
-    fastparquet
-
-    """
-    try:
-        import pyarrow.parquet
-        import pyarrow as pa
-    except ImportError:
-        raise ImportError("Saving to parquet requires the `pyarrow` package")
-
-    if isinstance(pieces, pd.DataFrame):
-        pieces = (pieces,)
-
-    try:
-        for i, piece in enumerate(pieces):
-            table = pa.Table.from_pandas(piece, preserve_index=False)
-            if i == 0:
-                writer = pa.parquet.ParquetWriter(
-                    outpath,
-                    table.schema,
-                    compression=compression,
-                    use_dictionary=use_dictionary,
-                    version=version,
-                    **kwargs
-                )
-            writer.write_table(table, row_group_size=row_group_size)
-    finally:
-        writer.close()
-
-
-def read_parquet(filepath, columns=None, iterator=False, **kwargs):
-    """
-    Load DataFrames from Parquet files, optionally in pieces.
-
-    Parameters
-    ----------
-    filepath : str, pathlib.Path, pyarrow.NativeFile, or file-like object
-        Readable source. For passing bytes or buffer-like file containing a
-        Parquet file, use pyarorw.BufferReader
-    columns: list
-        If not None, only these columns will be read from the row groups. A
-        column name may be a prefix of a nested field, e.g. 'a' will select
-        'a.b', 'a.c', and 'a.d.e'
-    iterator : boolean, default False
-        Return an iterator object that yields row group DataFrames and
-        provides the ParquetFile interface.
-    use_threads : boolean, default True
-        Perform multi-threaded column reads
-    memory_map : boolean, default True
-        If the source is a file path, use a memory map to read file, which can
-        improve performance in some environments
-
-    Returns
-    -------
-    DataFrame or ParquetFileIterator
-
-    """
-    use_threads = kwargs.pop("use_threads", True)
-
-    if not iterator:
-        return pd.read_parquet(
-            filepath, columns=columns, use_threads=use_threads, **kwargs
-        )
-    else:
-        try:
-            from pyarrow.parquet import ParquetFile
-        except ImportError:
-            raise ImportError(
-                "Iterating over Parquet data requires the `pyarrow` package."
-            )
-
-        class ParquetFileIterator(ParquetFile):
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                if not hasattr(self, "_rgid"):
-                    self._rgid = 0
-                if self._rgid < self.num_row_groups:
-                    rg = self.read_row_group(
-                        self._rgid,
-                        columns=columns,
-                        use_threads=use_threads,
-                        use_pandas_metadata=True,
-                    )
-                    self._rgid += 1
-                else:
-                    raise StopIteration
-                return rg.to_pandas()
-
-        return ParquetFileIterator(filepath, **kwargs)
