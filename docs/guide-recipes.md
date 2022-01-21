@@ -46,6 +46,11 @@ df = bf.count_overlaps(df1, df2)
 df = df[ df["count"] >= 2]
 ```
 
+## Find strand-specific downstream genomic features?
+Use closest after filtering by strand, and passing the `ignore_upsream=True` argument.
+```
+bioframe.closest(df1.loc[df1['strand']=='+'], df2, ignore_upstream=True)
+```
 
 
 
