@@ -7,9 +7,9 @@
 
 Bioframe is a library to enable flexible and scalable operations on genomic interval dataframes in python. Building bioframe directly on top of [pandas](https://pandas.pydata.org/) enables immediate access to a rich set of dataframe operations. Working in python enables rapid visualization (e.g. matplotlib, seaborn) and iteration of genomic analyses.
 
-The philosophy underlying bioframe is to enable flexible operations: instead of creating a function for every possible use-case, we instead encourage users to compose functions to achieve their goals. As a rough rule of thumb, if a function requires three steps and is crucial for genomic interval arithmetic we have included it; conversely if it can be performed in a single line by composing two of the core functions, we have not included it. 
+The philosophy underlying bioframe is to enable flexible operations: instead of creating a function for every possible use-case, we instead encourage users to compose functions to achieve their goals.
 
-Bioframe implements a variety of genomic interval operations directly on dataframes. Bioframe also has functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
+Bioframe implements a variety of genomic interval operations directly on dataframes. Bioframe also includes functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
 Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html).
 
