@@ -184,7 +184,7 @@ def digest(fasta_records, enzyme):
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     if not type(fasta_records) is collections.OrderedDict:
-        return ValueError(
+        raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
     chroms = fasta_records.keys()
@@ -231,11 +231,11 @@ def frac_mapped(df, fasta_records, return_input=True):
     """
 
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
-        return ValueError(
+        raise ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
     if not type(fasta_records) is collections.OrderedDict:
-        return ValueError(
+        raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
 
@@ -282,11 +282,11 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
 
     """
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
-        return ValueError(
+        raise ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
     if not type(fasta_records) is collections.OrderedDict:
-        return ValueError(
+        raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
 
