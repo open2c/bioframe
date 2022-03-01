@@ -131,7 +131,7 @@ def binnify(chromsizes, binsize, rel_ids=False):
 
     """
 
-    if type(binsize) is not int:
+    if not isinstance(binsize, int):
         raise ValueError("binsize must be int")
 
     def _each(chrom):
@@ -183,7 +183,7 @@ def digest(fasta_records, enzyme):
         raise ImportError("Biopython is required to use digest")
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
-    if not type(fasta_records) is collections.OrderedDict:
+    if not isinstance(fasta_records, dict):
         raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
@@ -234,7 +234,7 @@ def frac_mapped(df, fasta_records, return_input=True):
         raise ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-    if not type(fasta_records) is collections.OrderedDict:
+    if not isinstance(fasta_records, dict):
         raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
@@ -285,7 +285,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         raise ValueError(
             "chrom from intervals not in fasta_records: double-check genome agreement"
         )
-    if not type(fasta_records) is collections.OrderedDict:
+    if not isinstance(fasta_records, dict):
         raise ValueError(
             "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
         )
