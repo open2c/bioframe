@@ -13,8 +13,8 @@ Bioframe implements a variety of genomic interval operations directly on datafra
 
 Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html), as well as the [bioframe preprint](https://doi.org/10.1101/2022.02.16.480748) for more information.
 
-If you use ***bioframe*** in your work, please cite:
-Bioframe: Operations on Genomic Intervals in Pandas Dataframes. Open2C, Nezar Abdennur, Geoffrey Fudenberg, Ilya Flyamer, Aleksandra A. Galitsyna, Anton Goloborodko, Maxim Imakaev, Sergey V. Venev.
+If you use ***bioframe*** in your work, please cite:  
+*Bioframe: Operations on Genomic Intervals in Pandas Dataframes*. Open2C, Nezar Abdennur, Geoffrey Fudenberg, Ilya Flyamer, Aleksandra A. Galitsyna, Anton Goloborodko, Maxim Imakaev, Sergey V. Venev.
 bioRxiv 2022.02.16.480748; doi: https://doi.org/10.1101/2022.02.16.480748
 
 
