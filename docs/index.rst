@@ -19,6 +19,7 @@ bioframe
    guide-performance.ipynb
    guide-recipes.md
    guide-definitions
+   guide-specifications
 
 .. toctree::
    :maxdepth: 1

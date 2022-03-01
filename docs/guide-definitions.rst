@@ -35,7 +35,7 @@ View (i.e. a set of Genomic Regions):
     - We define views separately from the scaffolds that make up a genome assembly, as a set of more constrained and ordered genomic regions are often useful for downstream analysis and visualization.
     - An assembly is a special case of a view, where the individual regions correspond to the assembly’s entire scaffolds.
 
-Associating sets of genomic intervals with views
+Associating genomic intervals with views
     - Similarly to how genomic intervals are associated with a scaffold, they can also be associated with a region from a view with an additional string, making a quadruple (chrom, start, end, view_region). This string must be *cataloged* in the view, i.e. it must match the name of a region in the view. Typically the interval would be contained in its associated view region, or, at the minimum, have a greater overlap with that region than other view regions.
     - If each interval in a set is contained in their associated view region, the set is *contained* in the view.
     - A set of intervals *covers* a view if each region in the view is contained by the union of its associated intervals. Conversely, if a set does not cover all of view regions, the interval set will have *gaps* relative to that view (stretches of bases not covered by an interval).

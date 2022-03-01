@@ -11,9 +11,12 @@ The philosophy underlying bioframe is to enable flexible operations: instead of 
 
 Bioframe implements a variety of genomic interval operations directly on dataframes. Bioframe also includes functions for loading diverse genomic data formats, and performing operations on special classes of genomic intervals, including chromosome arms and fixed size bins.
 
-Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html).
+Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html), as well as the [bioframe preprint](https://doi.org/10.1101/2022.02.16.480748) for more information.
 
-If you use ***bioframe*** in your work, please cite via its zenodo DOI 10.5281/zenodo.5703622
+If you use ***bioframe*** in your work, please cite:  
+*Bioframe: Operations on Genomic Intervals in Pandas Dataframes*. Open2C, Nezar Abdennur, Geoffrey Fudenberg, Ilya Flyamer, Aleksandra A. Galitsyna, Anton Goloborodko, Maxim Imakaev, Sergey V. Venev.
+bioRxiv 2022.02.16.480748; doi: https://doi.org/10.1101/2022.02.16.480748
+
 
 ## Installation
 The following are required before installing bioframe:
