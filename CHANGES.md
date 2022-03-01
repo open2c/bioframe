@@ -1,5 +1,21 @@
 # Release notes
 
+## [v0.3.3](https://github.com/open2c/bioframe/compare/v0.3.2...v0.3.3)
+
+Date: 2022-02-28
+
+Bug fixes:
+* fixed a couple functions returning an error instance instead of raising
+* fetch_mrna link fixed
+
+## [v0.3.2](https://github.com/open2c/bioframe/compare/v0.3.1...v0.3.2)
+
+Date: 2022-02-01
+
+Bug fixes:
+* fixed error in is_contained
+* tutorial updates
+
 ## [v0.3.1](https://github.com/open2c/bioframe/compare/v0.3.0...v0.3.1)
 
 Date : 2021-11-15
@@ -7,7 +23,6 @@ Date : 2021-11-15
 API changes:
 
 * `bioframe.sort_bedframe` does not append columns or modify their dtypes.
-
 
 ## [v0.3.0](https://github.com/open2c/bioframe/compare/v0.2.0...v0.3.0)
 

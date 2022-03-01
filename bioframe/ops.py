@@ -114,7 +114,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
         pads = 0.5 * (scale - 1) * (df[ek].values - df[sk].values)
         types = df.dtypes[[sk, ek]]
     elif pad is not None:
-        if type(pad) is not int:
+        if not isinstance(pad, int):
             raise ValueError("additive pad must be integer")
         pads = pad
     else:
@@ -355,7 +355,7 @@ def overlap(
     if on is None:
         on_list = []
     else:
-        if type(on) is not list:
+        if not isinstance(on, list):
             raise ValueError("on=[] must be None or list")
         if (ck1 in on) or (ck2 in on):
             raise ValueError("on=[] should not contain chromosome colnames")
@@ -516,7 +516,7 @@ def cluster(
     # Find overlapping intervals for groups specified by ck1 and on=[] (default on=None)
     group_list = [ck]
     if on is not None:
-        if type(on) is not list:
+        if not isinstance(on, list):
             raise ValueError("on=[] must be None or list")
         if ck in on:
             raise ValueError("on=[] should not contain chromosome colnames")
@@ -552,7 +552,7 @@ def cluster(
         cluster_ids[df_group_idxs.values] = cluster_ids_group
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        if type(group_keys) is str:
+        if isinstance(group_keys, str):
             group_keys = tuple((group_keys,))
         clusters_group = {}
         for col in group_list:
@@ -656,7 +656,7 @@ def merge(df, min_dist=0, cols=None, on=None):
     # Find overlapping intervals for groups specified by on=[] (default on=None)
     group_list = [ck]
     if on is not None:
-        if type(on) is not list:
+        if not isinstance(on, list):
             raise ValueError("on=[] must be None or list")
         if ck in on:
             raise ValueError("on=[] should not contain chromosome colnames")
@@ -687,7 +687,7 @@ def merge(df, min_dist=0, cols=None, on=None):
         n_clusters = cluster_starts_group.shape[0]
 
         ## Storing chromosome names causes a 2x slowdown. :(
-        if type(group_keys) is str:
+        if isinstance(group_keys, str):
             group_keys = tuple((group_keys,))
         clusters_group = {}
         for col in group_list:
