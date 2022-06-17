@@ -11,6 +11,7 @@ __all__ = [
     "digest",
     "frac_mapped",
     "frac_gc",
+    "seq_gc",
     "frac_gene_coverage",
     "pair_by_distance",
 ]
@@ -278,7 +279,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
     Returns
     -------
     df_mapped : pd.DataFrame
-        Original dataframe with new column 'frac_mapped' appended.
+        Original dataframe with new column 'GC' appended.
 
     """
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
@@ -297,16 +298,7 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         gc = []
         for _, bin in chrom_group.iterrows():
             s = seq[bin.start : bin.end]
-            g = s.count("G")
-            g += s.count("g")
-            c = s.count("C")
-            c += s.count("c")
-            nbases = len(s)
-            if mapped_only:
-                n = s.count("N")
-                n += s.count("n")
-                nbases -= n
-            gc.append((g + c) / nbases if nbases > 0 else np.nan)
+            gc.append(seq_gc(s, mapped_only=mapped_only))
         return gc
 
     out = df.groupby("chrom", sort=False).apply(_each)
@@ -320,9 +312,42 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
 
 
+def seq_gc(seq, mapped_only=True):
+    """
+    Calculate the fraction of GC basepairs for a string of nucleotides.
+
+    Parameters
+    ----------
+    seq : str
+        Basepair input
+
+    mapped_only: bool
+        if True, ignore 'N' in the sequence for calculation.
+        if True and there are no mapped base-pairs, return np.nan.
+
+    Returns
+    -------
+    gc : float
+        calculated gc content.
+
+    """
+    if not type(seq) == str:
+        raise ValueError("reformat input sequence as a str")
+    g = seq.count("G")
+    g += seq.count("g")
+    c = seq.count("C")
+    c += seq.count("c")
+    nbases = len(seq)
+    if mapped_only:
+        n = seq.count("N")
+        n += seq.count("n")
+        nbases -= n
+    return (g + c) / nbases if nbases > 0 else np.nan
+
+
 def frac_gene_coverage(df, ucsc_mrna):
     """
-    Calculate number and fraction of overlaps by predicted and verified 
+    Calculate number and fraction of overlaps by predicted and verified
     RNA isoforms for a set of intervals stored in a dataframe.
 
     Parameters

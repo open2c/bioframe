@@ -178,6 +178,19 @@ def test_frac_gc():
     ).all()
 
 
+def test_seq_gc():
+
+    assert (0 == bioframe.seq_gc("AT"))
+    assert (np.isnan( bioframe.seq_gc("NNN")))
+    assert (1 == bioframe.seq_gc("NGnC"))
+    assert (0.5 == bioframe.seq_gc("GTCA"))
+    assert (0.25 == bioframe.seq_gc("nnnNgTCa", mapped_only=False))
+    with pytest.raises(ValueError):
+        bioframe.seq_gc(["A", "T"])
+    with pytest.raises(ValueError):
+        bioframe.seq_gc(np.array("ATGC"))
+
+
 ### todo: test frac_gene_coverage(bintable, mrna):
 ### currently broken
 
