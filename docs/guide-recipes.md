@@ -52,6 +52,11 @@ Use closest after filtering by strand, and passing the `ignore_upsream=True` arg
 bioframe.closest(df1.loc[df1['strand']=='+'], df2, ignore_upstream=True)
 ```
 
+## Drop non-autosomes from a bedframe?
+Use pandas DataFrame.isin(values):
+```
+df[ ~df.chrom.isin(['chrX','chrY'])]
+```
 
 
 
