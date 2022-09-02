@@ -8,7 +8,7 @@ import socket
 import base64
 import glob
 
-from .fileops import read_table
+from ..io.fileops import read_table
 
 
 class EncodeClient:
