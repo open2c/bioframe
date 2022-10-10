@@ -525,7 +525,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
     elif path_to_binary.endswith("bedGraphToBigWig"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
-                f"bedGraphToBigWig is absent in the provided path or cannot be executed: {path}. "
+                f"bedGraphToBigWig is absent in the provided path or cannot be executed: {path_to_binary}. "
             )
         cmd = path_to_binary
     else:
