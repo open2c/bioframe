@@ -515,7 +515,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path=None):
     if path is None:
         cmd = "bedGraphToBigWig"
         try:
-            assert shutil.which(command) is not None
+            assert shutil.which(cmd) is not None
         except Exception as e:
             raise ValueError(
                 "bedGraphToBigWig is not present in the current environment. "
@@ -598,7 +598,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path=None):
     if path is None:
         cmd = "bedToBigBed"
         try:
-            assert shutil.which(command) is not None
+            assert shutil.which(cmd) is not None
         except Exception as e:
             raise ValueError(
                 "bedToBigBed is not present in the current environment. "
