@@ -519,17 +519,18 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path=None):
         except Exception as e:
             raise ValueError(
                 "bedGraphToBigWig is not present in the current environment. "
-                "Install it with, for example, conda install -y -c bioconda ucsc-bedgraphtobigwig "
+                "Pass it as 'path' parameter to bioframe.to_bigwig or "
+                "install it with, for example, conda install -y -c bioconda ucsc-bedgraphtobigwig "
             )
     elif path.endswith("bedGraphToBigWig"):
-        cmd = path
         if not os.path.isfile(path) and os.access(path, os.X_OK):
             raise ValueError(
                 f"bedGraphToBigWig is absent in the provided path: {path}. "
             )
+        cmd = path
     else:
         cmd = os.path.join(path, "bedGraphToBigWig")
-        if not os.path.isfile(path) and os.access(path, os.X_OK):
+        if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
             raise ValueError(
                 f"bedGraphToBigWig is absent in the provided path: {path}. "
             )
@@ -601,17 +602,18 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path=None):
         except Exception as e:
             raise ValueError(
                 "bedToBigBed is not present in the current environment. "
-                "Install it with, for example, conda install -y -c bioconda ucsc-bedtobigbed "
+                "Pass it as 'path' parameter to bioframe.to_bigbed or "
+                "install it with, for example, conda install -y -c bioconda ucsc-bedtobigbed "
             )
     elif path.endswith("bedToBigBed"):
-        cmd = path
         if not os.path.isfile(path) and os.access(path, os.X_OK):
             raise ValueError(
                 f"bedToBigBed is absent in the provided path: {path}. "
             )
+        cmd = path
     else:
         cmd = os.path.join(path, "bedGraphToBigWig")
-        if not os.path.isfile(path) and os.access(path, os.X_OK):
+        if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
             raise ValueError(
                 f"bedToBigBed is absent in the provided path: {path}. "
             )
