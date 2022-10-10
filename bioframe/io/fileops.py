@@ -5,6 +5,9 @@ import tempfile
 import json
 import io
 
+import os
+import shutil
+
 import numpy as np
 import pandas as pd
 
@@ -488,7 +491,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
     return df
 
 
-def to_bigwig(df, chromsizes, outpath, value_field=None):
+def to_bigwig(df, chromsizes, outpath, value_field=None, path=None):
     """
     Save a bedGraph-like dataframe as a binary BigWig track.
 
@@ -504,8 +507,33 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
     value_field : str, optional
         Select the column label of the data frame to generate the track. Default
         is to use the fourth column.
+    path : str, optional
+        Provide system path to the bedGraphToBigWig binary.
 
     """
+
+    if path is None:
+        cmd = "bedGraphToBigWig"
+        try:
+            assert shutil.which(command) is not None
+        except Exception as e:
+            raise ValueError(
+                "bedGraphToBigWig is not present in the current environment. "
+                "Install it with, for example, conda install -y -c bioconda ucsc-bedgraphtobigwig "
+            )
+    elif path.endswith("bedGraphToBigWig"):
+        cmd = path
+        if not os.path.isfile(path) and os.access(path, os.X_OK):
+            raise ValueError(
+                f"bedGraphToBigWig is absent in the provided path: {path}. "
+            )
+    else:
+        cmd = os.path.join(path, "bedGraphToBigWig")
+        if not os.path.isfile(path) and os.access(path, os.X_OK):
+            raise ValueError(
+                f"bedGraphToBigWig is absent in the provided path: {path}. "
+            )
+
     is_bedgraph = True
     for col in ["chrom", "start", "end"]:
         if col not in df.columns:
@@ -526,9 +554,9 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
     bg["chrom"] = bg["chrom"].astype(str)
     bg = bg.sort_values(["chrom", "start", "end"])
 
-    with tempfile.NamedTemporaryFile(suffix=".bg") as f, tempfile.NamedTemporaryFile(
-        "wt", suffix=".chrom.sizes"
-    ) as cs:
+    with open(outpath+'.bg', 'w') as f, open(outpath+'.cs', 'w') as cs: #tempfile.NamedTemporaryFile(suffix=".bg") as f, tempfile.NamedTemporaryFile(
+    #    "wt", suffix=".chrom.sizes"
+    #) as cs:
 
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
@@ -538,14 +566,14 @@ def to_bigwig(df, chromsizes, outpath, value_field=None):
         )
 
         p = subprocess.run(
-            ["bedGraphToBigWig", f.name, cs.name, outpath],
+            [cmd, f.name, cs.name, outpath],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
     return p
 
 
-def to_bigbed(df, chromsizes, outpath, schema="bed6"):
+def to_bigbed(df, chromsizes, outpath, schema="bed6", path=None):
     """
     Save a bedGraph-like dataframe as a binary BigWig track.
 
@@ -561,8 +589,33 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
     value_field : str, optional
         Select the column label of the data frame to generate the track. Default
         is to use the fourth column.
+    path : str, optional
+        Provide system path to the bedGraphToBigWig binary.
 
     """
+
+    if path is None:
+        cmd = "bedToBigBed"
+        try:
+            assert shutil.which(command) is not None
+        except Exception as e:
+            raise ValueError(
+                "bedToBigBed is not present in the current environment. "
+                "Install it with, for example, conda install -y -c bioconda ucsc-bedtobigbed "
+            )
+    elif path.endswith("bedToBigBed"):
+        cmd = path
+        if not os.path.isfile(path) and os.access(path, os.X_OK):
+            raise ValueError(
+                f"bedToBigBed is absent in the provided path: {path}. "
+            )
+    else:
+        cmd = os.path.join(path, "bedGraphToBigWig")
+        if not os.path.isfile(path) and os.access(path, os.X_OK):
+            raise ValueError(
+                f"bedToBigBed is absent in the provided path: {path}. "
+            )
+
     is_bed6 = True
     for col in ["chrom", "start", "end", "name", "score", "strand"]:
         if col not in df.columns:
@@ -590,7 +643,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6"):
         )
 
         p = subprocess.run(
-            ["bedToBigBed", "-type={}".format(schema), f.name, cs.name, outpath],
+            [cmd, "-type={}".format(schema), f.name, cs.name, outpath],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
