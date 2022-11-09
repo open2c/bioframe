@@ -813,9 +813,10 @@ def _closest_intidxs(
     df1,
     df2=None,
     k=1,
-    ignore_overlaps=False,
-    ignore_upstream=False,
-    ignore_downstream=False,
+    return_overlaps=True,
+    return_upstream=True,
+    return_downstream=True,
+    direction_col=None,
     tie_breaking_col=None,
     cols1=None,
     cols2=None,
@@ -897,6 +898,15 @@ def _closest_intidxs(
                 "f(DataFrame) -> Series"
             )
 
+        # Verify and construct the direction_arr (convert from pandas string column to bool array)
+        # TODO: should we add checks that it's valid "strand"?
+        direction_arr = None
+        if direction_col is None:
+            direction_arr = np.ones(len(df1_group), dtype=np.bool)
+        else:
+            direction_arr = (df1_group[direction_col].values != "-") # both "+" and "." keep orientation by genomic coordinate
+
+        # Calculate closest intervals with arrops:
         closest_idxs_group = arrops.closest_intervals(
             df1_group[sk1].values,
             df1_group[ek1].values,
@@ -904,9 +914,10 @@ def _closest_intidxs(
             None if self_closest else df2_group[ek2].values,
             k=k,
             tie_arr=tie_arr,
-            ignore_overlaps=ignore_overlaps,
-            ignore_upstream=ignore_upstream,
-            ignore_downstream=ignore_downstream,
+            return_overlaps=return_overlaps,
+            return_upstream=return_upstream,
+            return_downstream=return_downstream,
+            direction=direction_arr
         )
 
         # Convert local per-chromosome indices into the
@@ -931,9 +942,10 @@ def closest(
     df1,
     df2=None,
     k=1,
-    ignore_overlaps=False,
-    ignore_upstream=False,
-    ignore_downstream=False,
+    return_overlaps=True, # Very similar name to return_overlap
+    return_upstream=True,
+    return_downstream=True,
+    direction_col=None,
     tie_breaking_col=None,
     return_input=True,
     return_index=False,
@@ -946,6 +958,9 @@ def closest(
     """
     For every interval in dataframe `df1` find k closest genomic intervals in dataframe `df2`.
 
+    Currently, we are not taking the feature strands into account for filtering.
+    However, the strand can be used for definition of upstream/downstream of the feature (direction.
+
     Note that, unless specified otherwise, overlapping intervals are considered as closest.
     When multiple intervals are located at the same distance, the ones with the lowest index
     in `df2` are returned.
@@ -957,20 +972,33 @@ def closest(
         If `df2` is None, find closest non-identical intervals within the same set.
 
     k : int
-        The number of closest intervals to report.
+        The number of the closest intervals to report.
 
-    ignore_overlaps : bool
-        If True, return the closest non-overlapping interval.
+    return_overlaps : bool
+        If True, include overlapping the closest intervals into output.
+        If False, exclude overlapping intervals and return the closest non-overlapping interval.
 
-    ignore_upstream : bool
-        If True, ignore intervals in `df2` that are upstream (relative to the
-        reference strand) of intervals in `df1`. Currently, we are not taking
-        the feature strands into account.
+    return_upstream : bool
+        If True, return intervals in `df2` that are upstream of intervals in `df1`,
+        relative to the reference strand or the strand specified by direction_col.
+        If False, ignore upstream intervals.
 
-    ignore_downstream : bool
-        If True, ignore intervals in `df2` that are downstream (relative to the
-        reference strand) of intervals in `df1`. Currently, we are not taking
-        the feature strands into account.
+    return_downstream : bool
+        If True, return intervals in `df2` that are downstream of intervals in `df1`,
+        relative to the reference strand or the strand specified by direction_col.
+        If False, ignore downstream intervals.
+
+    direction_col : str
+        Name of direction column that will set upstream/downstream orientation for each feature.
+        The column should contain bioframe-compliant strand ("+", "-", ".").
+        By default, direction is defined by genomic coordinates:
+        everything with smaller coordinate will be upstream, everything with larger coordinate will be downstream.
+        If direction_col is provided, features with "+" and "." strand will keep the same upstream/downstream,
+        and features with "-" will have upstream and downstream are reversed:
+        everything with smaller coordinate will be downstream, everything with larger coordinate will be upstream.
+
+        Simple usecase of direction_col: look for closest features in gene promoters only:
+        bioframe.closest(df_genes, df_features, direction_col="strand").query("distance<1000")
 
     tie_breaking_col : str
         A column in `df2` to use for breaking ties when multiple intervals
@@ -1028,9 +1056,10 @@ def closest(
         df1,
         df2,
         k=k,
-        ignore_overlaps=ignore_overlaps,
-        ignore_upstream=ignore_upstream,
-        ignore_downstream=ignore_downstream,
+        return_overlaps=return_overlaps,
+        return_upstream=return_upstream,
+        return_downstream=return_downstream,
+        direction_col=direction_col,
         tie_breaking_col=tie_breaking_col,
         cols1=cols1,
         cols2=cols2,

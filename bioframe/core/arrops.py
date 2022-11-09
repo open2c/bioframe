@@ -484,12 +484,12 @@ def complement_intervals(
 
 
 def _closest_intervals_nooverlap(
-    starts1, ends1, starts2, ends2, tie_arr=None, k_upstream=1, k_downstream=1
+    starts1, ends1, starts2, ends2, direction, tie_arr=None, k=1
 ):
     """
     For every interval in set 1, return the indices of k closest intervals
-    from set 2. Overlapping intervals from set 2 are not reported, unless they
-    overlap by a single point.
+    from set 2 to the left from the interval (with smaller coordinate).
+    Overlapping intervals from set 2 are not reported, unless they overlap by a single point.
 
     Parameters
     ----------
@@ -497,20 +497,23 @@ def _closest_intervals_nooverlap(
         Interval coordinates. Warning: if provided as pandas.Series, indices
         will be ignored.
 
+    direction : str ("left" or "right")
+        Orientation of closest interval search
+
     tie_arr : numpy.ndarray or None
         Extra data describing intervals in set 2 to break ties when multiple intervals
         are located at the same distance. An interval with the *lowest* value is
         selected.
 
-    k_upstream, k_downstream : int
-        The number of upstream and downstream neighbors to report.
+    k : int
+        The number of neighbors to report.
 
     Returns
     -------
-    upstream_ids, downstream_ids: numpy.ndarray
-        Two Nx2 arrays containing the indices of pairs of closest intervals,
-        reported separately for the downstream and upstream neighbors. The two columns
-        are the inteval ids from set 1, ids of the closest intevals from set 2.
+    ids: numpy.ndarray
+        One Nx2 array containing the indices of pairs of closest intervals,
+        reported for the neighbors in specified direction (by genomic coordinate).
+        The two columns are the inteval ids from set 1, ids of the closest intevals from set 2.
 
     """
 
@@ -530,12 +533,9 @@ def _closest_intervals_nooverlap(
     n1 = starts1.shape[0]
     n2 = starts2.shape[0]
 
-    upstream_ids, downstream_ids = (
-        np.zeros((0, 2), dtype=int),
-        np.zeros((0, 2), dtype=int),
-    )
+    ids = np.zeros((0, 2), dtype=int)
 
-    if k_upstream > 0:
+    if k > 0 and direction=="left":
         if tie_arr is None:
             ends2_sort_order = np.argsort(ends2)
         else:
@@ -544,26 +544,26 @@ def _closest_intervals_nooverlap(
         ids2_endsorted = np.arange(0, n2)[ends2_sort_order]
         ends2_sorted = ends2[ends2_sort_order]
 
-        upstream_closest_endidx = np.searchsorted(ends2_sorted, starts1, "right")
-        upstream_closest_startidx = np.maximum(upstream_closest_endidx - k_upstream, 0)
+        left_closest_endidx = np.searchsorted(ends2_sorted, starts1, "right")
+        left_closest_startidx = np.maximum(left_closest_endidx - k, 0)
 
         int1_ids = np.repeat(
-            np.arange(n1), upstream_closest_endidx - upstream_closest_startidx
+            np.arange(n1), left_closest_endidx - left_closest_startidx
         )
         int2_sorted_ids = arange_multi(
-            upstream_closest_startidx, upstream_closest_endidx
+            left_closest_startidx, left_closest_endidx
         )
 
-        upstream_ids = np.vstack(
+        ids = np.vstack(
             [
                 int1_ids,
                 ids2_endsorted[int2_sorted_ids],
                 # ends2_sorted[int2_sorted_ids] - starts1[int1_ids],
-                # arange_multi(upstream_closest_startidx - upstream_closest_endidx, 0)
+                # arange_multi(left_closest_startidx - left_closest_endidx, 0)
             ]
         ).T
 
-    if k_downstream > 0:
+    elif k > 0 and direction=="right":
         if tie_arr is None:
             starts2_sort_order = np.argsort(starts2)
         else:
@@ -572,28 +572,29 @@ def _closest_intervals_nooverlap(
         ids2_startsorted = np.arange(0, n2)[starts2_sort_order]
         starts2_sorted = starts2[starts2_sort_order]
 
-        downstream_closest_startidx = np.searchsorted(starts2_sorted, ends1, "left")
-        downstream_closest_endidx = np.minimum(
-            downstream_closest_startidx + k_downstream, n2
+        right_closest_startidx = np.searchsorted(starts2_sorted, ends1, "left")
+        right_closest_endidx = np.minimum(
+            right_closest_startidx + k, n2
         )
 
         int1_ids = np.repeat(
-            np.arange(n1), downstream_closest_endidx - downstream_closest_startidx
+            np.arange(n1), right_closest_endidx - right_closest_startidx
         )
         int2_sorted_ids = arange_multi(
-            downstream_closest_startidx, downstream_closest_endidx
+            right_closest_startidx, right_closest_endidx
         )
-        downstream_ids = np.vstack(
+        ids = np.vstack(
             [
                 int1_ids,
                 ids2_startsorted[int2_sorted_ids],
                 #  starts2_sorted[int2_sorted_ids] - ends1[int1_ids],
-                #  arange_multi(1, downstream_closest_endidx -
-                #                  downstream_closest_startidx + 1)
+                #  arange_multi(1, right_closest_endidx -
+                #                  right_closest_startidx + 1)
             ]
         ).T
 
-    return upstream_ids, downstream_ids
+
+    return ids
 
 
 def closest_intervals(
@@ -603,9 +604,10 @@ def closest_intervals(
     ends2=None,
     k=1,
     tie_arr=None,
-    ignore_overlaps=False,
-    ignore_upstream=False,
-    ignore_downstream=False,
+    return_overlaps=True,
+    return_upstream=True,
+    return_downstream=True,
+    direction=None
 ):
     """
     For every interval in set 1, return the indices of k closest intervals from set 2.
@@ -625,11 +627,14 @@ def closest_intervals(
         are located at the same distance. Intervals with *lower* tie_arr values will
         be given priority.
 
-    ignore_overlaps : bool
-        If True, ignore set 2 intervals that overlap with set 1 intervals.
+    return_overlaps : bool
+        If True, return set 2 intervals that overlap with set 1 intervals. Otherwise, ignore it.
 
-    ignore_upstream, ignore_downstream : bool
-        If True, ignore set 2 intervals upstream/downstream of set 1 intervals.
+    return_upstream, return_downstream : bool
+        If True, return set 2 intervals upstream/downstream of set 1 intervals. Otherwise, ignore it.
+
+    direction : numpy.ndarray with dtype bool or None
+        Strand vector to define the upstream/downstream orientation of the intervals.
 
     Returns
     -------
@@ -640,7 +645,8 @@ def closest_intervals(
 
     """
 
-    if ignore_overlaps:
+    # Get overlapping intervals:
+    if not return_overlaps:
         overlap_ids = np.zeros((0, 2), dtype=int)
     elif (starts2 is None) and (ends2 is None):
         starts2, ends2 = starts1, ends1
@@ -649,24 +655,66 @@ def closest_intervals(
     else:
         overlap_ids = overlap_intervals(starts1, ends1, starts2, ends2)
 
-    upstream_ids, downstream_ids = _closest_intervals_nooverlap(
-        starts1,
-        ends1,
+    # Get non-overlapping intervals:
+    n = len(starts1)
+    all_ids = np.arange(n)
+
+    # + directed intervals
+    ids_left_upstream = _closest_intervals_nooverlap(
+        starts1[direction],
+        ends1[direction],
         starts2,
         ends2,
-        tie_arr,
-        k_upstream=0 if ignore_upstream else k,
-        k_downstream=0 if ignore_downstream else k,
+        direction="left",
+        tie_arr=tie_arr,
+        k=k if return_upstream else 0
     )
+    ids_right_downstream = _closest_intervals_nooverlap(
+        starts1[direction],
+        ends1[direction],
+        starts2,
+        ends2,
+        direction="right",
+        tie_arr=tie_arr,
+        k=k if return_downstream else 0
+    )
+    # - directed intervals
+    ids_right_upstream = _closest_intervals_nooverlap(
+        starts1[~direction],
+        ends1[~direction],
+        starts2,
+        ends2,
+        direction="right",
+        tie_arr=tie_arr,
+        k=k if return_upstream else 0
+    )
+    ids_left_downstream = _closest_intervals_nooverlap(
+        starts1[~direction],
+        ends1[~direction],
+        starts2,
+        ends2,
+        direction="left",
+        tie_arr=tie_arr,
+        k=k if return_downstream else 0
+    )
+
+    # Reconstruct original indexes (b/c we split regions by direction above)
+    ids_left_upstream[:, 0]   = all_ids[direction][ids_left_upstream[:, 0]]
+    ids_right_downstream[:, 0] = all_ids[direction][ids_right_downstream[:, 0]]
+    ids_left_downstream[:, 0] = all_ids[~direction][ids_left_downstream[:, 0]]
+    ids_right_upstream[:, 0]   = all_ids[~direction][ids_right_upstream[:, 0]]
+
+    left_ids = np.concatenate([ids_left_upstream, ids_left_downstream])
+    right_ids = np.concatenate([ids_right_upstream, ids_right_downstream])
 
     # Increase the distance by 1 to distinguish between overlapping
     # and non-overlapping set 2 intervals.
-    upstream_dists = starts1[upstream_ids[:, 0]] - ends2[upstream_ids[:, 1]] + 1
-    downstream_dists = starts2[downstream_ids[:, 1]] - ends1[downstream_ids[:, 0]] + 1
+    left_dists = starts1[left_ids[:, 0]] - ends2[left_ids[:, 1]] + 1
+    right_dists = starts2[right_ids[:, 1]] - ends1[right_ids[:, 0]] + 1
 
-    closest_ids = np.vstack([upstream_ids, downstream_ids, overlap_ids])
+    closest_ids = np.vstack([left_ids, right_ids, overlap_ids])
     closest_dists = np.concatenate(
-        [upstream_dists, downstream_dists, np.zeros(overlap_ids.shape[0])]
+        [left_dists, right_dists, np.zeros(overlap_ids.shape[0])]
     )
 
     # Sort by distance to set 1 intervals and, if present, by the tie-breaking

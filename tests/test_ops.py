@@ -902,7 +902,7 @@ def test_closest():
     )
     pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1))
 
-    ### closest(df1,df2, ignore_overlaps=True)) ###
+    ### closest(df1,df2, return_overlaps=False)) ###
     d = """chrom_1 start_1 end_1   chrom_2 start_2 end_2   distance
         0   chr1    1   5   chr1    10  11  5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
@@ -913,7 +913,7 @@ def test_closest():
         }
     )
     pd.testing.assert_frame_equal(
-        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True)
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), return_overlaps=False)
     )
 
     ### closest(df1,df2,k=2) ###
@@ -930,19 +930,6 @@ def test_closest():
     pd.testing.assert_frame_equal(
         df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), k=2)
     )
-
-    ### closest(df2,df1) ###
-    d = """chrom_1  start_1 end_1   chrom_2 start_2 end_2   distance
-            0   chr1    4   8   chr1    1   5   0
-            1   chr1    10  11  chr1    1   5   5 """
-    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
-        {
-            "start_2": pd.Int64Dtype(),
-            "end_2": pd.Int64Dtype(),
-            "distance": pd.Int64Dtype(),
-        }
-    )
-    pd.testing.assert_frame_equal(df, bioframe.closest(df2, df1, suffixes=("_1", "_2")))
 
     ### change first interval to new chrom ###
     df2.iloc[0, 0] = "chrA"
@@ -1032,12 +1019,80 @@ def test_closest():
         }
     )
     pd.testing.assert_frame_equal(
-        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), ignore_overlaps=True, k=5)
+        df, bioframe.closest(df1, df2, suffixes=("_1", "_2"), return_overlaps=False, k=5)
     )
 
     with pytest.raises(ValueError):  # inputs must be valid bedFrames
         df1.iloc[0, 0] = "chr10"
         bioframe.closest(df1, df2)
+
+    ### closest with direction ###
+
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 3, 5, "+"],
+            ["chr1", 3, 5, "-"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    df2 = pd.DataFrame(
+        [["chr1", 1, 2], ["chr1", 2, 8], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
+    )
+
+    ### closest(df1, df2, k=1, direction_col="strand") ###
+    d = """chrom  start  end strand chrom_  start_  end_  distance
+        0    chr1        3      5    + chr1        2      8         0
+        1    chr1        3      5    - chr1        2      8         0
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1, direction_col="strand"))
+
+    ### closest(df1, df2, k=1, return_upstream=True, return_downstream=False, return_overlaps=False, direction_col="strand") ###
+    d = """chrom  start  end strand chrom_  start_  end_  distance
+        0    chr1        3      5    + chr1        1      2         1
+        1    chr1        3      5    - chr1        10      11         5
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(df,
+        bioframe.closest(df1, df2,
+                k=1,
+                return_upstream=True,
+                return_downstream=False,
+                return_overlaps=False,
+                direction_col="strand"))
+
+    ### closest(df1, df2, k=1, return_upstream=False, return_downstream=True, return_overlaps=False, direction_col="strand") ###
+    d = """chrom  start  end strand chrom_  start_  end_  distance
+        0    chr1        3      5    + chr1        10      11         5
+        1    chr1        3      5    - chr1        1      2         1
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(df,
+        bioframe.closest(df1, df2,
+                k=1,
+                return_upstream=False,
+                return_downstream=True,
+                return_overlaps=False,
+                direction_col="strand"))
 
 
 def test_coverage():
