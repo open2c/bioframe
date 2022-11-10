@@ -604,9 +604,9 @@ def closest_intervals(
     ends2=None,
     k=1,
     tie_arr=None,
-    return_overlaps=True,
-    return_upstream=True,
-    return_downstream=True,
+    ignore_overlaps=False,
+    ignore_upstream=False,
+    ignore_downstream=False,
     direction=None
 ):
     """
@@ -627,11 +627,11 @@ def closest_intervals(
         are located at the same distance. Intervals with *lower* tie_arr values will
         be given priority.
 
-    return_overlaps : bool
-        If True, return set 2 intervals that overlap with set 1 intervals. Otherwise, ignore it.
+    ignore_overlaps : bool
+        If True, ignore set 2 intervals that overlap with set 1 intervals.
 
-    return_upstream, return_downstream : bool
-        If True, return set 2 intervals upstream/downstream of set 1 intervals. Otherwise, ignore it.
+    ignore_upstream, ignore_downstream : bool
+        If True, ignore set 2 intervals upstream/downstream of set 1 intervals.
 
     direction : numpy.ndarray with dtype bool or None
         Strand vector to define the upstream/downstream orientation of the intervals.
@@ -646,7 +646,7 @@ def closest_intervals(
     """
 
     # Get overlapping intervals:
-    if not return_overlaps:
+    if ignore_overlaps:
         overlap_ids = np.zeros((0, 2), dtype=int)
     elif (starts2 is None) and (ends2 is None):
         starts2, ends2 = starts1, ends1
@@ -667,7 +667,7 @@ def closest_intervals(
         ends2,
         direction="left",
         tie_arr=tie_arr,
-        k=k if return_upstream else 0
+        k=0 if ignore_upstream else k
     )
     ids_right_downstream = _closest_intervals_nooverlap(
         starts1[direction],
@@ -676,7 +676,7 @@ def closest_intervals(
         ends2,
         direction="right",
         tie_arr=tie_arr,
-        k=k if return_downstream else 0
+        k=0 if ignore_downstream else k
     )
     # - directed intervals
     ids_right_upstream = _closest_intervals_nooverlap(
@@ -686,7 +686,7 @@ def closest_intervals(
         ends2,
         direction="right",
         tie_arr=tie_arr,
-        k=k if return_upstream else 0
+        k=0 if ignore_upstream else k
     )
     ids_left_downstream = _closest_intervals_nooverlap(
         starts1[~direction],
@@ -695,7 +695,7 @@ def closest_intervals(
         ends2,
         direction="left",
         tie_arr=tie_arr,
-        k=k if return_downstream else 0
+        k=0 if ignore_downstream else k
     )
 
     # Reconstruct original indexes (b/c we split regions by direction above)

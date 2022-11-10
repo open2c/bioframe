@@ -813,9 +813,9 @@ def _closest_intidxs(
     df1,
     df2=None,
     k=1,
-    return_overlaps=True,
-    return_upstream=True,
-    return_downstream=True,
+    ignore_overlaps=False,
+    ignore_upstream=False,
+    ignore_downstream=False,
     direction_col=None,
     tie_breaking_col=None,
     cols1=None,
@@ -914,9 +914,9 @@ def _closest_intidxs(
             None if self_closest else df2_group[ek2].values,
             k=k,
             tie_arr=tie_arr,
-            return_overlaps=return_overlaps,
-            return_upstream=return_upstream,
-            return_downstream=return_downstream,
+            ignore_overlaps=ignore_overlaps,
+            ignore_upstream=ignore_upstream,
+            ignore_downstream=ignore_downstream,
             direction=direction_arr
         )
 
@@ -942,9 +942,9 @@ def closest(
     df1,
     df2=None,
     k=1,
-    return_overlaps=True, # Very similar name to return_overlap
-    return_upstream=True,
-    return_downstream=True,
+    ignore_overlaps=False,
+    ignore_upstream=False,
+    ignore_downstream=False,
     direction_col=None,
     tie_breaking_col=None,
     return_input=True,
@@ -974,19 +974,16 @@ def closest(
     k : int
         The number of the closest intervals to report.
 
-    return_overlaps : bool
-        If True, include overlapping the closest intervals into output.
-        If False, exclude overlapping intervals and return the closest non-overlapping interval.
+    ignore_overlaps : bool
+        If True, ignore overlapping intervals and return the closest non-overlapping interval.
 
-    return_upstream : bool
-        If True, return intervals in `df2` that are upstream of intervals in `df1`,
+    ignore_upstream : bool
+        If True, ignore intervals in `df2` that are upstream of intervals in `df1`,
         relative to the reference strand or the strand specified by direction_col.
-        If False, ignore upstream intervals.
 
-    return_downstream : bool
-        If True, return intervals in `df2` that are downstream of intervals in `df1`,
+    ignore_downstream : bool
+        If True, ignore intervals in `df2` that are downstream of intervals in `df1`,
         relative to the reference strand or the strand specified by direction_col.
-        If False, ignore downstream intervals.
 
     direction_col : str
         Name of direction column that will set upstream/downstream orientation for each feature.
@@ -1056,9 +1053,9 @@ def closest(
         df1,
         df2,
         k=k,
-        return_overlaps=return_overlaps,
-        return_upstream=return_upstream,
-        return_downstream=return_downstream,
+        ignore_overlaps=ignore_overlaps,
+        ignore_upstream=ignore_upstream,
+        ignore_downstream=ignore_downstream,
         direction_col=direction_col,
         tie_breaking_col=tie_breaking_col,
         cols1=cols1,
