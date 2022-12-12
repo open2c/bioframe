@@ -69,7 +69,7 @@ def test_verify_columns():
 
     # no repeated column names
     with pytest.raises(ValueError):
-        specs._verify_columns(df1, ["chromStart", "chromStart"])
+        specs._verify_columns(df1, ["chromStart", "chromStart"], unique_cols=True)
 
 
 def test_verify_column_dtypes():
