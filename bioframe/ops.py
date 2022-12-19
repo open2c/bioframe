@@ -61,7 +61,7 @@ def select_mask(df, region, cols=None):
     if chrom is None:
         raise ValueError("no chromosome detected, check region input")
     if (start is not None) and (end is not None):
-        mask = (df[ck] == chrom) & (df[sk] < end) & (df[ek] > start)
+        mask = (df[ck] == chrom) & (df[sk] < end) & (df[ek] >= start)
     else:
         mask = df[ck] == chrom
     return mask.to_numpy()
