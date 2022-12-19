@@ -58,7 +58,7 @@ class update_default_colnames:
         _rc["colnames"] = self._old_colnames
 
 
-def _verify_columns(df, colnames, return_as_bool=False):
+def _verify_columns(df, colnames, unique_cols=False, return_as_bool=False):
     """
     Raises ValueError if columns with colnames are not present in dataframe df.
 
@@ -78,8 +78,9 @@ def _verify_columns(df, colnames, return_as_bool=False):
             return False
         raise ValueError("df is not a dataframe")
 
-    if len(set(colnames)) < len(colnames):
-        raise ValueError("column names must be unique")
+    if unique_cols:
+        if len(set(colnames)) < len(colnames):
+            raise ValueError("column names must be unique")
 
     if not set(colnames).issubset(df.columns):
         if return_as_bool:

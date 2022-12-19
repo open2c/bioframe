@@ -77,7 +77,7 @@ def make_chromarms(
         sk1, ek1 = "start", "end"
     elif len(cols_chroms) == 3:
         ck1, sk1, ek1 = cols_chroms
-        _verify_columns(df_chroms, [ck1, sk1, ek1])
+        _verify_columns(df_chroms, [ck1, sk1, ek1], unique_cols=True)
         if any((df_chroms[sk1].values != 0)):
             raise ValueError("all values in starts column must be zero")
     else:
