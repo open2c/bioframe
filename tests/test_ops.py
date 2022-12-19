@@ -64,6 +64,30 @@ def mock_bioframe(num_entries=100):
 
 
 ############# tests #####################
+def test_select_mask():
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+        columns=["chrom", "start", "end"],
+    )
+    region1 = "chr1:4-10"
+    df_result = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
+    mask1 = bioframe.select_mask(df1, region1)
+    pd.testing.assert_frame_equal(
+        df_result, df1.loc[mask1].reset_index(drop=True)
+    )
+
+    df2 = pd.DataFrame(
+        [["chrX", 3], ["chr1", 4], ["chrX", 1]],
+        columns=["chrom", "pos"],
+    )
+    region2 = "chr1:4-10"
+    df_result = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
+    mask2 = bioframe.select_mask(df2, region2, cols=["chrom", "pos", "pos"])
+    pd.testing.assert_frame_equal(
+        df_result, df2.loc[mask2].reset_index(drop=True)
+    )
+
+
 def test_select():
     df1 = pd.DataFrame(
         [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],

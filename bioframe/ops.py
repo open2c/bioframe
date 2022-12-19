@@ -10,6 +10,7 @@ from .core import construction
 from .core import checks
 
 __all__ = [
+    "select_mask",
     "select",
     "expand",
     "overlap",
@@ -27,6 +28,45 @@ __all__ = [
 ]
 
 
+def select_mask(df, region, cols=None):
+    """
+    Return boolean mask for all genomic intervals in a dataframe that overlap a
+    given genomic region.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    region : str or tuple
+        The genomic region to select from the dataframe in UCSC-style genomic
+        region string, or triple (chrom, start, end).
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    1D array of bool
+
+    Notes
+    -----
+    See :func:`.core.stringops.parse_region()` for more information on region
+    formatting.
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
+
+    chrom, start, end = parse_region(region)
+    if chrom is None:
+        raise ValueError("no chromosome detected, check region input")
+    if (start is not None) and (end is not None):
+        mask = (df[ck] == chrom) & (df[sk] < end) & (df[ek] >= start)
+    else:
+        mask = df[ck] == chrom
+    return mask.to_numpy()
+
+
 def select(df, region, cols=None):
     """
     Return all genomic intervals in a dataframe that overlap a genomic region.
@@ -36,10 +76,8 @@ def select(df, region, cols=None):
     df : pandas.DataFrame
 
     region : str or tuple
-        The genomic region to select from the dataframe.
-        UCSC-style genomic region string, or Triple (chrom, start, end),
-        where ``start`` or ``end`` may be ``None``. See :func:`.core.stringops.parse_region()`
-        for more information on region formatting.
+        The genomic region to select from the dataframe in UCSC-style genomic
+        region string, or triple (chrom, start, end).
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -49,19 +87,12 @@ def select(df, region, cols=None):
     -------
     df : pandas.DataFrame
 
+    Notes
+    -----
+    See :func:`.core.stringops.parse_region()` for more information on region
+    formatting.
     """
-
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
-
-    chrom, start, end = parse_region(region)
-    if chrom is None:
-        raise ValueError("no chromosome detected, check region input")
-    if (start is not None) and (end is not None):
-        inds = (df[ck] == chrom) & (df[sk] < end) & (df[ek] > start)
-    else:
-        inds = df[ck] == chrom
-    return df[inds]
+    return df.loc[select_mask(df, region, cols)]
 
 
 def expand(df, pad=None, scale=None, side="both", cols=None):
