@@ -10,8 +10,10 @@ from .core import construction
 from .core import checks
 
 __all__ = [
-    "select_mask",
     "select",
+    "select_mask",
+    "select_indices",
+    "select_labels",
     "expand",
     "overlap",
     "cluster",
@@ -30,8 +32,7 @@ __all__ = [
 
 def select_mask(df, region, cols=None):
     """
-    Return boolean mask for all genomic intervals in a dataframe that overlap a
-    given genomic region.
+    Return boolean mask for all genomic intervals that overlap a query range.
 
     Parameters
     ----------
@@ -47,12 +48,7 @@ def select_mask(df, region, cols=None):
 
     Returns
     -------
-    1D array of bool
-
-    Notes
-    -----
-    See :func:`.core.stringops.parse_region()` for more information on region
-    formatting.
+    Boolean array of shape (len(df),)
     """
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
@@ -65,6 +61,53 @@ def select_mask(df, region, cols=None):
     else:
         mask = df[ck] == chrom
     return mask.to_numpy()
+
+
+def select_indices(df, region, cols=None):
+    """
+    Return integer indices of all genomic intervals that overlap a query range.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    region : str or tuple
+        The genomic region to select from the dataframe in UCSC-style genomic
+        region string, or triple (chrom, start, end).
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    1D array of int
+    """
+    return np.nonzero(select_mask(df, region, cols))[0]
+
+
+def select_labels(df, region, cols=None):
+    """
+    Return pandas Index labels of all genomic intervals that overlap a query
+    range.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    region : str or tuple
+        The genomic region to select from the dataframe in UCSC-style genomic
+        region string, or triple (chrom, start, end).
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    pandas.Index
+    """
+    return df.index[select_mask(df, region, cols)]
 
 
 def select(df, region, cols=None):
@@ -91,6 +134,12 @@ def select(df, region, cols=None):
     -----
     See :func:`.core.stringops.parse_region()` for more information on region
     formatting.
+
+    See also
+    --------
+    :func:`select_mask`
+    :func:`select_indices`
+    :func:`select_labels`
     """
     return df.loc[select_mask(df, region, cols)]
 
