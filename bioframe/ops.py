@@ -51,7 +51,7 @@ def select_mask(df, region, cols=None):
     Boolean array of shape (len(df),)
     """
     ck, sk, ek = _get_default_colnames() if cols is None else cols
-    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
+    _verify_columns(df, [ck, sk, ek])
 
     chrom, start, end = parse_region(region)
     if chrom is None:
