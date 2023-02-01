@@ -52,6 +52,12 @@ Use closest after filtering by strand, and passing the `ignore_upsream=True` arg
 bioframe.closest(df1.loc[df1['strand']=='+'], df2, ignore_upstream=True)
 ```
 
+For gener, the upstream/downstream direction might be defined by the direction of transcription. 
+Use `direction_col='strand'` to set up the direction: 
+```
+bioframe.closest(df1, df2, ignore_upstream=True, direction_col='strand')
+```
+
 ## Drop non-autosomes from a bedframe?
 Use pandas DataFrame.isin(values):
 ```
