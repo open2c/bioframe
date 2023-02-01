@@ -902,7 +902,7 @@ def _closest_intidxs(
         # TODO: should we add checks that it's valid "strand"?
         direction_arr = None
         if direction_col is None:
-            direction_arr = np.ones(len(df1_group), dtype=np.bool)
+            direction_arr = np.ones(len(df1_group), dtype=np.bool_)
         else:
             direction_arr = (df1_group[direction_col].values != "-") # both "+" and "." keep orientation by genomic coordinate
 
