@@ -219,6 +219,28 @@ Closest intervals within a single DataFrame can be found simply by passing a sin
 bf.closest(df1, k=2)
 ```
 
+```{eval-rst}
+Closest intervals upstream of the features in df1 can be found by ignoring downstream and overlaps. 
+Upstream/downstream direction is defined by genomic coordinates by default (smaller coordinate is upstream).
+```
+```{code-cell} ipython3
+bf.closest(df1, df2, 
+    ignore_overlaps=True, 
+    ignore_downstream=True)
+```
+
+```{eval-rst}
+If the features in df1 have direction (e.g., genes have transcription direction), then the definition of upstream/downstream
+direction can be changed to the direction of the features by `direction_col`:
+```
+```{code-cell} ipython3
+bf.closest(df1, df2, 
+    ignore_overlaps=True, 
+    ignore_downstream=True, 
+    direction_col='strand')
+```
+
+
 ## Coverage & Count Overlaps
 ```{eval-rst}
 For two sets of genomic features, it is often useful to calculate the number of basepairs covered and the number of overlapping intervals. While these are fairly straightforward to compute from the output of :func:`bioframe.overlap` with :func:`pandas.groupby` and column renaming, since these are very frequently used, they are provided as core bioframe functions.
