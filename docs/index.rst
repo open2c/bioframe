@@ -26,6 +26,7 @@ bioframe
    :caption: Tutorials
 
    tutorials/tutorial_assign_motifs_to_peaks.ipynb
+   tutorials/tutorial_assign_peaks_to_genes.ipynb
 
 .. toctree::
    :maxdepth: 3
