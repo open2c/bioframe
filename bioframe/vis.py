@@ -159,21 +159,21 @@ def plot_intervals(
     chrom_gb = df.groupby("chrom", observed=True)
     for chrom, chrom_df in chrom_gb:
         if isinstance(levels, (list, pd.core.series.Series, np.ndarray)):
-            chrom_levels = np.asarray(levels)[chrom_gb.groups[chrom].values]
+            chrom_levels = pd.Series(levels, index=df.index)[chrom_gb.groups[chrom].values]
         elif levels is None:
             chrom_levels = None
         else:
             raise ValueError(f"Unknown type of levels: {type(levels)}")
 
         if isinstance(labels, (list, pd.core.series.Series, np.ndarray)):
-            chrom_labels = np.asarray(labels)[chrom_gb.groups[chrom].values]
+            chrom_labels = pd.Series(labels, index=df.index)[chrom_gb.groups[chrom].values]
         elif labels is None:
             chrom_labels = None
         else:
             raise ValueError(f"Unknown type of labels: {type(levels)}")
 
         if isinstance(colors, (list, pd.core.series.Series, np.ndarray)):
-            chrom_colors = np.asarray(colors)[chrom_gb.groups[chrom].values]
+            chrom_colors = pd.Series(colors, index=df.index)[chrom_gb.groups[chrom].values]
         elif colors is None or isinstance(colors, str):
             chrom_colors = colors
         else:
