@@ -156,7 +156,7 @@ def plot_intervals(
         The size of the figure. If None, plot within the current figure.
 
     """
-    chrom_gb = df.groupby("chrom")
+    chrom_gb = df.groupby("chrom", observed=True)
     for chrom, chrom_df in chrom_gb:
         if isinstance(levels, (list, pd.core.series.Series, np.ndarray)):
             chrom_levels = np.asarray(levels)[chrom_gb.groups[chrom].values]
