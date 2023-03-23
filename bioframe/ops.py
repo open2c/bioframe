@@ -1039,7 +1039,7 @@ def closest(
     For every interval in dataframe `df1` find k closest genomic intervals in dataframe `df2`.
 
     Currently, we are not taking the feature strands into account for filtering.
-    However, the strand can be used for definition of upstream/downstream of the feature (direction.
+    However, the strand can be used for definition of upstream/downstream of the feature (direction).
 
     Note that, unless specified otherwise, overlapping intervals are considered as closest.
     When multiple intervals are located at the same distance, the ones with the lowest index
@@ -1067,15 +1067,7 @@ def closest(
 
     direction_col : str
         Name of direction column that will set upstream/downstream orientation for each feature.
-        The column should contain bioframe-compliant strand ("+", "-", ".").
-        By default, direction is defined by genomic coordinates:
-        everything with smaller coordinate will be upstream, everything with larger coordinate will be downstream.
-        If direction_col is provided, features with "+" and "." strand will keep the same upstream/downstream,
-        and features with "-" will have upstream and downstream are reversed:
-        everything with smaller coordinate will be downstream, everything with larger coordinate will be upstream.
-
-        Simple usecase of direction_col: look for closest features in gene promoters only:
-        bioframe.closest(df_genes, df_features, direction_col="strand").query("distance<1000")
+        The column should contain bioframe-compliant strand values ("+", "-", ".").
 
     tie_breaking_col : str
         A column in `df2` to use for breaking ties when multiple intervals
@@ -1110,6 +1102,17 @@ def closest(
     df_closest : pandas.DataFrame
         If no intervals found, returns none.
 
+    Notes
+    -----
+    By default, direction is defined by the reference genome: everything with
+    smaller coordinate is considered upstream, everything with larger coordinate
+    is considered downstream.
+
+    If ``direction_col`` is provided, upstream/downstream are relative to the
+    direction column in ``df1``, i.e. features marked "+" and "." strand will
+    define upstream and downstream as above, while features marked "-" have
+    upstream and downstream reversed: smaller coordinates are downstream and
+    larger coordinates are upstream.
     """
 
     if k < 1:
