@@ -64,16 +64,24 @@ def mock_bioframe(num_entries=100):
 
 
 ############# tests #####################
-def test_select_mask():
+def test_select_mask_indices_labels():
     df1 = pd.DataFrame(
         [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
     region1 = "chr1:4-10"
     df_result = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
-    mask1 = bioframe.select_mask(df1, region1)
+    mask = bioframe.select_mask(df1, region1)
     pd.testing.assert_frame_equal(
-        df_result, df1.loc[mask1].reset_index(drop=True)
+        df_result, df1.loc[mask].reset_index(drop=True)
+    )
+    labels = bioframe.select_labels(df1, region1)
+    pd.testing.assert_frame_equal(
+        df_result, df1.loc[labels].reset_index(drop=True)
+    )
+    idx = bioframe.select_indices(df1, region1)
+    pd.testing.assert_frame_equal(
+        df_result, df1.iloc[idx].reset_index(drop=True)
     )
 
     df2 = pd.DataFrame(
@@ -82,9 +90,17 @@ def test_select_mask():
     )
     region2 = "chr1:4-10"
     df_result = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
-    mask2 = bioframe.select_mask(df2, region2, cols=["chrom", "pos", "pos"])
+    mask = bioframe.select_mask(df2, region2, cols=["chrom", "pos", "pos"])
     pd.testing.assert_frame_equal(
-        df_result, df2.loc[mask2].reset_index(drop=True)
+        df_result, df2.loc[mask].reset_index(drop=True)
+    )
+    labels = bioframe.select_labels(df2, region2, cols=["chrom", "pos", "pos"])
+    pd.testing.assert_frame_equal(
+        df_result, df2.loc[labels].reset_index(drop=True)
+    )
+    idx = bioframe.select_indices(df2, region2, cols=["chrom", "pos", "pos"])
+    pd.testing.assert_frame_equal(
+        df_result, df2.iloc[idx].reset_index(drop=True)
     )
 
 
