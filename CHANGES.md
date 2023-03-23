@@ -1,5 +1,20 @@
 # Release notes
 
+## [v0.4.0](https://github.com/open2c/bioframe/compare/v0.3.3...v0.4.0)
+
+Date 2023-03-23
+
+API changes:
+* New strand-aware directionality options for `closest()` via `direction_col` #129.
+* New index-based range query selectors on single bioframes to complement `select()` #128:
+    * `select_mask()` returns boolean indices corresponding to intervals that overlap the query region
+    * `select_indices()` returns integer indices corresponding to intervals that overlap the query region
+    * `select_labels()` returns pandas label indices corresponding to intervals that overlap the query region
+
+Bug fixes:
+* Import fixes in sandbox
+* Relax bioframe validator to permit using same column as start and end (e.g. point variants).
+
 ## [v0.3.3](https://github.com/open2c/bioframe/compare/v0.3.2...v0.3.3)
 
 Date: 2022-02-28
