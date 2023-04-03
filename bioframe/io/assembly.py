@@ -10,6 +10,7 @@ except ImportError:
 import pandas as pd
 import numpy as np
 import yaml
+from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
 
@@ -42,6 +43,10 @@ class GenomeAssembly:
     @property
     def chromnames(self) -> List[str]:
         return self.seqinfo["name"].tolist()
+    
+    @property
+    def viewframe(self) -> pd.DataFrame:
+        return make_viewframe(self.chromsizes.to_dict())
 
 
 def assemblies_available() -> pd.DataFrame:
