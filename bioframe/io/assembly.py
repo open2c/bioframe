@@ -1,6 +1,11 @@
-from typing import List, Tuple, Union, Literal, Dict
+from typing import List, Tuple, Union, Dict
 from dataclasses import dataclass
 import pkg_resources
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import pandas as pd
 import numpy as np
