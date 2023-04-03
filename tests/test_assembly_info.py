@@ -1,11 +1,11 @@
-from bioframe.io.assembly import list_assemblies, assembly_info, GenomeAssembly
+from bioframe.io.assembly import assemblies_available, assembly_info, GenomeAssembly
 
 import pandas as pd
 import pytest
 
 
-def test_list_assemblies():
-    assemblies = list_assemblies()
+def test_assemblies_available():
+    assemblies = assemblies_available()
     assert isinstance(assemblies, pd.DataFrame)
     for col in ["provider", "provider_version", "default_types", "default_units"]:
         assert col in assemblies.columns
