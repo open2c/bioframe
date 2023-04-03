@@ -15,15 +15,19 @@ def test_assembly_info():
     hg38 = assembly_info("hg38")
     assert isinstance(hg38, GenomeAssembly)
     assert isinstance(hg38.chromsizes, pd.Series)
-    assert isinstance(hg38.seqinfo, pd.DataFrame)
-    assert isinstance(hg38.viewframe, pd.DataFrame)
     assert isinstance(hg38.chromnames, list)
     assert isinstance(hg38.alias_dict, dict)
+
+    assert isinstance(hg38.seqinfo, pd.DataFrame)
+    for col in ["name", "length", "aliases", "type", "unit"]:
+        assert col in hg38.seqinfo.columns
+    
+    assert isinstance(hg38.viewframe, pd.DataFrame)
+    for col in ["chrom", "start", "end", "name"]:
+        assert col in hg38.viewframe.columns
     
     hg38 = assembly_info("ucsc.hg38", seq_types=("assembled", "non-nuclear"))
     assert isinstance(hg38, GenomeAssembly)
 
     with pytest.raises(ValueError):
-        assembly_info("ncbi.hg38")
-
-    
+        assembly_info("ncbi.hg38")  # provider-name mismatch
