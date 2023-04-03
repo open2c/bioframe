@@ -2,3 +2,4 @@
 biopython
 pysam
 pytest
+pybbi
