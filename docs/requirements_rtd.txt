@@ -1,4 +1,4 @@
 # Pip's new dependency resolver is causing issues on RTD, so we downgrade pip
 pip<=21.1.1
 -r ./requirements_doc.txt
--r ../requirements_dev.txt
+-r ../requirements-dev.txt
