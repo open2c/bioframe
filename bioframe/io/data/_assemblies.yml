@@ -3,7 +3,7 @@
   provider_version: GRCh37
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear-revised]
   url: https://ftp.ncbi.nlm.nih.gov/genomes/archive/old_genbank/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37.p13/seqs_for_alignment_pipelines/
 - organism: homo sapiens
@@ -11,7 +11,7 @@
   provider_version: hg19
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/analysisSet/
 - organism: homo sapiens
@@ -19,7 +19,7 @@
   provider_version: GRCh38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/
 - organism: homo sapiens
@@ -27,7 +27,7 @@
   provider_version: hg38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/
 - organism: homo sapiens
@@ -35,7 +35,7 @@
   provider_version: hs1
   release_year: 2022
   seqinfo: hs1.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hs1/bigZips/
 - organism: mus musculus
@@ -43,7 +43,7 @@
   provider_version: mm9
   release_year: 2007
   seqinfo: mm9.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/
 - organism: mus musculus
@@ -51,7 +51,7 @@
   provider_version: mm10
   release_year: 2011
   seqinfo: mm10.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/mm10/bigZips/
 - organism: mus musculus
@@ -59,7 +59,7 @@
   provider_version: mm39
   release_year: 2020
   seqinfo: mm39.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/mm39/bigZips/
 - organism: drosophila melanogaster
@@ -67,7 +67,7 @@
   provider_version: dm3
   release_year: 2006
   seqinfo: dm3.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/dm3/bigZips/
 - organism: drosophila melanogaster
@@ -75,7 +75,7 @@
   provider_version: dm6
   release_year: 2014
   seqinfo: dm6.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/dm6/bigZips/
 - organism: caenorhabditis elegans
@@ -83,7 +83,7 @@
   provider_version: ce10
   release_year: 2010
   seqinfo: ce10.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/ce10/bigZips/
 - organism: caenorhabditis elegans
@@ -91,7 +91,7 @@
   provider_version: ce11
   release_year: 2013
   seqinfo: ce11.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/ce11/bigZips/
 - organism: danio rerio
@@ -99,7 +99,7 @@
   provider_version: danRer10
   release_year: 2014
   seqinfo: danRer10.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/danRer10/bigZips/
 - organism: danio rerio
@@ -107,7 +107,7 @@
   provider_version: danRer11
   release_year: 2017
   seqinfo: danRer10.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/danRer11/bigZips/
 - organism: saccharomyces cerevisiae
@@ -115,6 +115,6 @@
   provider_version: sacCer3
   release_year: 2011
   seqinfo: sacCer3.seqinfo.tsv
-  default_types: [assembled]
+  default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/sacCer3/bigZips/

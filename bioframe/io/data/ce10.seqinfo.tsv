@@ -1,4 +1,4 @@
-name	length	type	molecule	unit	aliases
+name	length	role	molecule	unit	aliases
 chrI	15072423	assembled	chrI	primary	NC_003279.7,I
 chrII	15279345	assembled	chrII	primary	NC_003280.9,II
 chrIII	13783700	assembled	chrIII	primary	NC_003281.9,III

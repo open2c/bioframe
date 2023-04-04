@@ -7,7 +7,7 @@ import pytest
 def test_assemblies_available():
     assemblies = assemblies_available()
     assert isinstance(assemblies, pd.DataFrame)
-    for col in ["provider", "provider_version", "default_types", "default_units"]:
+    for col in ["provider", "provider_version", "default_roles", "default_units"]:
         assert col in assemblies.columns
 
 
@@ -19,14 +19,14 @@ def test_assembly_info():
     assert isinstance(hg38.alias_dict, dict)
 
     assert isinstance(hg38.seqinfo, pd.DataFrame)
-    for col in ["name", "length", "aliases", "type", "unit"]:
+    for col in ["name", "length", "aliases", "role", "unit"]:
         assert col in hg38.seqinfo.columns
     
     assert isinstance(hg38.viewframe, pd.DataFrame)
     for col in ["chrom", "start", "end", "name"]:
         assert col in hg38.viewframe.columns
     
-    hg38 = assembly_info("ucsc.hg38", seq_types=("assembled", "non-nuclear"))
+    hg38 = assembly_info("ucsc.hg38", roles=("assembled", "unlocalized"))
     assert isinstance(hg38, GenomeAssembly)
 
     with pytest.raises(ValueError):

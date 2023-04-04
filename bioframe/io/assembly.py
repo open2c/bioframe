@@ -58,8 +58,8 @@ def assemblies_available() -> pd.DataFrame:
 
 def assembly_info(
         name: str,
-        seq_types: Union[List, Tuple, Literal["all"]] = None, 
-        seq_units: Union[List, Tuple, Literal["all"]] = None
+        roles: Union[List, Tuple, Literal["all"]] = None, 
+        units: Union[List, Tuple, Literal["all"]] = None
     ) -> GenomeAssembly:
     """
     Get information about a genome assembly.
@@ -69,13 +69,13 @@ def assembly_info(
     name : str
         Name of the assembly. If the name contains a dot, it is interpreted as
         a provider name and a version, e.g. "hg38". Otherwise, the provider
-        is inferred from the default provider for the organism.
-    seq_types : list or tuple or "all", optional
-        Sequence types to include in the assembly. If not specified, the
-        default sequence types for the assembly are used.
-    seq_units : list or tuple or "all", optional
-        Assembly units to include in the assembly. If not specified, only 
-        sequences from the default units for the assembly are included.
+        is inferred if the version name is unique.
+    roles : list or tuple or "all", optional
+        Sequence roles to include in the assembly info. If not specified, only
+        sequences with the default sequence roles for the assembly are shown.
+    units : list or tuple or "all", optional
+        Assembly units to include in the assembly info. If not specified, only 
+        sequences from the default units for the assembly are shown.
 
     Returns
     -------
@@ -97,9 +97,9 @@ def assembly_info(
     chr3    198295559
     ...     ...
     
-    >>> assembly_info("hg38", seq_types=("assembled", "non-nuclear"))
+    >>> assembly_info("hg38", roles=("assembled", "non-nuclear"))
 
-    >>> assembly_info("ucsc.hg38", seq_units=("unplaced",))
+    >>> assembly_info("ucsc.hg38", units=("unplaced",))
 
     """
     assemblies = assemblies_available()
@@ -121,25 +121,25 @@ def assembly_info(
         raise ValueError(f"Assembly identifer not unique: {result}")
 
     assembly = result.iloc[0]
-    default_seq_types = assembly["default_types"]
-    default_seq_units = assembly["default_units"]
+    default_roles = assembly["default_roles"]
+    default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
     seqinfo = pd.read_table(
         pkg_resources.resource_filename("bioframe.io", f"data/{seqinfo_path}")
     )
     mask = np.ones(len(seqinfo), dtype=bool)
-    if seq_types is None:
-        mask &= seqinfo["type"].isin(default_seq_types)
-    elif isinstance(seq_types, (tuple, list)):
-        mask &= seqinfo["type"].isin(seq_types)
-    elif isinstance(seq_types, str) and seq_types != "all":
-        raise ValueError(f"seq_types must be a tuple or 'all', not {seq_types}")
-    if seq_units is None:
-        mask &= seqinfo["unit"].isin(default_seq_units)
-    elif isinstance(seq_units, (tuple, list)):
-        mask &= seqinfo["unit"].isin(seq_units)
-    elif isinstance(seq_units, str) and seq_units != "all":
-        raise ValueError(f"seq_units must be a tuple or 'all', not {seq_units}")
+    if roles is None:
+        mask &= seqinfo["role"].isin(default_roles)
+    elif isinstance(roles, (tuple, list)):
+        mask &= seqinfo["role"].isin(roles)
+    elif isinstance(roles, str) and roles != "all":
+        raise ValueError(f"roles must be a tuple or 'all', not {roles}")
+    if units is None:
+        mask &= seqinfo["unit"].isin(default_units)
+    elif isinstance(units, (tuple, list)):
+        mask &= seqinfo["unit"].isin(units)
+    elif isinstance(units, str) and units != "all":
+        raise ValueError(f"units must be a tuple or 'all', not {units}")
     seqinfo = seqinfo.loc[mask]
 
     return GenomeAssembly(
