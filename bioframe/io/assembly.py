@@ -14,15 +14,18 @@ from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
 
+ASSEMBLY_MANIFEST_PATH = "data/_assemblies.yml"
+
 
 @dataclass
 class GenomeAssembly:
     """
-    A dataclass containing information about sequences in a genome assembly.    
+    A dataclass containing information about sequences in a genome assembly.
     """
+
     organism: str
     provider: str
-    provider_version: str
+    provider_build: str
     release_year: str
     seqinfo: pd.DataFrame
     url: str
@@ -30,7 +33,7 @@ class GenomeAssembly:
 
     def __post_init__(self):
         self.alias_dict = {}
-        alias_lists = self.seqinfo["aliases"].str.split(',')
+        alias_lists = self.seqinfo["aliases"].str.split(",")
         names = self.seqinfo["name"]
         for aliases, name in zip(alias_lists, names):
             for alias in aliases:
@@ -43,24 +46,24 @@ class GenomeAssembly:
     @property
     def chromnames(self) -> List[str]:
         return self.seqinfo["name"].tolist()
-    
+
     @property
     def viewframe(self) -> pd.DataFrame:
         return make_viewframe(self.chromsizes.to_dict())
 
 
 def assemblies_available() -> pd.DataFrame:
-    path = pkg_resources.resource_filename("bioframe.io", "data/_assemblies.yml")
+    path = pkg_resources.resource_filename("bioframe.io", ASSEMBLY_MANIFEST_PATH)
     with open(path) as f:
         assemblies = yaml.safe_load(f)
     return pd.DataFrame.from_records(assemblies)
 
 
 def assembly_info(
-        name: str,
-        roles: Union[List, Tuple, Literal["all"]] = None, 
-        units: Union[List, Tuple, Literal["all"]] = None
-    ) -> GenomeAssembly:
+    name: str,
+    roles: Union[List, Tuple, Literal["all"]] = None,
+    units: Union[List, Tuple, Literal["all"]] = None,
+) -> GenomeAssembly:
     """
     Get information about a genome assembly.
 
@@ -68,13 +71,13 @@ def assembly_info(
     ----------
     name : str
         Name of the assembly. If the name contains a dot, it is interpreted as
-        a provider name and a version, e.g. "hg38". Otherwise, the provider
-        is inferred if the version name is unique.
+        a provider name and a build, e.g. "hg38". Otherwise, the provider
+        is inferred if the build name is unique.
     roles : list or tuple or "all", optional
         Sequence roles to include in the assembly info. If not specified, only
         sequences with the default sequence roles for the assembly are shown.
     units : list or tuple or "all", optional
-        Assembly units to include in the assembly info. If not specified, only 
+        Assembly units to include in the assembly info. If not specified, only
         sequences from the default units for the assembly are shown.
 
     Returns
@@ -86,7 +89,7 @@ def assembly_info(
     ------
     ValueError
         If the assembly name is not found or is not unique.
-    
+
     Examples
     --------
     >>> hg38 = assembly_info("hg38")
@@ -96,24 +99,23 @@ def assembly_info(
     chr2    242193529
     chr3    198295559
     ...     ...
-    
+
     >>> assembly_info("hg38", roles=("assembled", "non-nuclear"))
 
     >>> assembly_info("ucsc.hg38", units=("unplaced",))
 
     """
     assemblies = assemblies_available()
+    provider = None
     if "." in name:
         provider, name = name.split(".", 1)
         provider = provider.lower()
-    else:
-        provider = None
 
     if provider is None:
-        q = f"provider_version == '{name}'"
+        q = f"provider_build == '{name}'"
     else:
-        q = f"provider == '{provider}' and provider_version == '{name}'"
-    
+        q = f"provider == '{provider}' and provider_build == '{name}'"
+
     result = assemblies.query(q)
     if len(result) == 0:
         raise ValueError(f"Assembly not found: {name}")
@@ -145,7 +147,7 @@ def assembly_info(
     return GenomeAssembly(
         organism=assembly["organism"],
         provider=assembly["provider"],
-        provider_version=assembly["provider_version"],
+        provider_build=assembly["provider_build"],
         release_year=assembly["release_year"],
         seqinfo=seqinfo,
         url=assembly["url"],

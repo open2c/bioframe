@@ -7,13 +7,15 @@ import pytest
 def test_assemblies_available():
     assemblies = assemblies_available()
     assert isinstance(assemblies, pd.DataFrame)
-    for col in ["provider", "provider_version", "default_roles", "default_units"]:
+    for col in ["provider", "provider_build", "default_roles", "default_units"]:
         assert col in assemblies.columns
 
 
 def test_assembly_info():
     hg38 = assembly_info("hg38")
     assert isinstance(hg38, GenomeAssembly)
+    assert hg38.provider == "ucsc"
+    assert hg38.provider_build == "hg38"
     assert isinstance(hg38.chromsizes, pd.Series)
     assert isinstance(hg38.chromnames, list)
     assert isinstance(hg38.alias_dict, dict)
