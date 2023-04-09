@@ -162,7 +162,7 @@ class UCSCClient:
 
     def __init__(self, db):
         self._db = db
-        self._db_url = urljoin(self.BASE_URL, "goldenPath/{}/database/".format(db))
+        self._db_url = urljoin(self.BASE_URL, f"goldenPath/{db}/")
 
     def fetch_chromsizes(
         self,
@@ -172,7 +172,7 @@ class UCSCClient:
         as_bed=False,
         **kwargs,
     ):
-        url = urljoin(self._db_url, "chromInfo.txt.gz")
+        url = urljoin(self._db_url, f"bigZips/{self._db}.chrom.sizes")
         return read_chromsizes(
             url,
             filter_chroms=filter_chroms,
@@ -183,11 +183,11 @@ class UCSCClient:
         )
 
     def fetch_centromeres(self, **kwargs):
-        url = urljoin(self._db_url, "centromeres.txt.gz")
+        url = urljoin(self._db_url, "database/centromeres.txt.gz")
         return read_table(url, schema="centromeres")
 
     def fetch_gaps(self, **kwargs):
-        url = urljoin(self._db_url, "gap.txt.gz")
+        url = urljoin(self._db_url, "database/gap.txt.gz")
         return read_table(
             url,
             schema="gap",
@@ -197,15 +197,17 @@ class UCSCClient:
 
     def fetch_cytoband(self, ideo=False, **kwargs):
         if ideo:
-            url = urljoin(self._db_url, "cytoBandIdeo.txt.gz")
+            url = urljoin(self._db_url, "database/cytoBandIdeo.txt.gz")
         else:
-            url = urljoin(self._db_url, "cytoBand.txt.gz")
+            url = urljoin(self._db_url, "database/cytoBand.txt.gz")
         return read_table(url, schema="cytoband")
     
     def fetch_mrna(self, **kwargs):
-        url = urljoin(self._db_url, "all_mrna.txt.gz")
+        url = urljoin(self._db_url, "database/all_mrna.txt.gz")
         return read_table(
             url,
             schema=UCSC_MRNA_FIELDS,
             **kwargs,
         )
+
+

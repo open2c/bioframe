@@ -1,4 +1,4 @@
-name	length	type	molecule	unit	aliases
+name	length	role	molecule	unit	aliases
 chr1	59578282	assembled	chr1	primary	1,CM002885.2,NC_007112.7
 chr2	59640629	assembled	chr2	primary	2,CM002886.2,NC_007113.7
 chr3	62628489	assembled	chr3	primary	3,CM002887.2,NC_007114.7
