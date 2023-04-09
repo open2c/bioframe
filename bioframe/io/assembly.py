@@ -76,9 +76,11 @@ def assembly_info(
     roles : list or tuple or "all", optional
         Sequence roles to include in the assembly info. If not specified, only
         sequences with the default sequence roles for the assembly are shown.
+        e.g. "assembled", "unlocalized", "unplaced"
     units : list or tuple or "all", optional
         Assembly units to include in the assembly info. If not specified, only
         sequences from the default units for the assembly are shown.
+        e.g. "primary", "non-nuclear", "decoy"
 
     Returns
     -------
