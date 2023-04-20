@@ -262,34 +262,6 @@ def read_bam(fp, chrom=None, start=None, end=None):
     return df
 
 
-def extract_centromeres(df, schema=None, merge=True):
-    """
-    Attempts to extract centromere locations from a variety of file formats,
-    returning 'chrom', 'start', 'end', 'mid' in a pandas.DataFrame.
-    """
-
-    if schema == "centromeres":
-        cens = df
-    elif schema == "cytoband":
-        cens = df[df["gieStain"] == "acen"]
-    elif schema == "gap":
-        cens = df[df["type"] == "centromere"]
-    else:
-        raise ValueError('`schema` must be one of {"centromeres", "cytoband", "gap"}.')
-
-    if merge:
-        cens = cens.groupby("chrom").agg({"start": np.min, "end": np.max}).reset_index()
-
-    cens["mid"] = (cens["start"] + cens["end"]) // 2
-    cens = (
-        cens[["chrom", "start", "end", "mid"]]
-        .sort_values("chrom")
-        .reset_index(drop=True)
-    )
-
-    return cens
-
-
 class PysamFastaRecord(object):
     def __init__(self, ff, ref):
         self.ff = ff

@@ -4,6 +4,7 @@ import urllib
 import os
 import posixpath as pp
 import os.path as op
+import numpy as np
 import pandas as pd
 import requests
 import socket
@@ -16,7 +17,6 @@ from .schemas import SCHEMAS, UCSC_MRNA_FIELDS
 from .fileops import (
     read_table,
     read_chromsizes,
-    extract_centromeres,
 )
 
 __all__ = [
@@ -90,10 +90,72 @@ def fetch_chromsizes(
         raise ValueError("Unknown provider '{}'".format(provider))
 
 
+def _centers_from_cytoband(cyb):
+    """
+    Extract chromosome center positions from cytological band data. Takes
+    the cytological origin, i.e. the boundary between the two 'acen' bands.
+
+    Parameters
+    ----------
+    cyb : pandas.DataFrame
+        DataFrame with cytoband data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with columns 'chrom', 'start', 'end', 'mid'.
+    """
+    cyb = cyb[cyb["gieStain"] == "acen"]
+    grouped = cyb.groupby("chrom", sort=False)
+    cens = []
+    for chrom, group in grouped:
+        if not len(group) == 2:
+            raise ValueError(
+                f"Expected 2 'acen' bands for {chrom}, found {len(group)}"
+            )
+        acens = group.sort_values("start")
+        cens.append({
+            "chrom": chrom,
+            "start": acens.iloc[0]["start"],
+            "end": acens.iloc[1]["end"],
+            "mid": acens.iloc[0]["end"],
+        })
+    return pd.DataFrame.from_records(cens)
+
+
+def _centers_from_ucsccentromeres(cens):
+    """
+    Extract chromosome center positions from UCSC centromeres.txt table 
+    describing centromere model sequences. Takes the midpoint of all
+    modeled centromere sequences.
+
+    Parameters
+    ----------
+    cens : pandas.DataFrame
+        DataFrame with centromeres.txt data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with columns 'chrom', 'start', 'end', 'mid'.
+    """
+    cens = cens.groupby("chrom").agg({
+        "start": np.min, 
+        "end": np.max
+    }).reset_index()
+    cens["mid"] = (cens["start"] + cens["end"]) // 2
+    cens = (
+        cens[["chrom", "start", "end", "mid"]]
+        .sort_values("chrom")
+        .reset_index(drop=True)
+    )
+    return cens
+
+
 def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     """
     Extract centromere locations for a given assembly 'db' from a variety
-    of file formats in UCSC (centromeres, cytoband, gap) depending on
+    of file formats in UCSC (cytoband, centromeres) depending on
     availability, returning a DataFrame.
 
     Parameters
@@ -117,13 +179,11 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     - centromeres.txt
     - cytoBandIdeo
     - cytoBand
-    - gap.txt
-
+    
+    Gap files no longer provide centromere information.
     Currently only works for human assemblies.
 
-
     """
-
     if provider == "local":
         raise NotImplementedError("local method not currently implemented")
         fpath = f"data/{db}.centromeres"
@@ -137,10 +197,9 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
     if provider == "ucsc" or provider is None:
         client = UCSCClient(db)
         fetchers = [
-            ("centromeres", client.fetch_centromeres),
             ("cytoband", client.fetch_cytoband),
             ("cytoband", partial(client.fetch_cytoband, ideo=True)),
-            ("gap", client.fetch_gaps),
+            ("centromeres", client.fetch_centromeres),
         ]
 
         for schema, fetcher in fetchers:
@@ -153,8 +212,11 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
             raise ValueError("No source for centromere data found.")
     else:
         raise NotImplementedError("currently UCSC is only implemented provider")
-
-    return extract_centromeres(df, schema=schema, merge=merge)
+    
+    if schema == "centromeres":
+        return _centers_from_ucsccentromeres(df)
+    else:
+        return _centers_from_cytoband(df)
 
 
 class UCSCClient:
