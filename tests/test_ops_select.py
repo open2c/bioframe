@@ -149,10 +149,15 @@ def test_select__points():
         [["chrX", 3], ["chr1", 4], ["chrX", 1]],
         columns=["chrom", "pos"],
     )
-    region2 = "chr1:4-10"
-    answer = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
     
-    result = bioframe.select(df2, region2, cols=["chrom", "pos", "pos"])
+    result = bioframe.select(df2, "chr1:4-10", cols=["chrom", "pos", "pos"])
+    answer = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
+    pd.testing.assert_frame_equal(
+        answer, result.reset_index(drop=True)
+    )
+
+    result = bioframe.select(df2, "chr1:3-10", cols=["chrom", "pos", "pos"])
+    answer = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
     pd.testing.assert_frame_equal(
         answer, result.reset_index(drop=True)
     )
