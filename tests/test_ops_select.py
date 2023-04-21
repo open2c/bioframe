@@ -105,8 +105,6 @@ def test_select__half_open_query_intervals():
                  20, 30, 40, 50, 60, 70],
         "name": ["a", "b", 
                  "A", "B", "C", "D", "E", "F"],
-        "strand": ["+", "-", 
-                   "+", "-", "+", "-", "+", "-"],
     })
 
     result = bioframe.select(df, "chr1")
@@ -143,21 +141,61 @@ def test_select__half_open_query_intervals():
     assert (result["name"] == ["B", "C", "D", "E"]).all()
 
 
+def test_select__point_intervals():
+    # Dataframe containing "point intervals"
+    df = pd.DataFrame({
+        "chrom": ["chr1", "chr1", 
+                  "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
+        "start": [0, 10, 
+                  10, 20, 30, 40, 50, 60],
+        "end":  [10, 10, 
+                 20, 30, 40, 50, 50, 70],
+        "name": ["a", "b", 
+                 "A", "B", "C", "D", "E", "F"],
+    })
+    result = bioframe.select(df, "chr1")
+    assert (result["name"] == ["a", "b"]).all()
+
+    result = bioframe.select(df, "chr1:4-10")
+    assert (result["name"] == ["a"]).all()
+
+    result = bioframe.select(df, "chr1:4-4")
+    assert (result["name"] == ["a"]).all()
+
+    result = bioframe.select(df, "chr1:10-15")
+    assert (result["name"] == ["b"]).all()
+
+    result = bioframe.select(df, "chr2:20-70")
+    assert (result["name"] == ["B", "C", "D", "E", "F"]).all()
+
+    result = bioframe.select(df, "chr2:49-70")
+    assert (result["name"] == ["D", "E", "F"]).all()
+
+    result = bioframe.select(df, "chr2:50-70")
+    assert (result["name"] == ["E", "F"]).all()
+
+    result = bioframe.select(df, "chr2:50-51")
+    assert (result["name"] == ["E"]).all()
+
+    result = bioframe.select(df, "chr2:50-50")
+    assert (result["name"] == ["E"]).all()
+
+
 def test_select__points():
-    # Dataframe of "point intervals"
-    df2 = pd.DataFrame(
-        [["chrX", 3], ["chr1", 4], ["chrX", 1]],
-        columns=["chrom", "pos"],
+    # Dataframe of points
+    df = pd.DataFrame(
+        [["chrX", 3, "A"], 
+         ["chr1", 4, "C"], 
+         ["chrX", 1, "B"]],
+        columns=["chrom", "pos", "name"],
     )
     
-    result = bioframe.select(df2, "chr1:4-10", cols=["chrom", "pos", "pos"])
-    answer = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
-    pd.testing.assert_frame_equal(
-        answer, result.reset_index(drop=True)
-    )
+    result = bioframe.select(df, "chr1:4-10", cols=["chrom", "pos", "pos"])
+    assert (result["name"] == ["C"]).all()
 
-    result = bioframe.select(df2, "chr1:3-10", cols=["chrom", "pos", "pos"])
-    answer = pd.DataFrame([["chr1", 4]], columns=["chrom", "pos"])
-    pd.testing.assert_frame_equal(
-        answer, result.reset_index(drop=True)
-    )
+    result = bioframe.select(df, "chr1:3-10", cols=["chrom", "pos", "pos"])
+    assert (result["name"] == ["C"]).all()
+
+    result = bioframe.select(df, "chr1:4-4", cols=["chrom", "pos", "pos"])
+    assert (result["name"] == ["C"]).all()
+    

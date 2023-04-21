@@ -63,11 +63,10 @@ def select_mask(df, region, cols=None):
     else:
         if end is None:
             end = np.inf
-        if ek == sk:
-            mask = (df[ck] == chrom) & (df[sk] < end) & (df[ek] + 1 > start)
-        else:
-            mask = (df[ck] == chrom) & (df[sk] < end) & (df[ek] > start)
-
+        mask = (df[ck] == chrom) & (
+            ((df[sk] < end) & (df[ek] > start)) | 
+            ((df[sk] == df[ek]) & (df[sk] == start))  # include points at query start
+        )
     return mask.to_numpy()
 
 
