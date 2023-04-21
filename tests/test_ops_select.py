@@ -7,7 +7,9 @@ import bioframe
 
 def test_select():
     df1 = pd.DataFrame(
-        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+        [["chrX", 3, 8], 
+         ["chr1", 4, 5], 
+         ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
 
@@ -74,24 +76,30 @@ def test_select():
 
 
 def test_select__mask_indices_labels():
-    df1 = pd.DataFrame(
-        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+    df = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chr1", 4, 5], 
+         ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
-    region1 = "chr1:4-10"
+    region = "chr1:4-10"
     answer = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
     
-    mask = bioframe.select_mask(df1, region1)
+    result = bioframe.select(df, region)
     pd.testing.assert_frame_equal(
-        answer, df1.loc[mask].reset_index(drop=True)
+        answer, result.reset_index(drop=True)
     )
-    labels = bioframe.select_labels(df1, region1)
+    mask = bioframe.select_mask(df, region)
     pd.testing.assert_frame_equal(
-        answer, df1.loc[labels].reset_index(drop=True)
+        answer, df.loc[mask].reset_index(drop=True)
     )
-    idx = bioframe.select_indices(df1, region1)
+    labels = bioframe.select_labels(df, region)
     pd.testing.assert_frame_equal(
-        answer, df1.iloc[idx].reset_index(drop=True)
+        answer, df.loc[labels].reset_index(drop=True)
+    )
+    idx = bioframe.select_indices(df, region)
+    pd.testing.assert_frame_equal(
+        answer, df.iloc[idx].reset_index(drop=True)
     )
 
 
@@ -198,4 +206,3 @@ def test_select__points():
 
     result = bioframe.select(df, "chr1:4-4", cols=["chrom", "pos", "pos"])
     assert (result["name"] == ["C"]).all()
-    
