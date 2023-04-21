@@ -397,6 +397,14 @@ def test_expand():
     )
     pd.testing.assert_frame_equal(df, fake_expanded)
 
+def test_expand_amount_args():
+    d = """chrom  start  end
+         0  chr1      3    5
+         1  chr1     52   55
+         2  chr2    110  200"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    with pytest.raises(ValueError):
+        bioframe.expand(df, pad=10, scale=2.0)
 
 def test_overlap():
 
