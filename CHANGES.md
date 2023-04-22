@@ -1,5 +1,13 @@
 # Release notes
 
+## [v0.4.1](https://github.com/open2c/bioframe/compare/v0.4.0...v0.4.1)
+
+Date 2023-04-22
+
+Bug fixes:
+* Fix bug introduced in the last release in `select` and `select_*` query interval semantics. Results of select are now consistent with the query interval being interpreted as half-open, closed on the left.
+
+
 ## [v0.4.0](https://github.com/open2c/bioframe/compare/v0.3.3...v0.4.0)
 
 Date 2023-03-23
