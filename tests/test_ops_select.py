@@ -6,54 +6,72 @@ import bioframe
 
 
 def test_select():
-    df1 = pd.DataFrame(
+    df = pd.DataFrame(
         [["chrX", 3, 8], 
          ["chr1", 4, 5], 
          ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
 
-    region1 = "chr1:4-10"
-    df_result = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
-    pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df1, region1).reset_index(drop=True)
-    )
-
-    region1 = "chrX"
-    df_result = pd.DataFrame(
-        [["chrX", 3, 8], ["chrX", 1, 5]], columns=["chrom", "start", "end"]
+    result = pd.DataFrame(
+        [["chr1", 4, 5]], 
+        columns=["chrom", "start", "end"]
     )
     pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df1, region1).reset_index(drop=True)
+        result, bioframe.select(df, "chr1:4-10").reset_index(drop=True)
     )
 
-    region1 = "chrX:4-6"
-    df_result = pd.DataFrame(
-        [["chrX", 3, 8], ["chrX", 1, 5]], columns=["chrom", "start", "end"]
+    result = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chrX", 1, 5]], 
+         columns=["chrom", "start", "end"]
     )
     pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df1, region1).reset_index(drop=True)
+        result, bioframe.select(df, "chrX").reset_index(drop=True)
     )
 
+    result = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chrX", 1, 5]], 
+         columns=["chrom", "start", "end"]
+    )
+    pd.testing.assert_frame_equal(
+        result, bioframe.select(df, "chrX:4-6").reset_index(drop=True)
+    )
+
+    # Query range not in the dataframe
+    assert len(bioframe.select(df, "chrZ")) == 0
+    assert len(bioframe.select(df, "chr1:100-1000")) == 0
+    assert len(bioframe.select(df, "chr1:1-3")) == 0
+
+    # Invalid query range
+    with pytest.raises(ValueError):
+        bioframe.select(df, "chr1:1-0")
+
+
+def test_select__with_colnames():
     ### select with non-standard column names
-    region1 = "chrX:4-6"
     new_names = ["chr", "chrstart", "chrend"]
-    df1 = pd.DataFrame(
-        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+    df = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chr1", 4, 5], 
+         ["chrX", 1, 5]],
         columns=new_names,
     )
-    df_result = pd.DataFrame(
-        [["chrX", 3, 8], ["chrX", 1, 5]],
+    result = pd.DataFrame(
+        [["chrX", 3, 8], 
+         ["chrX", 1, 5]],
         columns=new_names,
     )
     pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
+        result, bioframe.select(df, "chrX:4-6", cols=new_names).reset_index(drop=True)
     )
-    region1 = "chrX"
     pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df1, region1, cols=new_names).reset_index(drop=True)
+        result, bioframe.select(df, "chrX", cols=new_names).reset_index(drop=True)
     )
 
+
+def test_select__with_nulls():
     ### select from a DataFrame with NaNs
     colnames = ["chrom", "start", "end", "view_region"]
     df = pd.DataFrame(
@@ -64,14 +82,14 @@ def test_select():
         ],
         columns=colnames,
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
-    df_result = pd.DataFrame(
+    
+    result = pd.DataFrame(
         [["chr1", -6, 12, "chr1p"]],
         columns=colnames,
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
-    region1 = "chr1:0-1"
     pd.testing.assert_frame_equal(
-        df_result, bioframe.select(df, region1).reset_index(drop=True)
+        result, bioframe.select(df, "chr1:0-1").reset_index(drop=True)
     )
 
 
@@ -82,8 +100,12 @@ def test_select__mask_indices_labels():
          ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
+    
     region = "chr1:4-10"
-    answer = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
+    answer = pd.DataFrame(
+        [["chr1", 4, 5]], 
+        columns=["chrom", "start", "end"]
+    )
     
     result = bioframe.select(df, region)
     pd.testing.assert_frame_equal(
@@ -103,7 +125,7 @@ def test_select__mask_indices_labels():
     )
 
 
-def test_select__half_open_query_intervals():
+def test_select__query_intervals_are_half_open():
     df = pd.DataFrame({
         "chrom": ["chr1", "chr1", 
                   "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
@@ -149,7 +171,7 @@ def test_select__half_open_query_intervals():
     assert (result["name"] == ["B", "C", "D", "E"]).all()
 
 
-def test_select__point_intervals():
+def test_select__with_point_intervals():
     # Dataframe containing "point intervals"
     df = pd.DataFrame({
         "chrom": ["chr1", "chr1", 
@@ -189,7 +211,7 @@ def test_select__point_intervals():
     assert (result["name"] == ["E"]).all()
 
 
-def test_select__points():
+def test_select__with_points():
     # Dataframe of points
     df = pd.DataFrame(
         [["chrX", 3, "A"], 
