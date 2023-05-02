@@ -195,7 +195,9 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
-    if scale is not None:
+    if scale is not None and pad is not None:
+        raise ValueError("only one of pad or scale can be supplied")
+    elif scale is not None:
         if scale < 0:
             raise ValueError("multiplicative scale must be >=0")
         pads = 0.5 * (scale - 1) * (df[ek].values - df[sk].values)
