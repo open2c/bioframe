@@ -30,6 +30,7 @@ class GenomeAssembly:
     seqinfo: pd.DataFrame
     url: str
     alias_dict: Dict[str, str] = None
+    cytobands: pd.DataFrame = None
 
     def __post_init__(self):
         self.alias_dict = {}
@@ -124,10 +125,11 @@ def assembly_info(
     elif len(result) > 1:
         raise ValueError(f"Assembly identifer not unique: {result}")
 
-    assembly = result.iloc[0]
+    assembly = result.iloc[0].replace([np.nan], [None]).to_dict()
     default_roles = assembly["default_roles"]
     default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
+    cytobands_path = assembly["cytobands"]
     seqinfo = pd.read_table(
         pkg_resources.resource_filename("bioframe.io", f"data/{seqinfo_path}")
     )
@@ -146,6 +148,15 @@ def assembly_info(
         raise ValueError(f"units must be a tuple or 'all', not {units}")
     seqinfo = seqinfo.loc[mask]
 
+    cytobands = None
+    if assembly["cytobands"] is not None:
+        cytobands_path = assembly["cytobands"]
+        cytobands = pd.read_table(
+            pkg_resources.resource_filename(
+                "bioframe.io", f"data/{cytobands_path}"
+            )
+        )
+
     return GenomeAssembly(
         organism=assembly["organism"],
         provider=assembly["provider"],
@@ -153,4 +164,5 @@ def assembly_info(
         release_year=assembly["release_year"],
         seqinfo=seqinfo,
         url=assembly["url"],
+        cytobands=cytobands,
     )

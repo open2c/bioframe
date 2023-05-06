@@ -3,14 +3,16 @@
   provider_build: GRCh37
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
+  cytobands: hg19.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear-revised]
-  url: https://ftp.ncbi.nlm.nih.gov/genomes/archive/old_genbank/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37.p13/seqs_for_alignment_pipelines/
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.25_GRCh37.p13/GRCh37_seqs_for_alignment_pipelines/
 - organism: homo sapiens
   provider: ucsc
   provider_build: hg19
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
+  cytobands: hg19.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/analysisSet/
@@ -19,25 +21,45 @@
   provider_build: GRCh38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
+  cytobands: hg38.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.26_GRCh38/GRCh38_major_release_seqs_for_alignment_pipelines/
 - organism: homo sapiens
   provider: ucsc
   provider_build: hg38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
+  cytobands: hg38.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/
+  url: https://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/
+- organism: homo sapiens
+  provider: ncbi
+  provider_build: T2T-CHM13v2.0
+  release_year: 2022
+  seqinfo: hs1.seqinfo.tsv
+  cytobands: hs1.cytoband.tsv
+  default_roles: [assembled]
+  default_units: [primary, non-nuclear]
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/914/755/GCA_009914755.4_T2T-CHM13v2.0/
 - organism: homo sapiens
   provider: ucsc
   provider_build: hs1
   release_year: 2022
   seqinfo: hs1.seqinfo.tsv
+  cytobands: hs1.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hs1/bigZips/
+- organism: mus musculus
+  provider: ncbi
+  provider_build: MGSCv37
+  release_year: 2010
+  seqinfo: mm9.seqinfo.tsv
+  default_roles: [assembled]
+  default_units: [primary, non-nuclear]
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.18_MGSCv37/
 - organism: mus musculus
   provider: ucsc
   provider_build: mm9
@@ -47,6 +69,14 @@
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/
 - organism: mus musculus
+  provider: ncbi
+  provider_build: GRCm38
+  release_year: 2011
+  seqinfo: mm10.seqinfo.tsv
+  default_roles: [assembled]
+  default_units: [primary, non-nuclear]
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.20_GRCm38/
+- organism: mus musculus
   provider: ucsc
   provider_build: mm10
   release_year: 2011
@@ -54,6 +84,14 @@
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/mm10/bigZips/
+- organism: mus musculus
+  provider: ncbi
+  provider_build: GRCm39
+  release_year: 2020
+  seqinfo: mm39.seqinfo.tsv
+  default_roles: [assembled]
+  default_units: [primary, non-nuclear]
+  url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.27_GRCm39/
 - organism: mus musculus
   provider: ucsc
   provider_build: mm39
