@@ -33,3 +33,10 @@ def test_assembly_info():
 
     with pytest.raises(ValueError):
         assembly_info("ncbi.hg38")  # provider-name mismatch
+
+    assert isinstance(hg38.cytobands, pd.DataFrame)
+    for col in ["chrom", "start", "end", "band", "stain"]:
+        assert col in hg38.cytobands.columns
+    
+    sacCer3 = assembly_info("sacCer3")
+    assert sacCer3.cytobands is None

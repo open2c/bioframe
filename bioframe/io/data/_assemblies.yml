@@ -3,6 +3,7 @@
   provider_build: GRCh37
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
+  cytobands: hg19.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear-revised]
   url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.25_GRCh37.p13/GRCh37_seqs_for_alignment_pipelines/
@@ -11,6 +12,7 @@
   provider_build: hg19
   release_year: 2009
   seqinfo: hg19.seqinfo.tsv
+  cytobands: hg19.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/analysisSet/
@@ -19,6 +21,7 @@
   provider_build: GRCh38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
+  cytobands: hg38.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.26_GRCh38/GRCh38_major_release_seqs_for_alignment_pipelines/
@@ -27,6 +30,7 @@
   provider_build: hg38
   release_year: 2013
   seqinfo: hg38.seqinfo.tsv
+  cytobands: hg38.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/
@@ -35,6 +39,7 @@
   provider_build: T2T-CHM13v2.0
   release_year: 2022
   seqinfo: hs1.seqinfo.tsv
+  cytobands: hs1.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/914/755/GCA_009914755.4_T2T-CHM13v2.0/
@@ -43,13 +48,14 @@
   provider_build: hs1
   release_year: 2022
   seqinfo: hs1.seqinfo.tsv
+  cytobands: hs1.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
   url: https://hgdownload.cse.ucsc.edu/goldenPath/hs1/bigZips/
 - organism: mus musculus
   provider: ncbi
   provider_build: MGSCv37
-  release_year:
+  release_year: 2010
   seqinfo: mm9.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
