@@ -125,7 +125,7 @@ def assembly_info(
     elif len(result) > 1:
         raise ValueError(f"Assembly identifer not unique: {result}")
 
-    assembly = result.iloc[0].replace(np.nan, None).to_dict()
+    assembly = result.iloc[0].replace([np.nan], [None]).to_dict()
     default_roles = assembly["default_roles"]
     default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
