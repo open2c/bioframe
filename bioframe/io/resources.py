@@ -90,10 +90,11 @@ def fetch_chromsizes(
         raise ValueError("Unknown provider '{}'".format(provider))
 
 
-def _centers_from_cytoband(cyb):
+def _origins_from_cytoband(cyb, band_col="gieStain"):
     """
-    Extract chromosome center positions from cytological band data. Takes
-    the cytological origin, i.e. the boundary between the two 'acen' bands.
+    Extract chromosomal origin positions separating chromosome arms from 
+    cytological band data. Takes the cytological origin, i.e. the boundary 
+    between the two bands labeled 'acen'.
 
     Parameters
     ----------
@@ -105,7 +106,7 @@ def _centers_from_cytoband(cyb):
     pandas.DataFrame
         A dataframe with columns 'chrom', 'start', 'end', 'mid'.
     """
-    cyb = cyb[cyb["gieStain"] == "acen"]
+    cyb = cyb[band_col == "acen"]
     grouped = cyb.groupby("chrom", sort=False)
     cens = []
     for chrom, group in grouped:
@@ -123,9 +124,9 @@ def _centers_from_cytoband(cyb):
     return pd.DataFrame.from_records(cens)
 
 
-def _centers_from_ucsccentromeres(cens):
+def _origins_from_ucsccentromeres(cens):
     """
-    Extract chromosome center positions from UCSC centromeres.txt table 
+    Extract chromosomal origin positions from UCSC centromeres.txt table 
     describing centromere model sequences. Takes the midpoint of all
     modeled centromere sequences.
 
@@ -214,9 +215,9 @@ def fetch_centromeres(db, provider=None, merge=True, verbose=False):
         raise NotImplementedError("currently UCSC is only implemented provider")
     
     if schema == "centromeres":
-        return _centers_from_ucsccentromeres(df)
+        return _origins_from_ucsccentromeres(df)
     else:
-        return _centers_from_cytoband(df)
+        return _origins_from_cytoband(df)
 
 
 class UCSCClient:
