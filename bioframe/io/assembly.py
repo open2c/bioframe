@@ -28,9 +28,9 @@ class GenomeAssembly:
     provider_build: str
     release_year: str
     seqinfo: pd.DataFrame
-    url: str
-    alias_dict: Dict[str, str] = None
     cytobands: pd.DataFrame = None
+    url: str = None
+    alias_dict: Dict[str, str] = None
 
     def __post_init__(self):
         self.alias_dict = {}
@@ -51,6 +51,13 @@ class GenomeAssembly:
     @property
     def viewframe(self) -> pd.DataFrame:
         return make_viewframe(self.chromsizes.to_dict())
+    
+    def __repr__(self) -> str:
+        return (
+            f"GenomeAssembly(organism='{self.organism}', provider='{self.provider}', "
+            f"provider_build='{self.provider_build}', release_year='{self.release_year}', "
+            f"...)"
+        )
 
 
 def assemblies_available() -> pd.DataFrame:
@@ -129,7 +136,6 @@ def assembly_info(
     default_roles = assembly["default_roles"]
     default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
-    cytobands_path = assembly["cytobands"]
     seqinfo = pd.read_table(
         pkg_resources.resource_filename("bioframe.io", f"data/{seqinfo_path}")
     )
@@ -149,8 +155,8 @@ def assembly_info(
     seqinfo = seqinfo.loc[mask]
 
     cytobands = None
-    if assembly["cytobands"] is not None:
-        cytobands_path = assembly["cytobands"]
+    cytobands_path = assembly["cytobands"]
+    if cytobands_path is not None:
         cytobands = pd.read_table(
             pkg_resources.resource_filename(
                 "bioframe.io", f"data/{cytobands_path}"
@@ -163,6 +169,6 @@ def assembly_info(
         provider_build=assembly["provider_build"],
         release_year=assembly["release_year"],
         seqinfo=seqinfo,
-        url=assembly["url"],
         cytobands=cytobands,
+        url=assembly["url"],
     )
