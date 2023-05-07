@@ -297,6 +297,54 @@ def test_expand_amount_args():
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     with pytest.raises(ValueError):
         bioframe.expand(df, pad=10, scale=2.0)
+        
+def test_expand_strand_aware():
+    df_test = pd.DataFrame(
+            [
+                ["chr1", 1000, 1200, "+"],
+                ["chr1", 800, 1200, "-"],
+                ["chrX", 1000, 1500, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    df_test_expanded_right = bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
+    df_test_expanded_left = bioframe.expand(df_test, pad=100, side='left', strand_aware=True)
+
+    df_right = pd.DataFrame(
+            [
+                ["chr1", 1000, 1300, "+"],
+                ["chr1", 700, 1200, "-"],
+                ["chrX", 1000, 1600, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    df_left = pd.DataFrame(
+            [
+                ["chr1", 900, 1200, "+"],
+                ["chr1", 800, 1300, "-"],
+                ["chrX", 900, 1500, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+
+    pd.testing.assert_frame_equal(df_right, df_test_expanded_right)
+    pd.testing.assert_frame_equal(df_left, df_test_expanded_left)
+    
+    # Test strand information is correct
+    df_test = pd.DataFrame(
+            [
+                ["chr1", 1000, 1200, "."],
+                ["chr1", 800, 1200, "-"],
+                ["chrX", 1000, 1500, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    with pytest.raises(ValueError):
+        bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
+    
+    df_test.drop('strand', axis=1, inplace=True)
+    with pytest.raises(ValueError):
+        bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
 
 def test_overlap():
 
