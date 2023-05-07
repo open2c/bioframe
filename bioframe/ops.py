@@ -151,7 +151,7 @@ def select(df, region, cols=None):
     return df.loc[select_mask(df, region, cols)]
 
 
-def expand(df, pad=None, scale=None, side="both", cols=None, strand_aware=False):
+def expand(df, pad=None, scale=None, side="both", cols=None, direction_col=None):
     """
     Expand each interval by an amount specified with `pad`.
 
@@ -182,9 +182,9 @@ def expand(df, pad=None, scale=None, side="both", cols=None, strand_aware=False)
         The names of columns containing the chromosome, start and end of the
         genomic intervals. Default values are 'chrom', 'start', 'end'.
     
-    strand_aware: bool
-        If True, the left or right expansions are made considering strand information
-        Default False
+    direction_col: str or None
+        Name of direction column that will set upstream/downstream orientation for each feature.
+        The column should contain bioframe-compliant strand ("+", "-", ".").
 
     Returns
     -------
@@ -198,11 +198,11 @@ def expand(df, pad=None, scale=None, side="both", cols=None, strand_aware=False)
 
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
-    if strand_aware:
-        if not 'strand' in df.columns:
-            raise ValueError('strand column is missing - strand-aware expansion is not possible')
-        if not df.strand.isin(['+', '-']).all():
-            missing_strand = (~df.strand.isin(['+', '-'])).sum()
+    if direction_col is not None:
+        if not direction_col in df.columns:
+            raise ValueError(f'{direction_col} column is missing - strand-aware expansion is not possible')
+        if not df.strand.isin(['+', '-', '.']).all():
+            missing_strand = (~df[direction_col].isin(['+', '-', '.'])).sum()
             raise ValueError(f'strand information missing for {missing_strand}/{df.shape[0]} ranges - strand-aware expansion is not possible')
 
     if scale is not None and pad is not None:
@@ -224,15 +224,15 @@ def expand(df, pad=None, scale=None, side="both", cols=None, strand_aware=False)
         df_expanded[sk] = df[sk].values - pads
         df_expanded[ek] = df[ek] + pads
     if side == "left":
-        if strand_aware:
-            df_expanded[sk] = np.where(df["strand"] == '+', df[sk] - pads, df[sk])
-            df_expanded[ek] = np.where(df["strand"] == '+', df[ek], df[ek] + pads)
+        if direction_col is not None:
+            df_expanded[sk] = np.where(df[direction_col] == '-', df[sk]       , df[sk] - pads)
+            df_expanded[ek] = np.where(df[direction_col] == '-', df[ek] + pads, df[ek]       )
         else:
             df_expanded[sk] = df[sk].values - pads
     if side == "right":
-        if strand_aware:
-            df_expanded[sk] = np.where(df["strand"] == '+', df[sk], df[sk] - pads)
-            df_expanded[ek] = np.where(df["strand"] == '+', df[ek] + pads, df[ek])
+        if direction_col is not None:
+            df_expanded[sk] = np.where(df[direction_col] == '-', df[sk] - pads, df[sk]       )
+            df_expanded[ek] = np.where(df[direction_col] == '-', df[ek]       , df[ek] + pads)
         else:
             df_expanded[ek] = df[ek] + pads
 

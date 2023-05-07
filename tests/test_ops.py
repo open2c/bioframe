@@ -307,8 +307,8 @@ def test_expand_strand_aware():
             ],
             columns=["chrom", "start", "end", "strand"],
         )
-    df_test_expanded_right = bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
-    df_test_expanded_left = bioframe.expand(df_test, pad=100, side='left', strand_aware=True)
+    df_test_expanded_right = bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
+    df_test_expanded_left = bioframe.expand(df_test, pad=100, side='left', direction_col='strand')
 
     df_right = pd.DataFrame(
             [
@@ -333,18 +333,18 @@ def test_expand_strand_aware():
     # Test strand information is correct
     df_test = pd.DataFrame(
             [
-                ["chr1", 1000, 1200, "."],
+                ["chr1", 1000, 1200, "x"],
                 ["chr1", 800, 1200, "-"],
                 ["chrX", 1000, 1500, "+"],
             ],
             columns=["chrom", "start", "end", "strand"],
         )
     with pytest.raises(ValueError):
-        bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
+        bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
     
     df_test.drop('strand', axis=1, inplace=True)
     with pytest.raises(ValueError):
-        bioframe.expand(df_test, pad=100, side='right', strand_aware=True)
+        bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
 
 def test_overlap():
 
