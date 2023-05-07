@@ -91,7 +91,7 @@ def test_verify_column_dtypes():
     df1["chromStart"] = df1["chromStart"].astype(pd.Int64Dtype())
     assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True)
 
-    df1["C"] = df1["C"].str.replace("chr", "").astype(int)
+    df1["C"] = df1["C"].str.replace("chr", "").astype(np.int64)
     assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True) is False
 
 

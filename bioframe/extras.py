@@ -196,7 +196,7 @@ def digest(fasta_records, enzyme):
 
     def _each(chrom):
         seq = bioseq.Seq(str(fasta_records[chrom][:]))
-        cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
+        cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(np.int64)
         n_frags = len(cuts) - 1
 
         frags = pd.DataFrame(
