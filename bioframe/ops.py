@@ -217,7 +217,7 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     if pad is not None:
         if pad < 0:
-            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(int)
+            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(np.int64)
             df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
             df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
     if scale is not None:
@@ -628,8 +628,8 @@ def cluster(
             cluster_starts_group,
             cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_group[sk].values.astype(int),
-            df_group[ek].values.astype(int),
+            df_group[sk].values.astype(np.int64),
+            df_group[ek].values.astype(np.int64),
             min_dist=min_dist,
         )
 
@@ -767,8 +767,8 @@ def merge(df, min_dist=0, cols=None, on=None):
             cluster_starts_group,
             cluster_ends_group,
         ) = arrops.merge_intervals(
-            df_group[sk].values.astype(int),
-            df_group[ek].values.astype(int),
+            df_group[sk].values.astype(np.int64),
+            df_group[ek].values.astype(np.int64),
             min_dist=min_dist
             # df_group[sk].values, df_group[ek].values, min_dist=min_dist
         )
@@ -1657,8 +1657,8 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
         df_group = df.loc[df_group_idxs]
 
         (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
-            df_group[sk].values.astype(int),
-            df_group[ek].values.astype(int),
+            df_group[sk].values.astype(np.int64),
+            df_group[ek].values.astype(np.int64),
             bounds=(region_start, region_end),
         )
 
