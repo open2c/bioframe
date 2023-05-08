@@ -156,24 +156,26 @@ def plot_intervals(
         The size of the figure. If None, plot within the current figure.
 
     """
-    chrom_gb = df.groupby("chrom")
+    chrom_gb = df.groupby("chrom", observed=True)
+    chrom_gb = df.reset_index(drop=True).groupby("chrom", observed=True)
     for chrom, chrom_df in chrom_gb:
-        if isinstance(levels, (list, pd.core.series.Series, np.ndarray)):
-            chrom_levels = np.asarray(levels)[chrom_gb.groups[chrom].values]
+        chrom_indices = chrom_gb.groups[chrom].to_numpy()
+        if isinstance(levels, (list, pd.Series, np.ndarray)):
+            chrom_levels = np.asarray(levels)[chrom_indices]
         elif levels is None:
             chrom_levels = None
         else:
             raise ValueError(f"Unknown type of levels: {type(levels)}")
 
-        if isinstance(labels, (list, pd.core.series.Series, np.ndarray)):
-            chrom_labels = np.asarray(labels)[chrom_gb.groups[chrom].values]
+        if isinstance(labels, (list, pd.Series, np.ndarray)):
+            chrom_labels = np.asarray(labels)[chrom_indices]
         elif labels is None:
             chrom_labels = None
         else:
             raise ValueError(f"Unknown type of labels: {type(levels)}")
 
-        if isinstance(colors, (list, pd.core.series.Series, np.ndarray)):
-            chrom_colors = np.asarray(colors)[chrom_gb.groups[chrom].values]
+        if isinstance(colors, (list, pd.Series, np.ndarray)):
+            chrom_colors = np.asarray(colors)[chrom_indices]
         elif colors is None or isinstance(colors, str):
             chrom_colors = colors
         else:
