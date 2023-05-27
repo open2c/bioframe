@@ -106,7 +106,7 @@ def _origins_from_cytoband(cyb, band_col="gieStain"):
     pandas.DataFrame
         A dataframe with columns 'chrom', 'start', 'end', 'mid'.
     """
-    cyb = cyb[band_col == "acen"]
+    cyb = cyb[cyb[band_col] == "acen"]
     grouped = cyb.groupby("chrom", sort=False)
     cens = []
     for chrom, group in grouped:
