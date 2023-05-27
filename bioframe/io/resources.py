@@ -1,6 +1,7 @@
-import urllib
+import urllib 
 from functools import partial
 from urllib.parse import urljoin
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,7 @@ def fetch_chromsizes(
     chrom_patterns: tuple = (r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
     natsort: bool = True,
     **kwargs,
-) -> pd.Series | pd.DataFrame:
+) -> Union[pd.Series, pd.DataFrame]:
     """
     Fetch chromsizes from local storage or the UCSC database.
 
@@ -258,7 +259,7 @@ class UCSCClient:
         natsort: bool = True,
         as_bed: bool = False,
         **kwargs,
-    ) -> pd.Series | pd.DataFrame:
+    ) -> Union[pd.Series, pd.DataFrame]:
         url = urljoin(self._db_url, f"bigZips/{self._db}.chrom.sizes")
         return read_chromsizes(
             url,
