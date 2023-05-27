@@ -73,7 +73,7 @@ def _verify_columns(df, colnames, unique_cols=False, return_as_bool=False):
 
     """
 
-    if not type(df) is pd.core.frame.DataFrame:
+    if not isinstance(df, pd.DataFrame):
         if return_as_bool:
             return False
         raise ValueError("df is not a dataframe")

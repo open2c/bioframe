@@ -127,7 +127,7 @@ def is_complete_ucsc_string(mystring):
         True if able to be parsed into (`chrom`, `start`, `end`) format.
 
     """
-    if type(mystring) is not str:
+    if not isinstance(mystring, str):
         return False
     if len(parse_region_string(mystring)) != 3:
         return False

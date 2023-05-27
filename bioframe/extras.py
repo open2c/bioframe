@@ -331,7 +331,7 @@ def seq_gc(seq, mapped_only=True):
         calculated gc content.
 
     """
-    if not type(seq) == str:
+    if not isinstance(seq, str):
         raise ValueError("reformat input sequence as a str")
     g = seq.count("G")
     g += seq.count("g")
