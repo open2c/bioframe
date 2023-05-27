@@ -192,7 +192,7 @@ SCHEMAS = {
     "vcf": VCF_FIELDS,
     "jaspar": JASPAR_FIELDS,
     "gap": GAP_FIELDS,
-    "UCSCmRNA": UCSC_MRNA_FIELDS,
+    "all_mrna": UCSC_MRNA_FIELDS,
     "pgsnp": PGSNP_FIELDS,
 }
 
