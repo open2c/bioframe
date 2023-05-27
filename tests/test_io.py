@@ -42,7 +42,7 @@ def test_read_chromsizes():
 
     d = """chr1\t1\nchr3\t2\nchr2\t3\n """
     chromsizes = bioframe.read_chromsizes(StringIO(d))
-    assert type(chromsizes) is pd.Series
+    assert isinstance(chromsizes, pd.Series)
     assert chromsizes.name == "length"
     assert list(chromsizes.index) == ["chr1", "chr2", "chr3"]
     assert list(chromsizes.values) == [1, 3, 2]

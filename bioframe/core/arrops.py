@@ -205,7 +205,7 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
-        if issubclass(type(vec), pd.core.series.Series):
+        if isinstance(vec, pd.Series):
             warnings.warn(
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
@@ -287,7 +287,7 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
-        if issubclass(type(vec), pd.core.series.Series):
+        if isinstance(vec, pd.Series):
             warnings.warn(
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
@@ -425,7 +425,7 @@ def merge_intervals(starts, ends, min_dist=0):
     """
 
     for vec in [starts, ends]:
-        if issubclass(type(vec), pd.core.series.Series):
+        if isinstance(vec, pd.Series):
             warnings.warn(
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
@@ -518,7 +518,7 @@ def _closest_intervals_nooverlap(
     """
 
     for vec in [starts1, ends1, starts2, ends2]:
-        if issubclass(type(vec), pd.core.series.Series):
+        if isinstance(vec, pd.Series):
             warnings.warn(
                 "One of the inputs is provided as pandas.Series "
                 "and its index will be ignored.",
