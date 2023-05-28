@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../"))
 
-autodoc_mock_imports = ["numpy", "pandas", "matplotlib", "requests"]
+# autodoc_mock_imports = ["numpy", "pandas", "matplotlib", "requests"]
 
 
 # -- Project information -----------------------------------------------------
