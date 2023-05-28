@@ -23,6 +23,7 @@ MANIFEST
 ehthumbs.db
 Thumbs.db
 
+_scratch/
 tmp/
 docs/notebooks/.ipynb_checkpoints
 .vscode
