@@ -1,5 +1,0 @@
-autodocsumm
-myst_nb
-jinja2<3.1
-sphinx<4,>=2.1
-sphinx_rtd_theme

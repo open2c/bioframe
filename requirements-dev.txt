@@ -1,5 +1,0 @@
--r requirements.txt
-biopython
-pysam
-pytest
-pybbi
