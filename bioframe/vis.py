@@ -1,8 +1,10 @@
+from typing import Union
 import itertools
 import numpy as np
 import pandas as pd
 
-import matplotlib
+from matplotlib.colors import to_rgb
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from .core import arrops
@@ -10,7 +12,51 @@ from .core import arrops
 DEFAULT_FACECOLOR = "skyblue"
 DEFAULT_EDGECOLOR = "dimgray"
 
-__all__ = ["plot_intervals"]
+__all__ = ["plot_intervals", "to_ucsc_colorstring"]
+
+
+def to_ucsc_colorstring(color: Union[str, tuple]) -> str:
+    """
+    Convert any matplotlib color identifier into a UCSC itemRgb color string.
+
+    Parameters
+    ----------
+    color : str or tuple
+        Any valid matplotlib color representation (e.g. 'red', 'tomato', 
+        '#ff0000', '#ff00', "#ff000055", (1, 0, 0), (1, 0, 0, 0.5))
+
+    Returns
+    -------
+    str
+        A UCSC itemRgb colorstring of the form "r,g,b" where r, g, and b are
+        integers between 0 and 255, inclusive.
+
+    Notes
+    -----
+    The alpha (opacity) channel is ignored if represented in the input. 
+    
+    Null values are converted to "0", which is shorthand for "0,0,0" (black). 
+    Note that BED9+ files with uninformative itemRgb values should use "0" as 
+    the itemRgb value on every data line.
+
+    Examples
+    --------
+    >>> to_ucsc_colorstring("red")
+    '255,0,0'
+    >>> to_ucsc_colorstring("tomato")
+    '255,99,71'
+    >>> df["itemRgb"] = df["color"].apply(to_ucsc_colorstring)
+    >>> df
+    chrom  start  end  color  itemRgb
+    chr1   0      10   red    255,0,0
+    chr1   10     20   blue   0,0,255
+    chr2   0      10   green  0,128,0
+    chr2   10     20   None   0
+    """
+    if pd.isnull(color):
+        return "0"
+    else:
+        return ",".join(str(int(x*255)) for x in to_rgb(color))
 
 
 def _plot_interval(
@@ -21,7 +67,7 @@ def _plot_interval(
 
     ax = plt.gca() if ax is None else ax
     ax.add_patch(
-        matplotlib.patches.Rectangle(
+        mpl.patches.Rectangle(
             (start, level - height / 2),
             end - start,
             height,
