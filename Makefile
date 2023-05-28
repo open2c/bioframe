@@ -1,35 +1,37 @@
-.PHONY: install clean-pyc clean-build build test publish docs-init docs
-
+.PHONY: install
 install:
-	pip install -r requirements-dev.txt
-	pip install -e .
+	pip install -e .[dev,docs]
 
+.PHONY: test
 test:
 	pytest
 
+.PHONY: clean
+clean: clean-pyc clean-build
+
+.PHONY: clean-pyc
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 
+.PHONY: clean-build
 clean-build:
 	rm -rf build/
 	rm -rf dist/
 
-clean: clean-pyc clean-build
-
+.PHONY: build
 build: clean-build
-	python setup.py sdist
-	python setup.py bdist_wheel
+	python -m build --sdist --wheel .
 
-docs-init:
-	pip install -r docs/requirements_doc.txt
-
+.PHONY: docs
 docs:
 	cd docs && make html
 
+.PHONY: publish
 publish: build
 	twine upload dist/*
 
+.PHONY: publish-test
 publish-test:
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
