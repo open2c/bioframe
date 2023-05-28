@@ -47,6 +47,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "biopython",
+    "isort",
+    "flake8",
+    "flake8-pyproject",
     "pysam",
     "pybbi",
     "pytest",
@@ -71,3 +74,36 @@ changelog = "https://github.com/open2c/bioframe/blob/master/CHANGES.md"
 
 [tool.hatch.version]
 path = "bioframe/_version.py"
+
+[tool.hatch.envs.default.scripts]
+fix = "ruff --fix ."
+lint = "flake8 --exit-zero bioframe tests"
+test = "pytest ."
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+known_first_party = "bioframe"
+
+[tool.flake8]
+max-line-length = 80
+exclude = [
+    ".venv",
+    "bioframe/__init__.py",
+    "bioframe/core/__init__.py",
+    "bioframe/io/__init__.py",
+]
+select = [
+    "B", # bugbear
+    "B950", # line exceeds max-line-length + 10%
+    "C", # mccabe complexity
+    "E", # pycodestyle
+    "F", # pyflakes error
+    "W", # pyflakes warning
+]
+ignore = [
+    "E203", # whitespace before ':'
+    "E266", # too many leading '#' for block comment
+    "E501", # line too long
+    "W503", # line break before binary operator
+]
