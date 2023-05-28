@@ -20,6 +20,8 @@ formats: all
 # setup_py_install: true
 python:
   install:
-    - requirements: docs/requirements_rtd.txt
-    - method: setuptools
+    - method: pip
       path: .
+      extra_requirements:
+        - dev
+        - docs
