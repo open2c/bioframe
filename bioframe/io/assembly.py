@@ -61,6 +61,16 @@ class GenomeAssembly:
 
 
 def assemblies_available() -> pd.DataFrame:
+    """
+    Get a list of available genome assembly metadata in local storage.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with metadata fields for available assemblies, including
+        'provider', 'provider_build', 'default_roles', 'default_units', 
+        and names of seqinfo and cytoband files.
+    """
     path = pkg_resources.resource_filename("bioframe.io", ASSEMBLY_MANIFEST_PATH)
     with open(path) as f:
         assemblies = yaml.safe_load(f)
