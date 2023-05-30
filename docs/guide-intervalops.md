@@ -234,6 +234,7 @@ If the features in df1 have direction (e.g., genes have transcription direction)
 direction can be changed to the direction of the features by `direction_col`:
 ```
 ```{code-cell} ipython3
+df1["strand"] = np.where(np.random.rand(len(df1)) > 0.5, "+", "-")
 bf.closest(df1, df2, 
     ignore_overlaps=True, 
     ignore_downstream=True, 
