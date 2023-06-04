@@ -1,7 +1,4 @@
 import re
-import pandas as pd
-import numpy as np
-from .specs import _get_default_colnames
 
 __all__ = [
     "parse_region",
@@ -10,7 +7,18 @@ __all__ = [
     "to_ucsc_string",
 ]
 
-### functions for manipulating UCSC strings ###
+GRANGE_TOKEN_SPEC = [
+    ("HYPHEN", r"-"),
+    ("COORD", r"[0-9,]+(\.[0-9]*)?(?:[a-z]+)?"),
+    ("OTHER", r".+"),
+]
+
+GRANGE_REGEX = re.compile(
+    r"\s*" + r"|\s*".join(
+        rf"(?P<{name}>{token})" for name, token in GRANGE_TOKEN_SPEC
+    ),
+    re.IGNORECASE
+)
 
 
 def to_ucsc_string(triplet):
@@ -26,7 +34,7 @@ def to_ucsc_string(triplet):
     ucsc_string : str
         UCSC-style string, 'chrom:start-end'
     """
-    return "{0}:{1}-{2}".format(*triplet)
+    return "{}:{}-{}".format(*triplet)
 
 
 def _parse_humanized(s):
@@ -44,7 +52,7 @@ def _parse_humanized(s):
     elif unit in ("G", "GB"):
         value *= 1000000000
     else:
-        raise ValueError("Unknown unit '{}'".format(unit))
+        raise ValueError(f"Unknown unit '{unit}'")
     return int(value)
 
 
@@ -66,23 +74,17 @@ def parse_region_string(s):
     """
 
     def _tokenize(s):
-        token_spec = [
-            ("HYPHEN", r"-"),
-            ("COORD", r"[0-9,]+(\.[0-9]*)?(?:[a-z]+)?"),
-            ("OTHER", r".+"),
-        ]
-        tok_regex = r"\s*" + r"|\s*".join(r"(?P<%s>%s)" % pair for pair in token_spec)
-        tok_regex = re.compile(tok_regex, re.IGNORECASE)
-        for match in tok_regex.finditer(s):
+        for match in GRANGE_REGEX.finditer(s):
             typ = match.lastgroup
             yield typ, match.group(typ)
 
     def _check_token(typ, token, expected):
         if typ is None:
-            raise ValueError("Expected {} token missing".format(" or ".join(expected)))
+            raise ValueError(
+                f"Expected {' or '.join(expected)} token missing")
         else:
             if typ not in expected:
-                raise ValueError('Unexpected token "{}"'.format(token))
+                raise ValueError(f'Unexpected token "{token}"')
 
     def _expect(tokens):
         typ, token = next(tokens, (None, None))
@@ -172,7 +174,7 @@ def parse_region(reg, chromsizes=None):
     try:
         clen = chromsizes[chrom] if chromsizes is not None else None
     except KeyError:
-        raise ValueError("Unknown sequence label: {}".format(chrom))
+        raise ValueError(f"Unknown sequence label: {chrom}")
 
     start = 0 if start is None else start
     if end is None:
@@ -182,6 +184,6 @@ def parse_region(reg, chromsizes=None):
         raise ValueError("End cannot be less than start")
 
     if start < 0 or (clen is not None and end > clen):
-        raise ValueError("Genomic region out of bounds: [{}, {})".format(start, end))
+        raise ValueError(f"Genomic region out of bounds: [{start}, {end})")
 
     return chrom, start, end

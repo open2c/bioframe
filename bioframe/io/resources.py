@@ -1,7 +1,7 @@
-import urllib 
+import urllib
 from functools import partial
-from urllib.parse import urljoin
 from typing import Union
+from urllib.parse import urljoin
 
 import numpy as np
 import pandas as pd
@@ -39,9 +39,9 @@ def fetch_chromsizes(
     as_bed : bool, optional
         If True, return chromsizes as an interval DataFrame (chrom, start, end)
         instead of a Series.
-    
+
     The remaining options only apply to provider="ucsc".
-    
+
     filter_chroms : bool, optional
         Filter for chromosome names given in ``chrom_patterns``.
     chrom_patterns : sequence, optional
@@ -103,15 +103,15 @@ def fetch_chromsizes(
             **kwargs,
         )
     else:
-        raise ValueError("Unknown provider '{}'".format(provider))
+        raise ValueError(f"Unknown provider '{provider}'")
 
 
 def _origins_from_cytoband(
     cyb: pd.DataFrame, band_col: str = "gieStain"
 ) -> pd.DataFrame:
     """
-    Extract chromosomal origin positions separating chromosome arms from 
-    cytological band data. Takes the cytological origin, i.e. the boundary 
+    Extract chromosomal origin positions separating chromosome arms from
+    cytological band data. Takes the cytological origin, i.e. the boundary
     between the two bands labeled 'acen'.
 
     Parameters
@@ -144,7 +144,7 @@ def _origins_from_cytoband(
 
 def _origins_from_ucsccentromeres(cens: pd.DataFrame) -> pd.DataFrame:
     """
-    Extract chromosomal origin positions from UCSC centromeres.txt table 
+    Extract chromosomal origin positions from UCSC centromeres.txt table
     describing centromere model sequences. Takes the midpoint of all
     modeled centromere sequences.
 
@@ -159,7 +159,7 @@ def _origins_from_ucsccentromeres(cens: pd.DataFrame) -> pd.DataFrame:
         A dataframe with columns 'chrom', 'start', 'end', 'mid'.
     """
     cens = cens.groupby("chrom").agg({
-        "start": np.min, 
+        "start": np.min,
         "end": np.max
     }).reset_index()
     cens["mid"] = (cens["start"] + cens["end"]) // 2
@@ -182,7 +182,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
     db : str
         Assembly name.
     provider : str, optional [default: "local"]
-        The provider of centromere data. Either "local" for local storage 
+        The provider of centromere data. Either "local" for local storage
         or "ucsc".
 
     Returns
@@ -193,12 +193,12 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
     -----
     When provider="local", centromeres are derived from cytoband tables
     in local storage.
-    
+
     Whe provider="ucsc", the fallback priority goes as follows:
     - UCSC cytoBand
     - UCSC cytoBandIdeo
     - UCSC centromeres.txt
-    
+
     Note that UCSC "gap" files no longer provide centromere information.
 
     Currently only works for human assemblies.
@@ -240,9 +240,9 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
             return _origins_from_ucsccentromeres(df)
         else:
             return _origins_from_cytoband(df)
-    
+
     else:
-        raise ValueError("Unknown provider '{}'".format(provider))
+        raise ValueError(f"Unknown provider '{provider}'")
 
 
 class UCSCClient:
@@ -289,7 +289,7 @@ class UCSCClient:
         else:
             url = urljoin(self._db_url, "database/cytoBand.txt.gz")
         return read_table(url, schema="cytoband")
-    
+
     def fetch_mrna(self, **kwargs) -> pd.DataFrame:
         url = urljoin(self._db_url, "database/all_mrna.txt.gz")
         return read_table(

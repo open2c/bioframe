@@ -1,6 +1,6 @@
+
 import numpy as np
 import pandas as pd
-import collections
 
 from . import ops
 from .core.specs import _get_default_colnames, _verify_columns
@@ -78,7 +78,7 @@ def make_chromarms(
     elif len(cols_chroms) == 3:
         ck1, sk1, ek1 = cols_chroms
         _verify_columns(df_chroms, [ck1, sk1, ek1], unique_cols=True)
-        if any((df_chroms[sk1].values != 0)):
+        if any(df_chroms[sk1].values != 0):
             raise ValueError("all values in starts column must be zero")
     else:
         raise ValueError("invalid number of cols_chroms")
@@ -186,13 +186,14 @@ def digest(fasta_records, enzyme):
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
     except AttributeError:
-        raise ValueError("Unknown enzyme name: {}".format(enzyme))
+        raise ValueError(f"Unknown enzyme name: {enzyme}")
 
     def _each(chrom):
         seq = bioseq.Seq(str(fasta_records[chrom][:]))
@@ -233,11 +234,13 @@ def frac_mapped(df, fasta_records, return_input=True):
 
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
         raise ValueError(
-            "chrom from intervals not in fasta_records: double-check genome agreement"
+            "chrom from intervals not in fasta_records: "
+            "double-check genome agreement"
         )
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
 
     def _each(bin):
@@ -288,7 +291,8 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         )
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
 
     def _each(chrom_group):

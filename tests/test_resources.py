@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import pytest
 
 import bioframe
 
@@ -12,7 +10,7 @@ def test_fetch_chromsizes():
         assert isinstance(chromsizes, pd.Series)
         assert chromsizes.name == "length"
         assert len(chromsizes) == 25
-        
+
         chromsizes_df = bioframe.fetch_chromsizes(
             db, provider=provider, as_bed=True
         )

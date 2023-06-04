@@ -1,8 +1,7 @@
-from io import StringIO
 import os.path as op
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 import bioframe

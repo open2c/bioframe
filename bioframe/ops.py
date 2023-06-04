@@ -1,13 +1,9 @@
 import numpy as np
 import pandas as pd
 
+from .core import arrops, checks, construction
 from .core.specs import _get_default_colnames, _verify_columns
 from .core.stringops import parse_region
-
-from .core import arrops
-from .core import specs
-from .core import construction
-from .core import checks
 
 __all__ = [
     "select",
@@ -64,8 +60,8 @@ def select_mask(df, region, cols=None):
         if end is None:
             end = np.inf
         mask = (df[ck] == chrom) & (
-            ((df[sk] < end) & (df[ek] > start)) | 
-            ((df[sk] == df[ek]) & (df[sk] == start))  # include points at query start
+            ((df[sk] < end) & (df[ek] > start))
+            | ((df[sk] == df[ek]) & (df[sk] == start))  # include points at query start
         )
     return mask.to_numpy()
 
@@ -165,8 +161,8 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     pad : int, optional
         The amount by which the intervals are additively expanded *on each side*.
-        Negative values for pad shrink intervals, but not beyond the interval midpoint.
-        Either `pad` or `scale` must be supplied.
+        Negative values for pad shrink intervals, but not beyond the interval
+        midpoint. Either `pad` or `scale` must be supplied.
 
     scale : float, optional
         The factor by which to scale intervals multiplicatively on each side, e.g
@@ -217,7 +213,10 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     if pad is not None:
         if pad < 0:
-            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(np.int64)
+            mids = (
+                df[sk].values +
+                (0.5 * (df[ek].values - df[sk].values)).astype(np.int64)
+            )
             df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
             df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
     if scale is not None:
@@ -380,7 +379,6 @@ def overlap(
     cols2=None,
     on=None,
 ):
-
     """
     Find pairs of overlapping genomic intervals.
 
@@ -405,7 +403,8 @@ def overlap(
 
     return_overlap : bool
         If True, return overlapping intervals for the overlapping pairs
-        as two additional columns (`overlap_start`, `overlap_end`). Default False.
+        as two additional columns (`overlap_start`, `overlap_end`).
+        Default False.
 
     suffixes : (str, str)
         The suffixes for the columns of the two overlapped sets.
@@ -438,19 +437,16 @@ def overlap(
 
     if (how == "left") and (keep_order is None):
         keep_order = True
-    if (how != "left") and (keep_order is True):
+    if (how != "left") and keep_order:
         raise ValueError("keep_order=True only allowed for how='left'")
 
-    if on is None:
-        on_list = []
-    else:
+    if on is not None:
         if not isinstance(on, list):
             raise ValueError("on=[] must be None or list")
         if (ck1 in on) or (ck2 in on):
             raise ValueError("on=[] should not contain chromosome colnames")
         _verify_columns(df1, on)
         _verify_columns(df2, on)
-        on_list = on
 
     overlap_df_idxs = _overlap_intidxs(
         df1,
@@ -490,10 +486,10 @@ def overlap(
 
     df_input_1 = None
     df_input_2 = None
-    if return_input is True or str(return_input) == "1" or return_input == "left":
+    if return_input or str(return_input) == "1" or return_input == "left":
         df_input_1 = df1.iloc[overlap_df_idxs[:, 0]].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
-    if return_input is True or str(return_input) == "2" or return_input == "right":
+    if return_input or str(return_input) == "2" or return_input == "right":
         df_input_2 = df2.iloc[overlap_df_idxs[:, 1]].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
@@ -553,9 +549,10 @@ def cluster(
     """
     Cluster overlapping intervals into groups.
 
-    Can return numeric ids for these groups (with `return_cluster_ids`=True) and/or
-    their genomic coordinates (with `return_cluster_intervals`=True).
-    Also see :func:`merge()`, which discards original intervals and returns a new set.
+    Can return numeric ids for these groups (with `return_cluster_ids`=True)
+    and/or their genomic coordinates (with `return_cluster_intervals`=True).
+    Also see :func:`merge()`, which discards original intervals and returns a
+    new set.
 
     Parameters
     ----------
@@ -565,16 +562,17 @@ def cluster(
         If provided, cluster intervals separated by this distance or less.
         If ``None``, do not cluster non-overlapping intervals.
         Since bioframe uses semi-open intervals, interval pairs [0,1) and [1,2)
-        do not overlap, but are separated by a distance of 0. Such adjacent intervals
-        are not clustered when ``min_dist=None``, but are clustered when ``min_dist=0``.
+        do not overlap, but are separated by a distance of 0. Such adjacent
+        intervals are not clustered when ``min_dist=None``, but are clustered
+        when ``min_dist=0``.
 
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        List of column names to perform clustering on independently, passed as an argument
-        to df.groupby before clustering. Default is ``None``.
+        List of column names to perform clustering on independently, passed as
+        an argument to df.groupby before clustering. Default is ``None``.
         An example useage would be to pass ``on=['strand']``.
 
     return_input : bool
@@ -656,7 +654,7 @@ def cluster(
 
         clusters.append(clusters_group)
 
-    df_nans = pd.isnull(df[[sk, ek] + group_list]).any(axis=1)
+    df_nans = pd.isnull(df[[sk, ek, *group_list]]).any(axis=1)
     if df_nans.sum() > 0:
         cluster_ids[df_nans.values] = (
             max_cluster_id + 1 + np.arange(np.sum(df_nans.values))
@@ -695,9 +693,10 @@ def merge(df, min_dist=0, cols=None, on=None):
     """
     Merge overlapping intervals.
 
-    This returns a new dataframe of genomic intervals, which have the genomic coordinates
-    of the interval cluster groups from the input dataframe. Also :func:`cluster()`, which
-    returns the assignment of intervals to clusters prior to merging.
+    This returns a new dataframe of genomic intervals, which have the genomic
+    coordinates of the interval cluster groups from the input dataframe. Also
+    :func:`cluster()`, which returns the assignment of intervals to clusters
+    prior to merging.
 
     Parameters
     ----------
@@ -716,8 +715,8 @@ def merge(df, min_dist=0, cols=None, on=None):
         genomic intervals. The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        List of column names to perform clustering on independently, passed as an argument
-        to df.groupby before clustering. Default is None.
+        List of column names to perform clustering on independently, passed as
+        an argument to df.groupby before clustering. Default is None.
         An example useage would be to pass ``on=['strand']``.
 
     Returns
@@ -791,7 +790,7 @@ def merge(df, min_dist=0, cols=None, on=None):
 
         clusters.append(clusters_group)
 
-    df_nans = pd.isnull(df[[sk, ek] + group_list]).any(axis=1)
+    df_nans = pd.isnull(df[[sk, ek, *group_list]]).any(axis=1)
     df_has_nans = df_nans.sum()
     if df_has_nans:
         nan_intervals = pd.DataFrame(
@@ -832,9 +831,9 @@ def coverage(
     """
     Quantify the coverage of intervals from 'df1' by intervals from 'df2'.
 
-    For every interval in 'df1' find the number of base pairs covered by intervals in 'df2'.
-    Note this only quantifies whether a basepair in 'df1' was covered, as 'df2' is merged
-    before calculating coverage.
+    For every interval in 'df1' find the number of base pairs covered by
+    intervals in 'df2'. Note this only quantifies whether a basepair in 'df1'
+    was covered, as 'df2' is merged before calculating coverage.
 
     Parameters
     ----------
@@ -918,7 +917,8 @@ def _closest_intidxs(
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        If df2 is None or same object as df1, find closest intervals within the same set.
+        If df2 is None or same object as df1, find closest intervals within
+        the same set.
 
     k_closest : int
         The number of closest intervals to report.
@@ -946,7 +946,8 @@ def _closest_intidxs(
     if (df2 is None) or (df2 is df1):
         if len(df1) == 1:
             raise ValueError(
-                "df1 must have more than one interval to find closest non-identical interval"
+                "df1 must have more than one interval to find closest "
+                "non-identical interval"
             )
         df2 = df1
         self_closest = True
@@ -987,13 +988,16 @@ def _closest_intidxs(
                 "f(DataFrame) -> Series"
             )
 
-        # Verify and construct the direction_arr (convert from pandas string column to bool array)
+        # Verify and construct the direction_arr (convert from pandas string
+        # column to bool array)
         # TODO: should we add checks that it's valid "strand"?
         direction_arr = None
         if direction_col is None:
             direction_arr = np.ones(len(df1_group), dtype=np.bool_)
         else:
-            direction_arr = (df1_group[direction_col].values != "-") # both "+" and "." keep orientation by genomic coordinate
+            direction_arr = (
+                df1_group[direction_col].values != "-"
+            )  # both "+" and "." keep orientation by genomic coordinate
 
         # Calculate closest intervals with arrops:
         closest_idxs_group = arrops.closest_intervals(
@@ -1006,7 +1010,7 @@ def _closest_intidxs(
             ignore_overlaps=ignore_overlaps,
             ignore_upstream=ignore_upstream,
             ignore_downstream=ignore_downstream,
-            direction=direction_arr
+            direction=direction_arr,
         )
 
         # Convert local per-chromosome indices into the
@@ -1045,38 +1049,46 @@ def closest(
     cols2=None,
 ):
     """
-    For every interval in dataframe `df1` find k closest genomic intervals in dataframe `df2`.
+    For every interval in dataframe `df1` find k closest genomic intervals in
+    dataframe `df2`.
 
     Currently, we are not taking the feature strands into account for filtering.
-    However, the strand can be used for definition of upstream/downstream of the feature (direction).
+    However, the strand can be used for definition of upstream/downstream of
+    the feature (direction).
 
-    Note that, unless specified otherwise, overlapping intervals are considered as closest.
-    When multiple intervals are located at the same distance, the ones with the lowest index
+    Note that, unless specified otherwise, overlapping intervals are considered
+    as closest. When multiple intervals are located at the same distance, the
+    ones with the lowest index
     in `df2` are returned.
 
     Parameters
     ----------
     df1, df2 : pandas.DataFrame
         Two sets of genomic intervals stored as a DataFrame.
-        If `df2` is None, find closest non-identical intervals within the same set.
+        If `df2` is None, find closest non-identical intervals within the same
+        set.
 
     k : int
         The number of the closest intervals to report.
 
     ignore_overlaps : bool
-        If True, ignore overlapping intervals and return the closest non-overlapping interval.
+        If True, ignore overlapping intervals and return the closest
+        non-overlapping interval.
 
     ignore_upstream : bool
-        If True, ignore intervals in `df2` that are upstream of intervals in `df1`,
-        relative to the reference strand or the strand specified by direction_col.
+        If True, ignore intervals in `df2` that are upstream of intervals in
+        `df1`, relative to the reference strand or the strand specified by
+        direction_col.
 
     ignore_downstream : bool
-        If True, ignore intervals in `df2` that are downstream of intervals in `df1`,
-        relative to the reference strand or the strand specified by direction_col.
+        If True, ignore intervals in `df2` that are downstream of intervals
+        in `df1`, relative to the reference strand or the strand specified by
+        direction_col.
 
     direction_col : str
-        Name of direction column that will set upstream/downstream orientation for each feature.
-        The column should contain bioframe-compliant strand values ("+", "-", ".").
+        Name of direction column that will set upstream/downstream orientation
+        for each feature. The column should contain bioframe-compliant strand
+        values ("+", "-", ".").
 
     tie_breaking_col : str
         A column in `df2` to use for breaking ties when multiple intervals
@@ -1093,8 +1105,8 @@ def closest(
         If True, return distances. Returns zero for overlaps.
 
     return_overlap : bool
-        If True, return columns: 'have_overlap', 'overlap_start', and 'overlap_end'.
-        Fills df_closest['overlap_start'] and df['overlap_end']
+        If True, return columns: 'have_overlap', 'overlap_start', and
+        'overlap_end'. Fills df_closest['overlap_start'] and df['overlap_end']
         with None if non-overlapping. Default False.
 
     suffixes : (str, str)
@@ -1114,8 +1126,8 @@ def closest(
     Notes
     -----
     By default, direction is defined by the reference genome: everything with
-    smaller coordinate is considered upstream, everything with larger coordinate
-    is considered downstream.
+    smaller coordinate is considered upstream, everything with larger
+    coordinate is considered downstream.
 
     If ``direction_col`` is provided, upstream/downstream are relative to the
     direction column in ``df1``, i.e. features marked "+" and "." strand will
@@ -1227,10 +1239,10 @@ def closest(
 
     df_input_1 = None
     df_input_2 = None
-    if return_input is True or str(return_input) == "1" or return_input == "left":
+    if return_input or str(return_input) == "1" or return_input == "left":
         df_input_1 = df1.iloc[closest_df_idxs[:, 0]].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
-    if return_input is True or str(return_input) == "2" or return_input == "right":
+    if return_input or str(return_input) == "2" or return_input == "right":
         df_input_2 = df2.iloc[closest_df_idxs[:, 1]].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
         df_input_2 = df_input_2.astype(
@@ -1255,7 +1267,8 @@ def subtract(
     cols2=None,
 ):
     """
-    Generate a new set of genomic intervals by subtracting the second set of genomic intervals from the first.
+    Generate a new set of genomic intervals by subtracting the second set of
+    genomic intervals from the first.
 
     Parameters
     ----------
@@ -1263,13 +1276,13 @@ def subtract(
         Two sets of genomic intervals stored as a DataFrame.
 
     return_index : bool
-        Whether to return the indices of the original intervals ('index'+suffixes[0]),
-        and the indices of any sub-intervals split by subtraction ('sub_index'+suffixes[1]).
-        Default False.
+        Whether to return the indices of the original intervals
+        ('index'+suffixes[0]), and the indices of any sub-intervals split by
+        subtraction ('sub_index'+suffixes[1]). Default False.
 
     suffixes : (str,str)
-        Suffixes for returned indices. Only alters output if return_index is True.
-        Default ("","_").
+        Suffixes for returned indices. Only alters output if return_index is
+        True. Default ("","_").
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -1282,7 +1295,8 @@ def subtract(
 
     Notes
     -----
-    Resets index, drops completely subtracted (null) intervals, and casts to pd.Int64Dtype().
+    Resets index, drops completely subtracted (null) intervals, and casts to
+    pd.Int64Dtype().
 
     """
 
@@ -1336,8 +1350,9 @@ def subtract(
 
 def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     """
-    Generate a new dataframe of genomic intervals by removing any interval from the
-    first dataframe that overlaps an interval from the second dataframe.
+    Generate a new dataframe of genomic intervals by removing any interval
+    from the first dataframe that overlaps an interval from the second
+    dataframe.
 
     Parameters
     ----------
@@ -1350,8 +1365,9 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
         The default values are 'chrom', 'start', 'end'.
 
     on : None or list
-        Additional column names to perform clustering on independently, passed as an argument
-        to df.groupby when considering overlaps and must be present in both dataframes.
+        Additional column names to perform clustering on independently, passed
+        as an argument to df.groupby when considering overlaps and must be
+        present in both dataframes.
         Examples for additional columns include 'strand'.
 
     Returns
@@ -1467,9 +1483,9 @@ def trim(
     df_view_col : str or None
         The column of 'df' used to specify view regions.
         The associated region in 'view_df' is then used for trimming.
-        If None, :func:'bioframe.ops.assign_view' will be used to assign view regions.
-        If no 'view_df' is provided, uses the 'chrom' column, df[cols[0]].
-        Default None.
+        If None, :func:'bioframe.ops.assign_view' will be used to assign view
+        regions. If no 'view_df' is provided, uses the 'chrom' column,
+        df[cols[0]]. Default None.
 
     view_name_col : str
         Column of df with region names. Default 'name'.
@@ -1480,7 +1496,8 @@ def trim(
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom',
+        'start', 'end'.
 
     Returns
     -------
@@ -1560,9 +1577,11 @@ def trim(
 
 def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None):
     """
-    Find genomic regions in a viewFrame 'view_df' that are not covered by any interval in the dataFrame 'df'.
+    Find genomic regions in a viewFrame 'view_df' that are not covered by any
+    interval in the dataFrame 'df'.
 
-    First assigns intervals in 'df' to region in 'view_df', splitting intervals in 'df' as necessary.
+    First assigns intervals in 'df' to region in 'view_df', splitting intervals
+    in 'df' as necessary.
 
     Parameters
     ----------
@@ -1580,7 +1599,8 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom',
+        'start', 'end'.
 
     Returns
     -------
@@ -1606,8 +1626,9 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
         view_df, view_name_col=view_name_col, cols=[ckv, skv, ekv]
     ).rename(columns=dict(zip([ckv, skv, ekv], [ck, sk, ek])))
 
-    # associate intervals to regions, required to enable single interval from df to
-    # overlap multiple intervals in view_df. note this differs from the goal of assign_view.
+    # associate intervals to regions, required to enable single interval from
+    # df to overlap multiple intervals in view_df. note this differs from the
+    # goal of assign_view.
     new_intervals = overlap(
         view_df,
         df,
@@ -1656,7 +1677,10 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
         df_group_idxs = df_groups[group_key].values
         df_group = df.loc[df_group_idxs]
 
-        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
+        (
+            complement_starts_group,
+            complement_ends_group,
+        ) = arrops.complement_intervals(
             df_group[sk].values.astype(np.int64),
             df_group[ek].values.astype(np.int64),
             bounds=(region_start, region_end),
@@ -1696,9 +1720,10 @@ def sort_bedframe(
     If 'view_df' is not provided, sorts by ``cols`` (e.g. "chrom", "start", "end").
     If 'view_df' is provided and 'df_view_col' is not provided, uses
     :func:`bioframe.ops.assign_view` with ``df_view_col='view_region'``
-    to assign intervals to the view regions with the largest overlap and then sorts.
-    If 'view_df' and 'df_view_col' are both provided, checks if the latter
-    are cataloged in 'view_name_col', and then sorts.
+    to assign intervals to the view regions with the largest overlap and then
+    sorts.
+    If 'view_df' and 'df_view_col' are both provided, checks if the latter are
+    cataloged in 'view_name_col', and then sorts.
 
     df : pandas.DataFrame
         Valid bedframe.
@@ -1727,7 +1752,8 @@ def sort_bedframe(
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom',
+        'start', 'end'.
 
     Returns
     -------
@@ -1772,7 +1798,7 @@ def sort_bedframe(
                     "column 'df_view_col' not in input df, cannot sort by view"
                 )
             if not checks.is_cataloged(
-                out_df[pd.isna(out_df[df_view_col].values) == False],
+                out_df[~pd.isna(out_df[df_view_col].to_numpy())],
                 view_df,
                 df_view_col=df_view_col,
                 view_name_col=view_name_col,
@@ -1806,7 +1832,8 @@ def assign_view(
     cols_view=None,
 ):
     """
-    Associates genomic intervals in bedframe ``df`` with regions in viewframe ``view_df``, based on their largest overlap.
+    Associates genomic intervals in bedframe ``df`` with regions in viewframe
+    ``view_df``, based on their largest overlap.
 
     Parameters
     ----------
@@ -1835,11 +1862,13 @@ def assign_view(
 
     cols_view : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in the view. The default values are 'chrom', 'start', 'end'.
+        genomic intervals in the view. The default values are 'chrom',
+        'start', 'end'.
 
     Returns
     -------
-    out_df : dataframe with an associated view region for each interval in ``out_df[view_name_col]``.
+    out_df : dataframe with an associated view region for each interval in
+    ``out_df[view_name_col]``.
 
     Notes
     -------
@@ -1869,7 +1898,6 @@ def assign_view(
         cols2=cols_view,
     )
 
-    overlap_columns = overlap_view.columns
     overlap_view["overlap_length"] = (
         overlap_view["overlap_" + ek1] - overlap_view["overlap_" + sk1]
     )
@@ -1886,6 +1914,6 @@ def assign_view(
         out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
     out_df.reset_index(inplace=True, drop=True)
 
-    return_cols = list(df.columns) + [df_view_col]
+    return_cols = [*list(df.columns), df_view_col]
 
     return out_df[return_cols]

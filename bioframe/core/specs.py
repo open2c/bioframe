@@ -1,6 +1,7 @@
 import collections
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 __all__ = [
     "update_default_colnames",

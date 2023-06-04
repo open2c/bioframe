@@ -1,14 +1,12 @@
-from urllib.parse import urljoin, urlencode
-import os
-import posixpath as pp
-import os.path as op
-import pandas as pd
-import requests
-import socket
 import base64
 import glob
+import os
+import os.path as op
+import posixpath as pp
+from urllib.parse import urlencode, urljoin
 
-from ..io.fileops import read_table
+import pandas as pd
+import requests
 
 
 class EncodeClient:
@@ -45,7 +43,8 @@ class EncodeClient:
             if not op.exists(metadata_path):
 
                 print(
-                    "getting metadata from ENCODE, please wait while (~240Mb) file downloads"
+                    "getting metadata from ENCODE, please wait while "
+                    "(~240Mb) file downloads"
                 )
                 with requests.get(self.METADATA_URL, stream=True) as r:
                     r.raise_for_status()
@@ -108,7 +107,7 @@ class EncodeClient:
             pass
             # print('File "{}" available'.format(filename))
         else:
-            print('Downloading "{}"'.format(filename))
+            print(f'Downloading "{filename}"')
             r = requests.get(url)
             r.raise_for_status()
             with open(path, "wb") as f:
@@ -125,7 +124,7 @@ class FDNClient:
     def __init__(self, cachedir, assembly, metadata=None, key_id=None, key_secret=None):
         self.cachedir = op.join(cachedir, assembly)
         if not op.isdir(self.cachedir):
-            raise OSError("Directory doesn't exist: '{}'".format(cachedir))
+            raise OSError(f"Directory doesn't exist: '{cachedir}'")
         if metadata is None:
             metadata_paths = sorted(glob.glob(op.join(cachedir, "metadata*.tsv")))
             metadata_path = metadata_paths[-1]
@@ -164,7 +163,7 @@ class FDNClient:
             pass
             # print('File "{}" available'.format(filename))
         else:
-            print('Downloading "{}"'.format(filename))
+            print(f'Downloading "{filename}"')
             if self._token:
                 headers = {"Authorization": b"Basic " + self._token}
             else:

@@ -276,10 +276,4 @@ NCBI_AUTOSOMES = r"^[0-9]+$"
 NCBI_SEXCHROMS = r"^[XYZW]$"
 NCBI_NONNUCLEAR = r"^MT$|^Pltd$"
 ROMAN_LT10 = [r"^chrI+$", r"^chrIV$", r"^chrVI*$", r"^chrIX$"]
-ROMAN_LT20 = ROMAN_LT10 + [
-    r"^chrX$",
-    r"^chrXI*$",
-    r"^chrXIV$",
-    r"^chrXVI*$",
-    r"^chrXIX$",
-]
+ROMAN_LT20 = [*ROMAN_LT10, "^chrX$", "^chrXI*$", "^chrXIV$", "^chrXVI*$", "^chrXIX$"]
