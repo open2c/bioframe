@@ -1,5 +1,5 @@
-from typing import Union, Tuple
 import re
+from typing import Tuple, Union
 
 import pandas as pd
 
@@ -45,7 +45,7 @@ def to_ucsc_string(grange: Tuple[str, int, int]) -> str:
 
 def is_complete_ucsc_string(s: str) -> bool:
     """
-    Returns True if a string can be parsed into a completely informative 
+    Returns True if a string can be parsed into a completely informative
     (chrom, start, end) format.
 
     Parameters
@@ -138,7 +138,7 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
             raise ValueError(
                 f"Expected COORD; got unexpected token: {name}: {token}"
             )
-        
+
         return start, end
 
     parts = s.split(":")
@@ -146,12 +146,12 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
     chrom = parts[0].strip()
     if not len(chrom):
         raise ValueError("Chromosome name cannot be empty")
-    
+
     if len(parts) < 2:
         return (chrom, None, None)
-    
+
     start, end = _parse_range(parts[1])
-    
+
     return chrom, start, end
 
 
@@ -162,9 +162,9 @@ def _parse_region_record(grange: tuple) -> Tuple[str, int, int]:
     Parameters
     ----------
     grange : str or tuple
-        * A triple (chrom, start, end), where ``start`` or ``end`` may be 
+        * A triple (chrom, start, end), where ``start`` or ``end`` may be
         ``None``.
-        * A quadruple or higher-order tuple, e.g. (chrom, start, end, name). 
+        * A quadruple or higher-order tuple, e.g. (chrom, start, end, name).
         ``name`` and other fields will be ignored.
 
     Returns
@@ -182,7 +182,7 @@ def _parse_region_record(grange: tuple) -> Tuple[str, int, int]:
 
 
 def parse_region(
-    grange: Union[str, tuple], 
+    grange: Union[str, tuple],
     chromsizes: Union[dict, pd.Series] = None,
     check_bounds: bool = True,
 ) -> Tuple[str, int, int]:
@@ -193,15 +193,15 @@ def parse_region(
     ----------
     grange : str or tuple
         * A UCSC-style genomic range string, e.g. "chr5:10,100,000-30,000,000".
-        * A triple (chrom, start, end), where ``start`` or ``end`` may be 
+        * A triple (chrom, start, end), where ``start`` or ``end`` may be
         ``None``.
-        * A quadruple or higher-order tuple, e.g. (chrom, start, end, name). 
+        * A quadruple or higher-order tuple, e.g. (chrom, start, end, name).
         ``name`` and other fields will be ignored.
-    
+
     chromsizes : dict or Series, optional
-        Lookup table of sequence lengths for bounds checking and for 
+        Lookup table of sequence lengths for bounds checking and for
         filling in a missing end coordinate.
-    
+
     check_bounds : bool, optional [default: True]
         If True, check that the genomic range is within the bounds of the
         sequence.
@@ -218,18 +218,18 @@ def parse_region(
 
     Sequence names may contain any character except for whitespace and colon.
 
-    The start coordinate should be 0 or greater and the end coordinate should 
-    be less than or equal to the length of the sequence, if the latter is 
-    known. These are enforced when ``check_bounds`` is ``True``. 
-    
-    If the start coordinate is missing, it is assumed to be 0. If the end 
-    coordinate is missing and chromsizes are provided, it is replaced with the 
+    The start coordinate should be 0 or greater and the end coordinate should
+    be less than or equal to the length of the sequence, if the latter is
+    known. These are enforced when ``check_bounds`` is ``True``.
+
+    If the start coordinate is missing, it is assumed to be 0. If the end
+    coordinate is missing and chromsizes are provided, it is replaced with the
     length of the sequence.
 
     The end coordinate **must** be greater than or equal to the start.
 
     The start and end coordinates may be suffixed with k(b), M(b), or G(b)
-    multipliers, case-insentive. e.g. "chr1:1K-2M" is equivalent to 
+    multipliers, case-insentive. e.g. "chr1:1K-2M" is equivalent to
     "chr1:1000-2000000".
     """
     if isinstance(grange, str):
