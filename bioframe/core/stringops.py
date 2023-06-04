@@ -163,9 +163,9 @@ def _parse_region_record(grange: tuple) -> Tuple[str, int, int]:
     ----------
     grange : str or tuple
         * A triple (chrom, start, end), where ``start`` or ``end`` may be
-        ``None``.
+          ``None``.
         * A quadruple or higher-order tuple, e.g. (chrom, start, end, name).
-        ``name`` and other fields will be ignored.
+          ``name`` and other fields will be ignored.
 
     Returns
     -------
@@ -195,9 +195,9 @@ def parse_region(
     grange : str or tuple
         * A UCSC-style genomic range string, e.g. "chr5:10,100,000-30,000,000".
         * A triple (chrom, start, end), where ``start`` or ``end`` may be
-        ``None``.
+          ``None``.
         * A quadruple or higher-order tuple, e.g. (chrom, start, end, name).
-        ``name`` and other fields will be ignored.
+          ``name`` and other fields will be ignored.
 
     chromsizes : dict or Series, optional
         Lookup table of sequence lengths for bounds checking and for
