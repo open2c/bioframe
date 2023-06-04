@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 import re
 
 import pandas as pd
@@ -26,7 +26,7 @@ RANGE_REGEX = re.compile(
 )
 
 
-def to_ucsc_string(grange: tuple[str, int, int]) -> str:
+def to_ucsc_string(grange: Tuple[str, int, int]) -> str:
     """
     Convert a grange to a UCSC string.
 
@@ -87,7 +87,7 @@ def _parse_humanized_int(s: str) -> int:
     return int(value)
 
 
-def parse_region_string(s: str) -> tuple[str, int, int]:
+def parse_region_string(s: str) -> Tuple[str, int, int]:
     """
     Parse a UCSC-style genomic range string into a triple.
 
@@ -155,7 +155,7 @@ def parse_region_string(s: str) -> tuple[str, int, int]:
     return chrom, start, end
 
 
-def _parse_region_record(grange: tuple) -> tuple[str, int, int]:
+def _parse_region_record(grange: tuple) -> Tuple[str, int, int]:
     """
     Coerce a genomic range record into a triple.
 
@@ -185,7 +185,7 @@ def parse_region(
     grange: Union[str, tuple], 
     chromsizes: Union[dict, pd.Series] = None,
     check_bounds: bool = True,
-) -> tuple[str, int, int]:
+) -> Tuple[str, int, int]:
     """
     Coerce a genomic range string or sequence type into a triple.
 
