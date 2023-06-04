@@ -27,11 +27,11 @@ author = "Open2C"
 
 # The full version, including alpha/beta/rc tags
 def _read(*parts, **kwargs):
-    import os, io
+    import os
 
     filepath = os.path.join(os.path.dirname(__file__), *parts)
     encoding = kwargs.pop("encoding", "utf-8")
-    with io.open(filepath, encoding=encoding) as fh:
+    with open(filepath, encoding=encoding) as fh:
         text = fh.read()
     return text
 

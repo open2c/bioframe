@@ -119,7 +119,7 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
     if isinstance(regions, pd.DataFrame):
-        if set([ck1, sk1, ek1]).issubset(regions.columns):
+        if {ck1, sk1, ek1}.issubset(regions.columns):
             out_df = regions.copy()
         elif (len(regions[name_col].values.shape) == 1) and is_complete_ucsc_string(
             regions[name_col].values[0]

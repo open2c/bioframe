@@ -640,7 +640,7 @@ def cluster(
 
         ## Storing chromosome names causes a 2x slowdown. :(
         if isinstance(group_keys, str):
-            group_keys = tuple((group_keys,))
+            group_keys = (group_keys,)
         clusters_group = {}
         for col in group_list:
             clusters_group[col] = pd.Series(
@@ -776,7 +776,7 @@ def merge(df, min_dist=0, cols=None, on=None):
 
         ## Storing chromosome names causes a 2x slowdown. :(
         if isinstance(group_keys, str):
-            group_keys = tuple((group_keys,))
+            group_keys = (group_keys,)
         clusters_group = {}
         for col in group_list:
             clusters_group[col] = pd.Series(
