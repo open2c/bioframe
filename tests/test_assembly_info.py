@@ -1,7 +1,7 @@
-from bioframe.io.assembly import assemblies_available, assembly_info, GenomeAssembly
-
 import pandas as pd
 import pytest
+
+from bioframe.io.assembly import GenomeAssembly, assemblies_available, assembly_info
 
 
 def test_assemblies_available():
@@ -23,11 +23,11 @@ def test_assembly_info():
     assert isinstance(hg38.seqinfo, pd.DataFrame)
     for col in ["name", "length", "aliases", "role", "unit"]:
         assert col in hg38.seqinfo.columns
-    
+
     assert isinstance(hg38.viewframe, pd.DataFrame)
     for col in ["chrom", "start", "end", "name"]:
         assert col in hg38.viewframe.columns
-    
+
     hg38 = assembly_info("ucsc.hg38", roles=("assembled", "unlocalized"))
     assert isinstance(hg38, GenomeAssembly)
 
@@ -37,6 +37,6 @@ def test_assembly_info():
     assert isinstance(hg38.cytobands, pd.DataFrame)
     for col in ["chrom", "start", "end", "band", "stain"]:
         assert col in hg38.cytobands.columns
-    
+
     sacCer3 = assembly_info("sacCer3")
     assert sacCer3.cytobands is None

@@ -1,8 +1,8 @@
-import bioframe
 import numpy as np
 import pandas as pd
-
 import pytest
+
+import bioframe
 
 
 def test_to_ucsc_colorstring():
@@ -24,10 +24,10 @@ def test_to_ucsc_colorstring():
     bioframe.to_ucsc_colorstring("none") == "0"
     bioframe.to_ucsc_colorstring(np.nan) == "0"
     bioframe.to_ucsc_colorstring(pd.NA) == "0"
-    
+
     with pytest.raises(ValueError):
         bioframe.to_ucsc_colorstring("notacolor")
-    
+
     df = bioframe.from_any([
         ["chr1", 0, 10, "red"],
         ["chr1", 10, 20, "blue"],

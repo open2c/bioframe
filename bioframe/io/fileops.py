@@ -1,12 +1,11 @@
-from collections import OrderedDict
-from contextlib import closing
-import subprocess
-import tempfile
-import json
 import io
-
+import json
 import os
 import shutil
+import subprocess
+import tempfile
+from collections import OrderedDict
+from contextlib import closing
 
 import numpy as np
 import pandas as pd
@@ -21,10 +20,9 @@ try:
 except ImportError:
     pyBigWig = None
 
-from ..core.stringops import parse_region
 from ..core.arrops import argnatsort
-from .schemas import SCHEMAS, BAM_FIELDS
-
+from ..core.stringops import parse_region
+from .schemas import BAM_FIELDS, SCHEMAS
 
 __all__ = [
     "read_table",
@@ -71,7 +69,7 @@ def read_table(filepath_or, schema=None, schema_is_strict=False, **kwargs):
             kwargs.setdefault("names", SCHEMAS[schema])
         except (KeyError, TypeError):
             if isinstance(schema, str):
-                raise ValueError("TSV schema not found: '{}'".format(schema))
+                raise ValueError(f"TSV schema not found: '{schema}'")
             kwargs.setdefault("names", schema)
     df = pd.read_csv(filepath_or, **kwargs)
     if schema_is_strict:
@@ -191,8 +189,8 @@ def read_pairix(
     """
     Read a pairix-indexed file into DataFrame.
     """
-    import pypairix
     import cytoolz as toolz
+    import pypairix
 
     if dtypes is None:
         dtypes = {}
@@ -262,11 +260,11 @@ def read_bam(fp, chrom=None, start=None, end=None):
     return df
 
 
-class PysamFastaRecord(object):
+class PysamFastaRecord:
     def __init__(self, ff, ref):
         self.ff = ff
         if ref not in ff.references:
-            raise KeyError("Reference name '{}' not found in '{}'".format(ref, ff))
+            raise KeyError(f"Reference name '{ref}' not found in '{ff}'")
         self.ref = ref
 
     def __getitem__(self, key):
@@ -400,7 +398,7 @@ def read_bigwig(path, chrom, start=None, end=None, engine="auto"):
 
     else:
         raise ValueError(
-            "engine must be 'auto', 'pybbi' or 'pybigwig'; got {}".format(engine)
+            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
         )
 
     return df
@@ -457,7 +455,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
 
     else:
         raise ValueError(
-            "engine must be 'auto', 'pybbi' or 'pybigwig'; got {}".format(engine)
+            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
         )
 
     return df
@@ -488,23 +486,26 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
         cmd = "bedGraphToBigWig"
         try:
             assert shutil.which(cmd) is not None
-        except Exception as e:
+        except Exception:
             raise ValueError(
                 "bedGraphToBigWig is not present in the current environment. "
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
-                "install it with, for example, conda install -y -c bioconda ucsc-bedgraphtobigwig "
+                "install it with, for example, conda install -y -c bioconda "
+                "ucsc-bedgraphtobigwig "
             )
     elif path_to_binary.endswith("bedGraphToBigWig"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
-                f"bedGraphToBigWig is absent in the provided path or cannot be executed: {path_to_binary}. "
+                f"bedGraphToBigWig is absent in the provided path or cannot be "
+                f"fexecuted: {path_to_binary}. "
             )
         cmd = path_to_binary
     else:
         cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
         if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
             raise ValueError(
-                f"bedGraphToBigWig is absent in the provided path or cannot be executed: {path_to_binary}. "
+                f"bedGraphToBigWig is absent in the provided path or cannot be "
+                f"executed: {path_to_binary}. "
             )
 
     is_bedgraph = True
@@ -516,7 +517,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
 
     if not is_bedgraph:
         raise ValueError(
-            "A bedGraph-like DataFrame is required, got {}".format(df.columns)
+            f"A bedGraph-like DataFrame is required, got {df.columns}"
         )
 
     if value_field is None:
@@ -527,9 +528,8 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
     bg["chrom"] = bg["chrom"].astype(str)
     bg = bg.sort_values(["chrom", "start", "end"])
 
-    with tempfile.NamedTemporaryFile(suffix=".bg") as f, tempfile.NamedTemporaryFile(
-       "wt", suffix=".chrom.sizes"
-    ) as cs:
+    with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
+         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs: # fmt: skip
 
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
@@ -540,8 +540,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
 
         p = subprocess.run(
             [cmd, f.name, cs.name, outpath],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
     return p
 
@@ -571,23 +570,26 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
         cmd = "bedToBigBed"
         try:
             assert shutil.which(cmd) is not None
-        except Exception as e:
+        except Exception:
             raise ValueError(
                 "bedToBigBed is not present in the current environment. "
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigbed or "
-                "install it with, for example, conda install -y -c bioconda ucsc-bedtobigbed "
+                "install it with, for example, conda install -y -c bioconda "
+                "ucsc-bedtobigbed "
             )
     elif path_to_binary.endswith("bedToBigBed"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
-                f"bedToBigBed is absent in the provided path or cannot be executed: {path_to_binary}. "
+                f"bedToBigBed is absent in the provided path or cannot be "
+                f"executed: {path_to_binary}. "
             )
         cmd = path_to_binary
     else:
         cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
         if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
             raise ValueError(
-                f"bedToBigBed is absent in the provided path  or cannot be executed: {path_to_binary}. "
+                f"bedToBigBed is absent in the provided path or cannot be "
+                f"executed: {path_to_binary}. "
             )
 
     is_bed6 = True
@@ -598,7 +600,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
         is_bed6 = False
 
     if not is_bed6:
-        raise ValueError("A bed6-like DataFrame is required, got {}".format(df.columns))
+        raise ValueError(f"A bed6-like DataFrame is required, got {df.columns}")
 
     columns = ["chrom", "start", "end", "name", "score", "strand"]
     bed = df[columns].copy()
@@ -617,8 +619,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
         )
 
         p = subprocess.run(
-            [cmd, "-type={}".format(schema), f.name, cs.name, outpath],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            [cmd, f"-type={schema}", f.name, cs.name, outpath],
+            capture_output=True,
         )
     return p

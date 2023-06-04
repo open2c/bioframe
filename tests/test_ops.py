@@ -1,11 +1,10 @@
 from io import StringIO
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 import bioframe
-
 import bioframe.core.checks as checks
 from bioframe.core.construction import make_viewframe
 
@@ -24,7 +23,8 @@ from bioframe.core.construction import make_viewframe
 # def pyranges_to_bioframe(pydf):
 #     df = pydf.df
 #     df.rename(
-#         {"Chromosome": "chrom", "Start": "start", "End": "end", "Count": "n_intervals"},
+#         {"Chromosome": "chrom", "Start": "start", "End": "end",
+#          "Count": "n_intervals"},
 #         axis="columns",
 #         inplace=True,
 #     )
@@ -304,7 +304,7 @@ def test_overlap():
     ### note does not test overlap_start or overlap_end columns of bioframe.overlap
     df1 = mock_bioframe()
     df2 = mock_bioframe()
-    assert df1.equals(df2) == False
+    assert not df1.equals(df2)
 
     # p1 = bioframe_to_pyranges(df1)
     # p2 = bioframe_to_pyranges(df2)
@@ -552,7 +552,8 @@ def test_cluster():
         df_annotated["cluster"].values == np.array([2, 0, 0, 1])
     ).all()  # do not cluster intervals across chromosomes
 
-    # test consistency with pyranges (which automatically sorts df upon creation and uses 1-based indexing for clusters)
+    # test consistency with pyranges (which automatically sorts df upon
+    # creation and uses 1-based indexing for clusters)
     # assert (
     #     (bioframe_to_pyranges(df1).cluster(count=True).df["Cluster"].values - 1)
     #     == bioframe.cluster(df1.sort_values(["chrom", "start"]))["cluster"].values
@@ -708,7 +709,8 @@ def test_merge():
 
 
 def test_complement():
-    ### complementing a df with no intervals in chrX by a view with chrX should return entire chrX region
+    ### complementing a df with no intervals in chrX by a view with chrX
+    # should return entire chrX region
     df1 = pd.DataFrame(
         [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14]],
         columns=["chrom", "start", "end"],
@@ -787,7 +789,8 @@ def test_complement():
         bioframe.complement(df1, view_df=chromsizes, view_name_col="VR"), df1_complement
     )
 
-    ### test complement where an interval from df overlaps two different regions from view
+    ### test complement where an interval from df overlaps two different
+    ### regions from view
     ### test complement with no view_df and a negative interval
     df1 = pd.DataFrame([["chr1", 5, 15]], columns=["chrom", "start", "end"])
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
@@ -977,7 +980,10 @@ def test_closest():
     )
 
     df2 = pd.DataFrame(
-        [["chr1", 1, 2], ["chr1", 2, 8], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
+        [["chr1", 1, 2],
+         ["chr1", 2, 8],
+         ["chr1", 10, 11]],
+        columns=["chrom", "start", "end"]
     )
 
     ### closest(df1, df2, k=1, direction_col="strand") ###
@@ -992,9 +998,12 @@ def test_closest():
             "distance": pd.Int64Dtype(),
         }
     )
-    pd.testing.assert_frame_equal(df, bioframe.closest(df1, df2, k=1, direction_col="strand"))
+    pd.testing.assert_frame_equal(
+        df, bioframe.closest(df1, df2, k=1, direction_col="strand")
+    )
 
-    ### closest(df1, df2, k=1, ignore_upstream=False, ignore_downstream=True, ignore_overlaps=True, direction_col="strand") ###
+    ### closest(df1, df2, k=1, ignore_upstream=False, ignore_downstream=True,
+    ### ignore_overlaps=True, direction_col="strand") ###
     d = """chrom  start  end strand chrom_  start_  end_  distance
         0    chr1        3      5    + chr1        1      2         1
         1    chr1        3      5    - chr1        10      11         5
@@ -1014,7 +1023,8 @@ def test_closest():
                 ignore_overlaps=True,
                 direction_col="strand"))
 
-    ### closest(df1, df2, k=1, ignore_upstream=True, ignore_downstream=False, ignore_overlaps=True, direction_col="strand") ###
+    ### closest(df1, df2, k=1, ignore_upstream=True, ignore_downstream=False,
+    ### ignore_overlaps=True, direction_col="strand") ###
     d = """chrom  start  end strand chrom_  start_  end_  distance
         0    chr1        3      5    + chr1        10      11         5
         1    chr1        3      5    - chr1        1      2         1
@@ -1171,7 +1181,7 @@ def test_subtract():
 
     df_result = pd.DataFrame(
         [["chr1", 4, 5, "+"], ["chr1", 6, 7, "+"]],
-        columns=funny_cols + ["strand"],
+        columns=[*funny_cols, "strand"],
     )
     df_result = df_result.astype(
         {funny_cols[1]: pd.Int64Dtype(), funny_cols[2]: pd.Int64Dtype()}
@@ -1256,7 +1266,8 @@ def test_subtract():
         .reset_index(drop=True),
     )
 
-    # Test the case when a chromosome should not be split (now implemented with subtract)
+    # Test the case when a chromosome should not be split
+    # (now implemented with subtract)
     df1 = pd.DataFrame(
         [
             ["chrX", 3, 8],
@@ -1348,7 +1359,7 @@ def test_setdiff():
             ["chr1", 8, 12, "-", "cat"],
             ["chrX", 1, 8, "+", "cat"],
         ],
-        columns=cols1 + ["strand", "animal"],
+        columns=[*cols1, "strand", "animal"],
     )
     df2 = pd.DataFrame(
         [
@@ -1356,7 +1367,7 @@ def test_setdiff():
             ["chr1", 6, 10, "-", "cat"],
             ["chr1", 6, 10, "-", "cat"],
         ],
-        columns=cols2 + ["strand", "animal"],
+        columns=[*cols2, "strand", "animal"],
     )
 
     assert (
@@ -1580,7 +1591,8 @@ def test_assign_view():
         ),
     )
 
-    # assignment with funny view_name_col and an interval on chr2 not cataloged in the view_df
+    # assignment with funny view_name_col and an interval on chr2 not cataloged
+    # in the view_df
     view_df = pd.DataFrame(
         [
             ["chrX", 1, 8, "oranges"],
@@ -1733,12 +1745,14 @@ def test_sort_bedframe():
         ),
     )
 
-    # also test if sorting after assigning view to df denovo works with default view_name_col
+    # also test if sorting after assigning view to df denovo works with
+    # default view_name_col
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df.rename(columns={"fruit": "name"}))
     )
 
-    # also test if sorting after assiging view to df from chromsizes-like dictionary works:
+    # also test if sorting after assiging view to df from chromsizes-like
+    # dictionary works:
     pd.testing.assert_frame_equal(
         df_sorted, bioframe.sort_bedframe(df, view_df={"chrX": 20, "chr1": 10})
     )

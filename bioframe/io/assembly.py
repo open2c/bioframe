@@ -1,5 +1,6 @@
-from typing import List, Tuple, Union, Dict
 from dataclasses import dataclass
+from typing import Dict, List, Tuple, Union
+
 import pkg_resources
 
 try:
@@ -7,9 +8,10 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import yaml
+
 from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
@@ -51,12 +53,12 @@ class GenomeAssembly:
     @property
     def viewframe(self) -> pd.DataFrame:
         return make_viewframe(self.chromsizes.to_dict())
-    
+
     def __repr__(self) -> str:
         return (
             f"GenomeAssembly(organism='{self.organism}', provider='{self.provider}', "
-            f"provider_build='{self.provider_build}', release_year='{self.release_year}', "
-            f"...)"
+            f"provider_build='{self.provider_build}', "
+            f"release_year='{self.release_year}', ...)"
         )
 
 
@@ -68,7 +70,7 @@ def assemblies_available() -> pd.DataFrame:
     -------
     pandas.DataFrame
         A dataframe with metadata fields for available assemblies, including
-        'provider', 'provider_build', 'default_roles', 'default_units', 
+        'provider', 'provider_build', 'default_roles', 'default_units',
         and names of seqinfo and cytoband files.
     """
     path = pkg_resources.resource_filename("bioframe.io", ASSEMBLY_MANIFEST_PATH)

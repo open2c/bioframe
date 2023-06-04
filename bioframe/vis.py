@@ -1,11 +1,11 @@
-from typing import Union
 import itertools
-import numpy as np
-import pandas as pd
+from typing import Union
 
-from matplotlib.colors import to_rgb
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.colors import to_rgb
 
 from .core import arrops
 
@@ -22,7 +22,7 @@ def to_ucsc_colorstring(color: Union[str, tuple]) -> str:
     Parameters
     ----------
     color : str or tuple
-        Any valid matplotlib color representation (e.g. 'red', 'tomato', 
+        Any valid matplotlib color representation (e.g. 'red', 'tomato',
         '#ff0000', '#ff00', "#ff000055", (1, 0, 0), (1, 0, 0, 0.5))
 
     Returns
@@ -33,10 +33,10 @@ def to_ucsc_colorstring(color: Union[str, tuple]) -> str:
 
     Notes
     -----
-    The alpha (opacity) channel is ignored if represented in the input. 
-    
-    Null values are converted to "0", which is shorthand for "0,0,0" (black). 
-    Note that BED9+ files with uninformative itemRgb values should use "0" as 
+    The alpha (opacity) channel is ignored if represented in the input.
+
+    Null values are converted to "0", which is shorthand for "0,0,0" (black).
+    Note that BED9+ files with uninformative itemRgb values should use "0" as
     the itemRgb value on every data line.
 
     Examples

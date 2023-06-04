@@ -1,10 +1,19 @@
 from io import StringIO
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
-from bioframe.core.checks import *
+from bioframe.core.checks import (
+    is_bedframe,
+    is_cataloged,
+    is_contained,
+    is_covering,
+    is_overlapping,
+    is_sorted,
+    is_tiling,
+    is_viewframe,
+)
 from bioframe.ops import sort_bedframe
 
 
@@ -122,7 +131,7 @@ def test_is_overlapping():
          1  chr1     5   10
          2  chr2    5  10"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    assert is_overlapping(df) is True
+    assert is_overlapping(df)
 
     ### adjacent intervals do not overlap
     d = """chrom  start  end
@@ -130,7 +139,7 @@ def test_is_overlapping():
          1  chr1    6    10
          2  chr2    5    10"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    assert is_overlapping(df) is False
+    assert not is_overlapping(df)
 
 
 def test_is_covering():
@@ -143,7 +152,7 @@ def test_is_covering():
         columns=["chrom", "start", "end"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_covering(df1, chromsizes) is True
+    assert is_covering(df1, chromsizes)
 
     ### test is_covering where two intervals from df overlap
     ### two different regions from view
@@ -156,7 +165,7 @@ def test_is_covering():
         columns=["chrom", "start", "end"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_covering(df1, chromsizes) is True
+    assert is_covering(df1, chromsizes)
 
     ### test is_covering where two intervals from df overlap
     ### two different regions from view
@@ -169,7 +178,7 @@ def test_is_covering():
         columns=["chrom", "start", "end", "view_region"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_covering(df1, chromsizes) is True
+    assert is_covering(df1, chromsizes)
 
 
 def test_is_tiling():
@@ -183,7 +192,7 @@ def test_is_tiling():
         columns=["chrom", "start", "end", "view_region"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_tiling(df1, chromsizes) is True
+    assert is_tiling(df1, chromsizes)
 
     ### not tiling, since (chr1,0,9) is associated with chr1q
     df1 = pd.DataFrame(
@@ -195,7 +204,7 @@ def test_is_tiling():
         columns=["chrom", "start", "end", "view_region"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_tiling(df1, chromsizes) is False
+    assert not is_tiling(df1, chromsizes)
 
     ### not tiling, contains overlaps
     df1 = pd.DataFrame(
@@ -207,7 +216,7 @@ def test_is_tiling():
         columns=["chrom", "start", "end", "view_region"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_tiling(df1, chromsizes) is False
+    assert not is_tiling(df1, chromsizes)
 
     ### not tiling, since it doesn't cover
     df1 = pd.DataFrame(
@@ -218,7 +227,7 @@ def test_is_tiling():
         columns=["chrom", "start", "end", "view_region"],
     )
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
-    assert is_tiling(df1, chromsizes) is False
+    assert not is_tiling(df1, chromsizes)
 
 
 def test_is_bedframe():
@@ -230,7 +239,7 @@ def test_is_bedframe():
         ],
         columns=["chrom", "start"],
     )
-    assert is_bedframe(df1) is False
+    assert not is_bedframe(df1)
 
     ### end column has invalid dtype
     df1 = pd.DataFrame(
@@ -240,7 +249,7 @@ def test_is_bedframe():
         ],
         columns=["chrom", "start", "end"],
     )
-    assert is_bedframe(df1) is False
+    assert not is_bedframe(df1)
 
     ### second interval start > ends.
     df1 = pd.DataFrame(
@@ -250,7 +259,7 @@ def test_is_bedframe():
         ],
         columns=["chrom", "start", "end"],
     )
-    assert is_bedframe(df1) is False
+    assert not is_bedframe(df1)
 
     ### third interval has a null in one column
     df1 = pd.DataFrame(
@@ -279,7 +288,7 @@ def test_is_bedframe():
         columns=["chrom", "start", "end", "name"],
     )
     df1 = df1.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
-    assert is_bedframe(df1) is True
+    assert is_bedframe(df1)
 
 
 def test_is_viewframe():
@@ -291,7 +300,7 @@ def test_is_viewframe():
         ],
         columns=["chrom", "start", "end", "name"],
     )
-    assert is_viewframe(df1) is False
+    assert not is_viewframe(df1)
 
     # no column for region name
     df1 = pd.DataFrame(
@@ -301,7 +310,7 @@ def test_is_viewframe():
         ],
         columns=["chrom", "start", "end"],
     )
-    assert is_viewframe(df1) is False
+    assert not is_viewframe(df1)
 
     # contains null values
     df1 = pd.DataFrame(
@@ -311,7 +320,7 @@ def test_is_viewframe():
         ],
         columns=["chrom", "start", "end", "name"],
     )
-    assert is_viewframe(df1) is False
+    assert not is_viewframe(df1)
 
     # overlapping intervals
     df1 = pd.DataFrame(
@@ -321,7 +330,7 @@ def test_is_viewframe():
         ],
         columns=["chrom", "start", "end", "name"],
     )
-    assert is_viewframe(df1) is False
+    assert not is_viewframe(df1)
 
     # valid view
     df1 = pd.DataFrame(
@@ -332,7 +341,7 @@ def test_is_viewframe():
         ],
         columns=["chrom", "start", "end", "name"],
     )
-    assert is_viewframe(df1) is True
+    assert is_viewframe(df1)
 
 
 def test_is_sorted():

@@ -37,8 +37,8 @@ def to_parquet(
 
     """
     try:
-        import pyarrow.parquet
         import pyarrow as pa
+        import pyarrow.parquet
     except ImportError:
         raise ImportError("Saving to parquet requires the `pyarrow` package")
 
