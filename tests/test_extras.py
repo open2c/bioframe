@@ -292,3 +292,81 @@ def test_pair_by_distance():
         bioframe.pair_by_distance(
             df, min_sep=0, max_sep=9, min_intervening=10, max_intervening=9
         )
+
+
+def test_mark_compress_runs():
+    df1 = pd.DataFrame([
+        ["chr1", 85563, 129897, "c", 0.1],
+        ["chr1", 434858, 508340, "c", 0.8],
+        ["chr1", 586303, 620904, "c", 0.5],
+        ["chr1", 652861, 688020, "c", 0.7],
+        ["chr1", 818801, 858415, "b", 0.8],
+
+        ["chr2", 548402, 639680, "a", 0.6],
+        ["chr2", 970541, 1026586, "b", 0.8],
+
+        ["chr3", 260538, 272930, "c", 0.5],
+        ["chr3", 460071, 470969, "c", 0.5],
+        ["chr3", 487568, 502336, "c", 0.5],
+    ], columns=["chrom", "start", "end", "name", "score"])
+
+    runs = bioframe.mark_runs(df1, "name")
+    assert (
+        runs["name"].to_numpy()
+        == np.array(["c", "c", "c", "c", "b", "a", "b", "c", "c", "c"])
+    ).all()
+    assert (
+        runs["run"].to_numpy()
+        == np.array([0, 0, 0, 0, 1, 0, 1, 0, 0, 0])
+    ).all()
+
+    runs = bioframe.mark_runs(df1, "name", reset_counter=False)
+    assert (
+        runs["run"].to_numpy()
+        == np.array([0, 0, 0, 0, 1, 2, 3, 4, 4, 4])
+    ).all()
+
+    runs = bioframe.mark_runs(df1, "name", run_col="foo", reset_counter=False)
+    assert (
+        runs["foo"].to_numpy()
+        == np.array([0, 0, 0, 0, 1, 2, 3, 4, 4, 4])
+    ).all()
+
+    compressed = bioframe.compress_runs(
+        df1, "name", agg={"score_mean": ("score", "mean")}
+    )
+    assert (
+        compressed["name"].to_numpy()
+        == np.array(["c", "b", "a", "b", "c"])
+    ).all()
+    assert np.allclose(
+        compressed["score_mean"].to_numpy(),
+        np.array([0.525, 0.8, 0.6, 0.8, 0.5]),
+    )
+
+
+def test_mark_compress_runs__with_overlaps():
+    df1 = pd.DataFrame([
+        ["chr1", 85563, 129897, "c", 0.1],
+        ["chr1", 434858, 508340, "c", 0.8],
+        ["chr1", 586303, 620904, "c", 0.5],
+        ["chr1", 652861, 688020, "c", 0.7],
+        ["chr1", 818801, 858415, "b", 0.8],
+        ["chr1", 800000, 900000, "b", 0.8],
+
+        ["chr2", 548402, 639680, "a", 0.6],
+        ["chr2", 970541, 1026586, "b", 0.8],
+
+        ["chr3", 260538, 272930, "c", 0.5],
+        ["chr3", 460071, 470969, "c", 0.5],
+        ["chr3", 487568, 502336, "c", 0.5],
+    ], columns=["chrom", "start", "end", "name", "score"])
+
+    with pytest.raises(ValueError):
+        bioframe.mark_runs(df1, "name")
+
+    runs = bioframe.mark_runs(df1, "name", allow_overlaps=True)
+    assert (
+        runs["name"].to_numpy()
+        == np.array(["c", "c", "c", "c", "b", "b", "a", "b", "c", "c", "c"])
+    ).all()

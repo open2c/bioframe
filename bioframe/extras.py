@@ -1,4 +1,6 @@
 
+from typing import Optional, Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -14,6 +16,8 @@ __all__ = [
     "seq_gc",
     "frac_gene_coverage",
     "pair_by_distance",
+    "mark_runs",
+    "compress_runs"
 ]
 
 
@@ -499,3 +503,133 @@ def pair_by_distance(
     )
 
     return pd.concat([left_ivals, right_ivals], axis=1)
+
+
+def mark_runs(
+    df: pd.DataFrame,
+    col: str,
+    *,
+    allow_overlaps: bool = False,
+    reset_counter: bool = True,
+    run_col: str = 'run',
+    cols: Optional[Tuple[str, str, str]] = None,
+) -> pd.DataFrame:
+    """
+    Mark runs of consecutive intervals sharing the same value of ``col``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        A bioframe dataframe.
+    col : str
+        The column to mark runs of values for.
+    allow_overlaps : bool, optional [default: False]
+        If True, allow intervals in ``df`` to overlap. This may cause
+        unexpected results.
+    reset_counter : bool, optional [default: True]
+        If True, reset the run counter for each chromosome.
+    run_col : str, optional [default: 'run']
+        The name of the column to store the run numbers in.
+
+    Returns
+    -------
+    DataFrame
+        A sorted copy the input dataframe with an additional column 'run'
+        marking runs of values in the input column.
+    """
+    ck, _, _ = _get_default_colnames() if cols is None else cols
+
+    if not allow_overlaps and len(ops.overlap(df, df)) > len(df):
+        raise ValueError("Not a proper bedGraph: found overlapping intervals.")
+
+    result = []
+    where = np.flatnonzero
+    n_runs = 0
+
+    for _, group in df.groupby(ck, sort=False):
+        group = ops.sort_bedframe(group, reset_index=False)
+
+        # Find runs of values
+        values = group[col].to_numpy()
+        isnumeric = np.issubdtype(values.dtype, np.number)
+
+        if isnumeric:
+            run_starts = np.r_[
+                0,
+                where(~np.isclose(values[1:], values[:-1], equal_nan=True)) + 1
+            ]
+        else:
+            run_starts = np.r_[0, where(values[1:] != values[:-1]) + 1]
+
+        run_lengths = np.diff(np.r_[run_starts, len(values)])
+        run_ends = run_starts + run_lengths
+
+        # Assign run numbers to intervals
+        if reset_counter:
+            n_runs = 0
+        group[run_col] = pd.NA
+        j = group.columns.get_loc(run_col)
+        for lo, hi in zip(run_starts, run_ends):
+            group.iloc[lo : hi + 1, j] = n_runs
+            n_runs += 1
+
+        result.append(group)
+
+    return pd.concat(result)
+
+
+def compress_runs(
+    df: pd.DataFrame,
+    col: str,
+    *,
+    allow_overlaps: bool = False,
+    agg: Optional[dict] = None,
+    cols: Optional[Tuple[str, str, str]] = None,
+) -> pd.DataFrame:
+    """
+    Compress runs of consecutive intervals sharing the same value of ``col``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        A bioframe dataframe.
+    col : str
+        The column to compress runs of values for.
+    allow_overlaps : bool, optional [default: False]
+        If True, allow intervals in ``df`` to overlap. This may cause
+        unexpected results.
+    agg : dict, optional [default: None]
+        A dictionary of additional column names and aggregation functions to
+        apply to each run. Takes the format:
+            {'agg_name': ('column_name', 'agg_func')}
+
+    Returns
+    -------
+    DataFrame
+        A sorted copy the input dataframe with runs of values in the input
+        column compressed.
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+
+    if agg is None:
+        agg = {}
+
+    df_runs = mark_runs(
+        df,
+        col,
+        allow_overlaps=allow_overlaps,
+        reset_counter=False,
+        run_col='_run',
+    )
+    df_compressed = (
+        df_runs
+        .groupby('_run')
+        .agg(**{
+            ck: (ck, 'first'),
+            sk: (sk, 'min'),
+            ek: (ek, 'max'),
+            col: (col, 'first'),
+            **agg
+         })
+    )
+    return df_compressed.reset_index(drop=True)
