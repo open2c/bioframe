@@ -515,7 +515,8 @@ def mark_runs(
     cols: Optional[Tuple[str, str, str]] = None,
 ) -> pd.DataFrame:
     """
-    Mark runs of consecutive intervals sharing the same value of ``col``.
+    Mark runs of immediately consecutive intervals sharing the same value of
+    ``col``.
 
     Parameters
     ----------
@@ -533,8 +534,8 @@ def mark_runs(
 
     Returns
     -------
-    DataFrame
-        A sorted copy the input dataframe with an additional column 'run'
+    pandas.DataFrame
+        A reordered copy the input dataframe with an additional column 'run'
         marking runs of values in the input column.
     """
     ck, _, _ = _get_default_colnames() if cols is None else cols
@@ -587,7 +588,8 @@ def compress_runs(
     cols: Optional[Tuple[str, str, str]] = None,
 ) -> pd.DataFrame:
     """
-    Compress runs of consecutive intervals sharing the same value of ``col``.
+    Merge runs of immediately consecutive intervals sharing the same value of
+    ``col``.
 
     Parameters
     ----------
@@ -605,9 +607,27 @@ def compress_runs(
 
     Returns
     -------
-    DataFrame
-        A sorted copy the input dataframe with runs of values in the input
-        column compressed.
+    pandas.DataFrame
+        Dataframe with consecutive intervals in the same run merged.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({
+    ...     'chrom': ['chr1', 'chr1', 'chr1', 'chr1', 'chr1', 'chr1'],
+    ...     'start': [0, 100, 200, 300, 400, 500],
+    ...     'end': [100, 200, 300, 400, 500, 600],
+    ...     'value': [1, 1, 1, 2, 2, 2],
+    ... })
+
+    >>> compress_runs(df, 'value')
+        chrom  start  end  value
+    0   chr1      0  300      1
+    1   chr1    300  600      2
+
+    >>> compress_runs(df, 'value', agg={'sum': ('value', 'sum')})
+        chrom  start  end  value  sum
+    0   chr1      0  300      1    3
+    1   chr1    300  600      2    6
     """
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
