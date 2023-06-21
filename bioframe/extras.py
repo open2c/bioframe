@@ -538,7 +538,7 @@ def mark_runs(
         A reordered copy the input dataframe with an additional column 'run'
         marking runs of values in the input column.
     """
-    ck, _, _ = _get_default_colnames() if cols is None else cols
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     if not allow_overlaps and len(ops.overlap(df, df)) > len(df):
         raise ValueError("Not a proper bedGraph: found overlapping intervals.")
@@ -548,7 +548,7 @@ def mark_runs(
     n_runs = 0
 
     for _, group in df.groupby(ck, sort=False):
-        group = ops.sort_bedframe(group, reset_index=False)
+        group = group.sort_values([sk, ek])
 
         # Find runs of values
         values = group[col].to_numpy()
