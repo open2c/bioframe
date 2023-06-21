@@ -1,5 +1,5 @@
 import re
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import pandas as pd
 
@@ -179,7 +179,7 @@ def _parse_region_record(grange: tuple) -> Tuple[str, int, int]:
 
 def parse_region(
     grange: Union[str, tuple],
-    chromsizes: Union[dict, pd.Series] = None,
+    chromsizes: Optional[Union[dict, pd.Series]] = None,
     *,
     check_bounds: bool = True,
 ) -> Tuple[str, int, int]:
