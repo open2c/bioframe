@@ -16,7 +16,7 @@ class EncodeClient:
     # 2020-05-15 compatible with ENCODE Metadata at:
     METADATA_URL = "https://www.encodeproject.org/metadata/type=Experiment&status=released/metadata.tsv"
 
-    KNOWN_ASSEMBLIES = [
+    KNOWN_ASSEMBLIES = (
         "GRCh38",
         "GRCh38-minimal",
         "ce10",
@@ -27,7 +27,7 @@ class EncodeClient:
         "mm10",
         "mm10-minimal",
         "mm9",
-    ]
+    )
 
     def __init__(self, cachedir, assembly, metadata=None):
         if assembly not in self.KNOWN_ASSEMBLIES:

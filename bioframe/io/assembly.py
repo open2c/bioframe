@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pkg_resources
 
@@ -81,8 +81,8 @@ def assemblies_available() -> pd.DataFrame:
 
 def assembly_info(
     name: str,
-    roles: Union[List, Tuple, Literal["all"]] = None,
-    units: Union[List, Tuple, Literal["all"]] = None,
+    roles: Optional[Union[List, Tuple, Literal["all"]]] = None,
+    units: Optional[Union[List, Tuple, Literal["all"]]] = None,
 ) -> GenomeAssembly:
     """
     Get information about a genome assembly.
