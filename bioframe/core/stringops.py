@@ -111,9 +111,7 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
             name = match.lastgroup
             yield name, match.group(name)
 
-    def _parse_range(s):
-        token_stream = _tokenize(s)
-
+    def _parse_range(token_stream):
         name, token = next(token_stream, (None, None))
         if name != "COORD":
             raise ValueError(
@@ -132,8 +130,6 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
             end = None
         elif name == "COORD":
             end = _parse_humanized_int(token)
-            if end < start:
-                raise ValueError("End coordinate less than start")
         else:
             raise ValueError(
                 f"Expected COORD; got unexpected token: {name}: {token}"
@@ -150,7 +146,7 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
     if len(parts) < 2:
         return (chrom, None, None)
 
-    start, end = _parse_range(parts[1])
+    start, end = _parse_range(_tokenize(parts[1]))
 
     return chrom, start, end
 
