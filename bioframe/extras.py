@@ -17,7 +17,7 @@ __all__ = [
     "frac_gene_coverage",
     "pair_by_distance",
     "mark_runs",
-    "compress_runs"
+    "merge_runs"
 ]
 
 
@@ -537,6 +537,10 @@ def mark_runs(
     pandas.DataFrame
         A reordered copy the input dataframe with an additional column 'run'
         marking runs of values in the input column.
+
+    See Also
+    --------
+    merge_runs
     """
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -579,7 +583,7 @@ def mark_runs(
     return pd.concat(result)
 
 
-def compress_runs(
+def merge_runs(
     df: pd.DataFrame,
     col: str,
     *,
@@ -619,15 +623,19 @@ def compress_runs(
     ...     'value': [1, 1, 1, 2, 2, 2],
     ... })
 
-    >>> compress_runs(df, 'value')
+    >>> merge_runs(df, 'value')
         chrom  start  end  value
     0   chr1      0  300      1
     1   chr1    300  600      2
 
-    >>> compress_runs(df, 'value', agg={'sum': ('value', 'sum')})
+    >>> merge_runs(df, 'value', agg={'sum': ('value', 'sum')})
         chrom  start  end  value  sum
     0   chr1      0  300      1    3
     1   chr1    300  600      2    6
+
+    See Also
+    --------
+    mark_runs
     """
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
@@ -641,7 +649,7 @@ def compress_runs(
         reset_counter=False,
         run_col='_run',
     )
-    df_compressed = (
+    df_merged = (
         df_runs
         .groupby('_run')
         .agg(**{
@@ -652,4 +660,4 @@ def compress_runs(
             **agg
          })
     )
-    return df_compressed.reset_index(drop=True)
+    return df_merged.reset_index(drop=True)

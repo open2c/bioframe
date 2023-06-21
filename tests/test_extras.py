@@ -294,7 +294,7 @@ def test_pair_by_distance():
         )
 
 
-def test_mark_compress_runs():
+def test_mark_merge_runs():
     df1 = pd.DataFrame([
         ["chr1", 85563, 129897, "c", 0.1],
         ["chr1", 434858, 508340, "c", 0.8],
@@ -332,20 +332,20 @@ def test_mark_compress_runs():
         == np.array([0, 0, 0, 0, 1, 2, 3, 4, 4, 4])
     ).all()
 
-    compressed = bioframe.compress_runs(
+    merged = bioframe.merge_runs(
         df1, "name", agg={"score_mean": ("score", "mean")}
     )
     assert (
-        compressed["name"].to_numpy()
+        merged["name"].to_numpy()
         == np.array(["c", "b", "a", "b", "c"])
     ).all()
     assert np.allclose(
-        compressed["score_mean"].to_numpy(),
+        merged["score_mean"].to_numpy(),
         np.array([0.525, 0.8, 0.6, 0.8, 0.5]),
     )
 
 
-def test_mark_compress_runs__with_overlaps():
+def test_mark_merge_runs__with_overlaps():
     df1 = pd.DataFrame([
         ["chr1", 85563, 129897, "c", 0.1],
         ["chr1", 434858, 508340, "c", 0.8],
