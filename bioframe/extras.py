@@ -548,7 +548,6 @@ def mark_runs(
         raise ValueError("Not a proper bedGraph: found overlapping intervals.")
 
     result = []
-    where = np.flatnonzero
     n_runs = 0
 
     for _, group in df.groupby(ck, sort=False):
@@ -560,7 +559,7 @@ def mark_runs(
         ends = np.maximum.accumulate(ends)
 
         # Find borders of interval clusters and assign cluster ids
-        is_cluster_border = np.r_[True, starts[1:] > ends[:-1] + 0, False]
+        is_cluster_border = np.r_[True, starts[1:] > ends[:-1], False]
 
         # Find borders of consecutive equal values
         values = group[col].to_numpy()
