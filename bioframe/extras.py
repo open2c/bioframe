@@ -554,18 +554,22 @@ def mark_runs(
     for _, group in df.groupby(ck, sort=False):
         group = group.sort_values([sk, ek])
 
-        # Find runs of values
-        values = group[col].to_numpy()
-        isnumeric = np.issubdtype(values.dtype, np.number)
+        # Find boundaries of consecutive bookended intervals
+        starts = group[sk].to_numpy()
+        ends = group[ek].to_numpy()
+        is_next_run_break = np.r_[starts[1:] != ends[:-1], False]
 
-        if isnumeric:
-            run_starts = np.r_[
-                0,
-                where(~np.isclose(values[1:], values[:-1], equal_nan=True)) + 1
+        # Find boundaries of consecutive equal values
+        values = group[col].to_numpy()
+        if values.dtype.kind == 'f':
+            is_next_val_break = np.r_[
+                ~np.isclose(values[1:], values[:-1], equal_nan=True), False
             ]
         else:
-            run_starts = np.r_[0, where(values[1:] != values[:-1]) + 1]
+            is_next_val_break = np.r_[values[1:] != values[:-1], False]
 
+        # Find run index extents
+        run_starts = np.r_[0, where(is_next_val_break | is_next_run_break) + 1]
         run_lengths = np.diff(np.r_[run_starts, len(values)])
         run_ends = run_starts + run_lengths
 
