@@ -1,4 +1,6 @@
 
+from typing import Optional, Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -14,6 +16,8 @@ __all__ = [
     "seq_gc",
     "frac_gene_coverage",
     "pair_by_distance",
+    "mark_runs",
+    "merge_runs"
 ]
 
 
@@ -499,3 +503,166 @@ def pair_by_distance(
     )
 
     return pd.concat([left_ivals, right_ivals], axis=1)
+
+
+def mark_runs(
+    df: pd.DataFrame,
+    col: str,
+    *,
+    allow_overlaps: bool = False,
+    reset_counter: bool = True,
+    run_col: str = 'run',
+    cols: Optional[Tuple[str, str, str]] = None,
+) -> pd.DataFrame:
+    """
+    Mark runs of immediately consecutive intervals sharing the same value of
+    ``col``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        A bioframe dataframe.
+    col : str
+        The column to mark runs of values for.
+    allow_overlaps : bool, optional [default: False]
+        If True, allow intervals in ``df`` to overlap. This may cause
+        unexpected results.
+    reset_counter : bool, optional [default: True]
+        If True, reset the run counter for each chromosome.
+    run_col : str, optional [default: 'run']
+        The name of the column to store the run numbers in.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A reordered copy the input dataframe with an additional column 'run'
+        marking runs of values in the input column.
+
+    See Also
+    --------
+    merge_runs
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+
+    if not allow_overlaps and len(ops.overlap(df, df)) > len(df):
+        raise ValueError("Not a proper bedGraph: found overlapping intervals.")
+
+    result = []
+    n_runs = 0
+
+    for _, group in df.groupby(ck, sort=False):
+        group = group.sort_values([sk, ek])
+        starts = group[sk].to_numpy()
+        ends = group[ek].to_numpy()
+
+        # Extend ends by running max
+        ends = np.maximum.accumulate(ends)
+
+        # Find borders of interval clusters and assign cluster ids
+        is_cluster_border = np.r_[True, starts[1:] > ends[:-1], False]
+
+        # Find borders of consecutive equal values
+        values = group[col].to_numpy()
+        if values.dtype.kind == 'f':
+            is_value_border = np.r_[
+                True,
+                ~np.isclose(values[1:], values[:-1], equal_nan=True),
+                False
+            ]
+        else:
+            is_value_border = np.r_[True, values[1:] != values[:-1], False]
+
+        # Find index extents of runs
+        is_border = is_cluster_border | is_value_border
+        sum_borders = np.cumsum(is_border)
+        run_ids = sum_borders[:-1] - 1
+
+        # Assign run numbers to intervals
+        if reset_counter:
+            n_runs = 0
+        group[run_col] = n_runs + run_ids
+        n_runs += sum_borders[-1]
+
+        result.append(group)
+
+    return pd.concat(result)
+
+
+def merge_runs(
+    df: pd.DataFrame,
+    col: str,
+    *,
+    allow_overlaps: bool = False,
+    agg: Optional[dict] = None,
+    cols: Optional[Tuple[str, str, str]] = None,
+) -> pd.DataFrame:
+    """
+    Merge runs of immediately consecutive intervals sharing the same value of
+    ``col``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        A bioframe dataframe.
+    col : str
+        The column to compress runs of values for.
+    allow_overlaps : bool, optional [default: False]
+        If True, allow intervals in ``df`` to overlap. This may cause
+        unexpected results.
+    agg : dict, optional [default: None]
+        A dictionary of additional column names and aggregation functions to
+        apply to each run. Takes the format:
+            {'agg_name': ('column_name', 'agg_func')}
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe with consecutive intervals in the same run merged.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({
+    ...     'chrom': ['chr1', 'chr1', 'chr1', 'chr1', 'chr1', 'chr1'],
+    ...     'start': [0, 100, 200, 300, 400, 500],
+    ...     'end': [100, 200, 300, 400, 500, 600],
+    ...     'value': [1, 1, 1, 2, 2, 2],
+    ... })
+
+    >>> merge_runs(df, 'value')
+        chrom  start  end  value
+    0   chr1      0  300      1
+    1   chr1    300  600      2
+
+    >>> merge_runs(df, 'value', agg={'sum': ('value', 'sum')})
+        chrom  start  end  value  sum
+    0   chr1      0  300      1    3
+    1   chr1    300  600      2    6
+
+    See Also
+    --------
+    mark_runs
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+
+    if agg is None:
+        agg = {}
+
+    df_runs = mark_runs(
+        df,
+        col,
+        allow_overlaps=allow_overlaps,
+        reset_counter=False,
+        run_col='_run',
+    )
+    df_merged = (
+        df_runs
+        .groupby('_run')
+        .agg(**{
+            ck: (ck, 'first'),
+            sk: (sk, 'min'),
+            ek: (ek, 'max'),
+            col: (col, 'first'),
+            **agg
+         })
+    )
+    return df_merged.reset_index(drop=True)
