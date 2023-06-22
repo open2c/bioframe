@@ -366,7 +366,6 @@ def test_mark_merge_runs__with_overlaps():
 
         # consecutive with previous interval but different value of "name"
         ["chr1", 688020, 858415, "b", 0.8],
-
         # overlapping with previous interval
         ["chr1", 700000, 900000, "b", 0.8],
 
@@ -390,5 +389,5 @@ def test_mark_merge_runs__with_overlaps():
     ).all()
     assert (
         runs["run"].to_numpy()
-        == np.array([0, 0, 0, 1, 2, 3, 0, 1, 0, 0, 0])
+        == np.array([0, 0, 0, 1, 2, 2, 0, 1, 0, 0, 0])
     ).all()

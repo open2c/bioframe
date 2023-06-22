@@ -553,34 +553,36 @@ def mark_runs(
 
     for _, group in df.groupby(ck, sort=False):
         group = group.sort_values([sk, ek])
-
-        # Find boundaries of consecutive bookended intervals
         starts = group[sk].to_numpy()
         ends = group[ek].to_numpy()
-        is_next_run_break = np.r_[starts[1:] != ends[:-1], False]
 
-        # Find boundaries of consecutive equal values
+        # Extend ends by running max
+        ends = np.maximum.accumulate(ends)
+
+        # Find borders of interval clusters and assign cluster ids
+        is_cluster_border = np.r_[True, starts[1:] > ends[:-1] + 0, False]
+
+        # Find borders of consecutive equal values
         values = group[col].to_numpy()
         if values.dtype.kind == 'f':
-            is_next_val_break = np.r_[
-                ~np.isclose(values[1:], values[:-1], equal_nan=True), False
+            is_value_border = np.r_[
+                True,
+                ~np.isclose(values[1:], values[:-1], equal_nan=True),
+                False
             ]
         else:
-            is_next_val_break = np.r_[values[1:] != values[:-1], False]
+            is_value_border = np.r_[True, values[1:] != values[:-1], False]
 
-        # Find run index extents
-        run_starts = np.r_[0, where(is_next_val_break | is_next_run_break) + 1]
-        run_lengths = np.diff(np.r_[run_starts, len(values)])
-        run_ends = run_starts + run_lengths
+        # Find index extents of runs
+        is_border = is_cluster_border | is_value_border
+        sum_borders = np.cumsum(is_border)
+        run_ids = sum_borders[:-1] - 1
 
         # Assign run numbers to intervals
         if reset_counter:
             n_runs = 0
-        group[run_col] = pd.NA
-        j = group.columns.get_loc(run_col)
-        for lo, hi in zip(run_starts, run_ends):
-            group.iloc[lo : hi + 1, j] = n_runs
-            n_runs += 1
+        group[run_col] = n_runs + run_ids
+        n_runs += sum_borders[-1]
 
         result.append(group)
 
