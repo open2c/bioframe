@@ -413,6 +413,8 @@ def overlap(
         If True and how='left', sort the output dataframe to preserve the order
         of the intervals in df1. Cannot be used with how='right'/'outer'/'inner'.
         Default True for how='left', and None otherwise.
+        Note that it relies on sorting of index in the original dataframes, 
+        and will reorder the output by index. 
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the

@@ -389,6 +389,8 @@ def pair_by_distance(
     max_intervening=None,
     relative_to="midpoints",
     cols=None,
+    return_index=False,
+    keep_order=False,
     suffixes=("_1", "_2"),
 ):
     """
@@ -412,6 +414,14 @@ def pair_by_distance(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+    return_index : bool
+        If True, return indicies of pairs as two new columns
+        ('index'+suffixes[0] and 'index'+suffixes[1]). Default False.
+    keep_order : bool, optional
+        If True, sort the output dataframe to preserve the order
+        of the intervals in df1. Default False.
+        Note that it relies on sorting of index in the original dataframes, 
+        and will reorder the output by index.
     suffixes : (str, str), optional
         The column name suffixes for the two interval sets in the output.
         The first interval of each output pair is always upstream of the
@@ -423,10 +433,22 @@ def pair_by_distance(
         A BEDPE-like dataframe of paired intervals from ``df``.
 
     """
+
+    # Create the copy of original dataset:
+    df = df.copy()
+
+    # Index column name
+    index_col = return_index if isinstance(return_index, str) else "index"
+    index_col_1 = index_col + suffixes[0]
+    index_col_2 = index_col + suffixes[1]
+    if (return_index or keep_order):
+        df.index.name = index_col
+
+    # Get columns for pairing
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Sort intervals by genomic coordinates
-    df = df.sort_values([ck, sk, ek]).reset_index(drop=True)
+    df = df.sort_values([ck, sk, ek]).reset_index(drop=False)
 
     if min_sep >= max_sep:
         raise ValueError("min_sep must be less than max_sep")
@@ -452,7 +474,7 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    right_probe = df[[ck]].copy()
+    right_probe = df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
     right_probe[sk] = ref + min_sep // 2
     right_probe[ek] = ref + (max_sep + 1) // 2
 
@@ -463,7 +485,7 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    left_probe = df[[ck]].copy()
+    left_probe = df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
     left_probe[sk] = ref - max_sep // 2
     left_probe[ek] = ref - (min_sep + 1) // 2
 
@@ -498,4 +520,14 @@ def pair_by_distance(
         .reset_index(drop=True)
     )
 
-    return pd.concat([left_ivals, right_ivals], axis=1)
+    out_df = pd.concat([left_ivals, right_ivals], axis=1)
+
+    if keep_order:
+        out_df = out_df.sort_values([index_col_1, index_col_2])
+
+    if not return_index:
+        out_df = out_df.drop([index_col_1, index_col_2], axis=1)
+
+    out_df.reset_index(drop=True, inplace=True)
+
+    return out_df
