@@ -213,9 +213,8 @@ def expand(df, pad=None, scale=None, side="both", cols=None):
 
     if pad is not None:
         if pad < 0:
-            mids = (
-                df[sk].values +
-                (0.5 * (df[ek].values - df[sk].values)).astype(np.int64)
+            mids = df[sk].values + (0.5 * (df[ek].values - df[sk].values)).astype(
+                np.int64
             )
             df_expanded[sk] = np.minimum(df_expanded[sk].values, mids)
             df_expanded[ek] = np.maximum(df_expanded[ek].values, mids)
@@ -413,8 +412,8 @@ def overlap(
         If True and how='left', sort the output dataframe to preserve the order
         of the intervals in df1. Cannot be used with how='right'/'outer'/'inner'.
         Default True for how='left', and None otherwise.
-        Note that it relies on sorting of index in the original dataframes, 
-        and will reorder the output by index. 
+        Note that it relies on sorting of index in the original dataframes,
+        and will reorder the output by index.
 
     cols1, cols2 : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
@@ -1679,10 +1678,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
         df_group_idxs = df_groups[group_key].values
         df_group = df.loc[df_group_idxs]
 
-        (
-            complement_starts_group,
-            complement_ends_group,
-        ) = arrops.complement_intervals(
+        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
             df_group[sk].values.astype(np.int64),
             df_group[ek].values.astype(np.int64),
             bounds=(region_start, region_end),

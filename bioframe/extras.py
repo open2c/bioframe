@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 
@@ -420,7 +419,7 @@ def pair_by_distance(
     keep_order : bool, optional
         If True, sort the output dataframe to preserve the order
         of the intervals in df1. Default False.
-        Note that it relies on sorting of index in the original dataframes, 
+        Note that it relies on sorting of index in the original dataframes,
         and will reorder the output by index.
     suffixes : (str, str), optional
         The column name suffixes for the two interval sets in the output.
@@ -441,7 +440,7 @@ def pair_by_distance(
     index_col = return_index if isinstance(return_index, str) else "index"
     index_col_1 = index_col + suffixes[0]
     index_col_2 = index_col + suffixes[1]
-    if (return_index or keep_order):
+    if return_index or keep_order:
         df.index.name = index_col
 
     # Get columns for pairing
@@ -474,7 +473,9 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    right_probe = df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    right_probe = (
+        df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    )
     right_probe[sk] = ref + min_sep // 2
     right_probe[ek] = ref + (max_sep + 1) // 2
 
@@ -485,7 +486,9 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    left_probe = df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    left_probe = (
+        df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    )
     left_probe[sk] = ref - max_sep // 2
     left_probe[ek] = ref - (min_sep + 1) // 2
 
