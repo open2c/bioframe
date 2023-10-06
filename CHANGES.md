@@ -1,5 +1,25 @@
 # Release notes
 
+## [v0.5.0](https://github.com/open2c/bioframe/compare/v0.4.1...v0.5.0)
+
+Date 2023-05-10
+
+API changes:
+* New builtin curated genome assembly database (metadata, chromsizes, cytobands):
+  * `bioframe.list_assemblies()`
+  * `bioframe.assembly_info()`
+* New UCSC RGB color converter utility #158
+* Options added to `pair_by_distance`
+
+Bug fixes:
+* Make expand throw an error if both pad and scale are passed (#148)
+* Fixes to bioframe.select query interval semantics (#147)
+
+Maintenance:
+* Migrate to hatch build system and pyproject.toml
+* Various refactorings
+
+
 ## [v0.4.1](https://github.com/open2c/bioframe/compare/v0.4.0...v0.4.1)
 
 Date 2023-04-22
