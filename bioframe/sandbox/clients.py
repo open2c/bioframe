@@ -93,9 +93,7 @@ class EncodeClient:
 
         url = urljoin(self.BASE_URL, pp.join("experiments", accession))
         return HTML(
-            '<iframe width="{}px" height="{}px" src={}></iframe>'.format(
-                width, height, url
-            )
+            f'<iframe width="{width}px" height="{height}px" src={url}></iframe>'
         )
 
     def fetch(self, accession):
@@ -149,9 +147,7 @@ class FDNClient:
 
         url = urljoin(self.BASE_URL, pp.join("experiments", accession))
         return HTML(
-            '<iframe width="{}px" height="{}px" src={}></iframe>'.format(
-                width, height, url
-            )
+            f'<iframe width="{width}px" height="{height}px" src={url}></iframe>'
         )
 
     def fetch(self, accession):
