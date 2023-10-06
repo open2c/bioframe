@@ -148,6 +148,6 @@ def is_chrom_dtype(chrom_dtype):
         [
             pd.api.types.is_string_dtype(chrom_dtype),
             pd.api.types.is_object_dtype(chrom_dtype),
-            pd.api.types.is_categorical_dtype(chrom_dtype),
+            isinstance(chrom_dtype, pd.api.types.CategoricalDtype),
         ]
     )
