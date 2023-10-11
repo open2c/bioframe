@@ -881,7 +881,7 @@ def coverage(
         cols2=cols2,
     )
 
-    df_overlap["overlap"] = df_overlap["overlap_end"] - df_overlap["overlap_start"]
+    df_overlap["overlap"] = df_overlap[f"overlap_{ek1}"] - df_overlap[f"overlap_{sk1}"]
 
     out_df = (
         pd.DataFrame(
