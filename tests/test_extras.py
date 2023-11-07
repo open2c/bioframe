@@ -51,7 +51,11 @@ def test_make_chromarms():
     )
 
     # test for passing Series or dict
-    result = bioframe.make_chromarms(pd.Series({"chrX": 8}), mids, cols_mids=["chromosome", "loc"])
+    result = bioframe.make_chromarms(
+        pd.Series({"chrX": 8}),
+        mids,
+        cols_mids=["chromosome", "loc"]
+    )
     pd.testing.assert_frame_equal(arms, result)
 
     result = bioframe.make_chromarms(pd.Series({"chrX": 8}), pd.Series({"chrX": 4}))
