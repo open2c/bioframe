@@ -28,15 +28,15 @@ def make_chromarms(
 
     Parameters
     ----------
-    chromsizes : pandas.Dataframe or pandas.Series
-        If pandas.Series, a map from chromosomes to lengths in bp.
+    chromsizes : pandas.Dataframe or dict-like
+        If dict or pandas.Series, a map from chromosomes to lengths in bp.
         If pandas.Dataframe, a dataframe with columns defined by cols_chroms.
         If cols_chroms is a triplet (e.g. 'chrom','start','end'), then
         values in chromsizes[cols_chroms[1]].values must all be zero.
 
     midpoints : pandas.Dataframe or dict-like
         Mapping of chromosomes to midpoint (aka centromere) locations.
-        If pandas.Series, a map from chromosomes to midpoints in bp.
+        If dict or pandas.Series, a map from chromosomes to midpoints in bp.
         If pandas.Dataframe, a dataframe with columns defined by cols_mids.
 
     cols_chroms : (str, str) or (str, str, str)
@@ -59,9 +59,13 @@ def make_chromarms(
     elif len(cols_chroms) == 3:
         ck1, sk1, ek1 = cols_chroms
 
-    if isinstance(chromsizes, pd.Series):
+    if isinstance(chromsizes, (pd.Series, dict)):
+        chromsizes = dict(chromsizes)
         df_chroms = (
-            pd.DataFrame(chromsizes).reset_index().rename(columns={"index": ck1})
+            pd.DataFrame({
+                ck1: list(chromsizes.keys()),
+                "length": list(chromsizes.values()),
+            })
         )
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
@@ -83,7 +87,8 @@ def make_chromarms(
         raise ValueError("invalid number of cols_chroms")
 
     ck2, sk2 = cols_mids
-    if isinstance(midpoints, dict):
+    if isinstance(midpoints, (pd.Series, dict)):
+        midpoints = dict(midpoints)
         df_mids = pd.DataFrame.from_dict(midpoints, orient="index", columns=[sk2])
         df_mids.reset_index(inplace=True)
         df_mids.rename(columns={"index": ck2}, inplace=True)
