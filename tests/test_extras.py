@@ -46,7 +46,7 @@ def test_make_chromarms():
         cols_mids=["chromosome", "loc"],
     )
     pd.testing.assert_frame_equal(
-        result
+        result,
         arms.rename(columns={"chrom": "chromosome"}),
     )
 
