@@ -1081,7 +1081,10 @@ def test_coverage():
     d = """chromosome    begin   stop coverage
          0  chr1     3       8     5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
-    pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2, cols1=cols1, cols2=cols2))
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.coverage(df1, df2, cols1=cols1, cols2=cols2)
+    )
 
     ### coverage of NA interval returns zero for coverage
     df1 = pd.DataFrame(
