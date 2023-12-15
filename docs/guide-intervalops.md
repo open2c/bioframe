@@ -64,7 +64,7 @@ BedFrames satisfy the following properties:
 - chrom, start, end columns  
 - columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype(), int/pd.Int64Dtype())  
 - for each interval, if any of chrom, start, end are null, then all are null
-- all starts < ends.  
+- all starts <= ends.  
 
 Whether a dataframe satisfies these properties can be checked with :func:`bioframe.core.checks.is_bedframe`:
 ```
