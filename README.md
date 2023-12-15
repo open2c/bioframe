@@ -19,10 +19,6 @@ bioRxiv 2022.02.16.480748; doi: https://doi.org/10.1101/2022.02.16.480748
 
 
 ## Installation
-The following are required before installing bioframe:
-* Python 3.7+
-* `numpy`
-* `pandas>=1.3`
 
 ```sh
 pip install bioframe
