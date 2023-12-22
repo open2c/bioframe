@@ -19,10 +19,6 @@ bioRxiv 2022.02.16.480748; doi: https://doi.org/10.1101/2022.02.16.480748
 
 
 ## Installation
-The following are required before installing bioframe:
-* Python 3.7+
-* `numpy`
-* `pandas>=1.3`
 
 ```sh
 pip install bioframe
@@ -47,13 +43,13 @@ bf.overlap(df1, df2)
 
 For these two input dataframes, with intervals all on the same chromosome:
 
-<img src="./docs/figs/df1.png" width=60%> 
-<img src="./docs/figs/df2.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df2.png" width=60%> 
 
 `overlap` will return the following interval pairs as overlaps:
 
-<img src="./docs/figs/overlap_inner_0.png" width=60%> 
-<img src="./docs/figs/overlap_inner_1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_0.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_1.png" width=60%> 
 
 
 To `merge` all overlapping intervals in a dataframe, call:
@@ -65,11 +61,11 @@ bf.merge(df1)
 
 For this input dataframe, with intervals all on the same chromosome:
 
-<img src="./docs/figs/df1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%> 
 
 `merge` will return a new dataframe with these merged intervals:
 
-<img src="./docs/figs/merge_df1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/merge_df1.png" width=60%> 
 
 See the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html) for visualizations of other interval operations in bioframe.
 
@@ -78,14 +74,9 @@ See the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html
 Bioframe includes utilities for reading genomic file formats into dataframes and vice versa. One handy function is `read_table` which mirrors pandas’s read_csv/read_table but provides a [`schema`](https://github.com/open2c/bioframe/blob/main/bioframe/io/schemas.py) argument to populate column names for common tabular file formats.
 
 ```python
-jaspar_url = 'http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2018/hg38/tsv/MA0139.1.tsv.gz'
+jaspar_url = 'http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2022/hg38/MA0139.1.tsv.gz'
 ctcf_motif_calls = bioframe.read_table(jaspar_url, schema='jaspar', skiprows=1)
 ```
 
 ## Tutorials
 See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/tutorials/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
-
-## Projects currently using bioframe:
-* [cooler](https://github.com/open2c/cooler)
-* [cooltools](https://github.com/open2c/cooltools)
-* yours? :)

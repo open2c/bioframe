@@ -69,7 +69,7 @@ docs = [
 homepage = "https://github.com/open2c/bioframe"
 documentation = "https://bioframe.readthedocs.io/en/latest"
 repository = "https://github.com/open2c/bioframe"
-changelog = "https://github.com/open2c/bioframe/blob/master/CHANGES.md"
+changelog = "https://github.com/open2c/bioframe/blob/main/CHANGES.md"
 
 [tool.hatch.version]
 path = "bioframe/_version.py"

@@ -1,8 +1,17 @@
 # Release notes
 
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.5.1...HEAD)
+
+## [v0.5.1](https://github.com/open2c/bioframe/compare/v0.5.0...v0.5.1)
+Date 2023-11-08
+
+Bug fixes:
+* Series are treated like dict in `make_chromarms`
+
+
 ## [v0.5.0](https://github.com/open2c/bioframe/compare/v0.4.1...v0.5.0)
 
-Date 2023-05-10
+Date 2023-10-05
 
 API changes:
 * New builtin curated genome assembly database (metadata, chromsizes, cytobands):

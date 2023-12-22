@@ -403,6 +403,9 @@ def overlap(
     return_overlap : bool
         If True, return overlapping intervals for the overlapping pairs
         as two additional columns (`overlap_start`, `overlap_end`).
+        When `cols1` is modified, `start` and `end` are replaced accordingly.
+        When `return_overlap` is a string, its value is used for naming the overlap
+        columns: `return_overlap + "_start"`, `return_overlap + "_end"`.
         Default False.
 
     suffixes : (str, str)
