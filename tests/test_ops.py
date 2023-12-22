@@ -1073,6 +1073,19 @@ def test_coverage():
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(df, bioframe.coverage(df1, df2))
 
+    ### with custom column names
+    cols1 = ["chromosome", "begin", "stop"]
+    cols2 = ["chr", "cluster_start", "cluster_end"]
+    df1 = pd.DataFrame([["chr1", 3, 8]], columns=cols1)
+    df2 = pd.DataFrame([["chr1", 3, 8]], columns=cols2)
+    d = """chromosome    begin   stop coverage
+         0  chr1     3       8     5"""
+    df = pd.read_csv(StringIO(d), sep=r"\s+")
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.coverage(df1, df2, cols1=cols1, cols2=cols2)
+    )
+
     ### coverage of NA interval returns zero for coverage
     df1 = pd.DataFrame(
         [
