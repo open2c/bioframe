@@ -280,10 +280,11 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
     all_groups = set.union(set(df1_groups), set(df2_groups))
 
     # Extract coordinate columns
-    starts1 = df1[sk1].array
-    ends1 = df1[ek1].array
-    starts2 = df2[sk2].array
-    ends2 = df2[ek2].array
+    # .values will return a numpy array or pandas array, depending on the dtype
+    starts1 = df1[sk1].values
+    ends1 = df1[ek1].values
+    starts2 = df2[sk2].values
+    ends2 = df2[ek2].values
 
     # Find overlapping intervals per group (determined by chrom and on).
     overlap_intidxs = []
