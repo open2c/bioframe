@@ -274,10 +274,16 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
     if on is not None:
         group_list1 += on
         group_list2 += on
-    df1_groups = df1.groupby(group_list1, observed=True, dropna=False).indices
 
+    df1_groups = df1.groupby(group_list1, observed=True, dropna=False).indices
     df2_groups = df2.groupby(group_list2, observed=True, dropna=False).indices
     all_groups = set.union(set(df1_groups), set(df2_groups))
+
+    # Extract coordinate columns
+    starts1 = df1[sk1].array
+    ends1 = df1[ek1].array
+    starts2 = df2[sk2].array
+    ends2 = df2[ek2].array
 
     # Find overlapping intervals per group (determined by chrom and on).
     overlap_intidxs = []
@@ -293,11 +299,12 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
         both_groups_nonempty = (df1_group_idxs.size > 0) and (df2_group_idxs.size > 0)
 
         if both_groups_nonempty:
+
             overlap_idxs_loc = arrops.overlap_intervals(
-                df1[sk1].values[df1_group_idxs],
-                df1[ek1].values[df1_group_idxs],
-                df2[sk2].values[df2_group_idxs],
-                df2[ek2].values[df2_group_idxs],
+                starts1[df1_group_idxs],
+                ends1[df1_group_idxs],
+                starts2[df2_group_idxs],
+                ends2[df2_group_idxs],
             )
 
             # Convert local per-chromosome indices into the
@@ -433,7 +440,6 @@ def overlap(
     df_overlap : pandas.DataFrame
 
     """
-
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
     checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
@@ -460,13 +466,15 @@ def overlap(
         cols2=cols2,
         on=on,
     )
+    events1 = overlap_df_idxs[:, 0]
+    events2 = overlap_df_idxs[:, 1]
 
     # Generate output tables.
     index_col = return_index if isinstance(return_index, str) else "index"
     index_col_1 = index_col + suffixes[0]
     index_col_2 = index_col + suffixes[1]
-    df_index_1 = pd.DataFrame({index_col_1: df1.index[overlap_df_idxs[:, 0]]})
-    df_index_2 = pd.DataFrame({index_col_2: df2.index[overlap_df_idxs[:, 1]]})
+    df_index_1 = pd.DataFrame({index_col_1: df1.index[events1]})
+    df_index_2 = pd.DataFrame({index_col_2: df2.index[events2]})
 
     df_overlap = None
     if return_overlap:
@@ -475,58 +483,52 @@ def overlap(
         overlap_col_ek1 = overlap_col + "_" + ek1
 
         overlap_start = np.maximum(
-            df1[sk1].values[overlap_df_idxs[:, 0]],
-            df2[sk2].values[overlap_df_idxs[:, 1]],
+            df1[sk1].values[events1],
+            df2[sk2].values[events2],
         )
 
         overlap_end = np.minimum(
-            df1[ek1].values[overlap_df_idxs[:, 0]],
-            df2[ek2].values[overlap_df_idxs[:, 1]],
+            df1[ek1].values[events1],
+            df2[ek2].values[events2],
         )
 
         df_overlap = pd.DataFrame(
-            {overlap_col_sk1: overlap_start, overlap_col_ek1: overlap_end}
+            {
+                overlap_col_sk1: overlap_start,
+                overlap_col_ek1: overlap_end
+            }
         )
 
     df_input_1 = None
     df_input_2 = None
     if return_input or str(return_input) == "1" or return_input == "left":
-        df_input_1 = df1.iloc[overlap_df_idxs[:, 0]].reset_index(drop=True)
+        df_input_1 = df1.iloc[events1].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
     if return_input or str(return_input) == "2" or return_input == "right":
-        df_input_2 = df2.iloc[overlap_df_idxs[:, 1]].reset_index(drop=True)
+        df_input_2 = df2.iloc[events2].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
-        df_index_1[overlap_df_idxs[:, 0] == -1] = None
-        df_index_1 = df_index_1.astype({index_col_1: pd.Int64Dtype()})
-        df_index_2[overlap_df_idxs[:, 1] == -1] = None
-        df_index_2 = df_index_2.astype({index_col_2: pd.Int64Dtype()})
+        df_index_1[index_col_1] = df_index_1[index_col_1].convert_dtypes()
+        df_index_2[index_col_2] = df_index_2[index_col_2].convert_dtypes()
+        df_index_1[events1 == -1] = None
+        df_index_2[events2 == -1] = None
 
         if df_input_1 is not None:
-            df_input_1[overlap_df_idxs[:, 0] == -1] = None
-            df_input_1 = df_input_1.astype(
-                {
-                    (sk1 + suffixes[0]): pd.Int64Dtype(),
-                    (ek1 + suffixes[0]): pd.Int64Dtype(),
-                }
-            )
+            df_input_1[sk1 + suffixes[0]] = df_input_1[sk1 + suffixes[0]].convert_dtypes()
+            df_input_1[ek1 + suffixes[0]] = df_input_1[ek1 + suffixes[0]].convert_dtypes()
+            df_input_1[events1 == -1] = None
+
         if df_input_2 is not None:
-            df_input_2[overlap_df_idxs[:, 1] == -1] = None
-            df_input_2 = df_input_2.astype(
-                {
-                    (sk2 + suffixes[1]): pd.Int64Dtype(),
-                    (ek2 + suffixes[1]): pd.Int64Dtype(),
-                }
-            )
+            df_input_2[sk2 + suffixes[1]] = df_input_2[sk2 + suffixes[1]].convert_dtypes()
+            df_input_2[ek2 + suffixes[1]] = df_input_2[ek2 + suffixes[1]].convert_dtypes()
+            df_input_2[events2 == -1] = None
+
         if df_overlap is not None:
-            df_overlap[
-                (overlap_df_idxs[:, 0] == -1) | (overlap_df_idxs[:, 1] == -1)
-            ] = None
-            df_overlap = df_overlap.astype(
-                {overlap_col_sk1: pd.Int64Dtype(), (overlap_col_ek1): pd.Int64Dtype()}
-            )
+            df_overlap[overlap_col_sk1] = df_overlap[overlap_col_sk1].convert_dtypes()
+            df_overlap[overlap_col_ek1] = df_overlap[overlap_col_ek1].convert_dtypes()
+            df_overlap[(events1 == -1) | (events2 == -1)] = None
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"
