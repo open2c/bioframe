@@ -516,13 +516,21 @@ def overlap(
         df_index_2[events2 == -1] = None
 
         if df_input_1 is not None:
-            df_input_1[sk1 + suffixes[0]] = df_input_1[sk1 + suffixes[0]].convert_dtypes()
-            df_input_1[ek1 + suffixes[0]] = df_input_1[ek1 + suffixes[0]].convert_dtypes()
+            df_input_1[sk1 + suffixes[0]] = (
+                df_input_1[sk1 + suffixes[0]].convert_dtypes()
+            )
+            df_input_1[ek1 + suffixes[0]] = (
+                df_input_1[ek1 + suffixes[0]].convert_dtypes()
+            )
             df_input_1[events1 == -1] = None
 
         if df_input_2 is not None:
-            df_input_2[sk2 + suffixes[1]] = df_input_2[sk2 + suffixes[1]].convert_dtypes()
-            df_input_2[ek2 + suffixes[1]] = df_input_2[ek2 + suffixes[1]].convert_dtypes()
+            df_input_2[sk2 + suffixes[1]] = (
+                df_input_2[sk2 + suffixes[1]].convert_dtypes()
+            )
+            df_input_2[ek2 + suffixes[1]] = (
+                df_input_2[ek2 + suffixes[1]].convert_dtypes()
+            )
             df_input_2[events2 == -1] = None
 
         if df_overlap is not None:
