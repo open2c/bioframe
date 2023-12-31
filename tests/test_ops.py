@@ -130,7 +130,7 @@ def test_trim():
             ["chrX_0", 1, 5],
         ],
         columns=["chrom", "startFunky", "end"],
-    ).astype({"startFunky": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    )
     pd.testing.assert_frame_equal(
         df_trimmed,
         bioframe.trim(
@@ -520,6 +520,58 @@ def test_overlap():
             cols2=["chrom2", "start2", "end2"],
             keep_order=True,
         )
+
+
+def test_overlap_preserves_coord_dtypes():
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 8, 12, "+"],
+            ["chr1", 7, 10, "-"],
+            ["chrX", 1, 8, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": np.uint32, "end": np.uint32})
+    df2 = pd.DataFrame(
+        [
+            ["chr1", 6, 10, "+"],
+            [pd.NA, pd.NA, pd.NA, "-"],
+            ["chrX", 7, 10, "-"]
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    # inner join - left keeps non-nullable numpy uint32
+    overlap_dtypes = bioframe.overlap(df1,  df2, how="inner").dtypes
+    assert (df1.dtypes == overlap_dtypes[:4]).all()
+    assert (df2.dtypes == overlap_dtypes[4:].rename(lambda x: x.replace("_", ""))).all()
+
+    # outer join - left uint32 gets cast to numpy float64
+    overlap_dtypes = bioframe.overlap(df1,  df2, how="outer").dtypes
+    assert overlap_dtypes["start"] == np.float64
+    assert overlap_dtypes["end"] == np.float64
+    assert overlap_dtypes["start_"] == pd.Int64Dtype()
+    assert overlap_dtypes["end_"] == pd.Int64Dtype()
+
+    # convert left coords to nullable *before* joining
+    overlap_dtypes = bioframe.overlap(df1.convert_dtypes(), df2, how="inner").dtypes
+    assert overlap_dtypes["start"] == pd.UInt32Dtype()
+    assert overlap_dtypes["end"] == pd.UInt32Dtype()
+    assert overlap_dtypes["start_"] == pd.Int64Dtype()
+    assert overlap_dtypes["end_"] == pd.Int64Dtype()
+
+    # convert coords to nullable *after* joining
+    # inner join - uint32 output becomes UInt32
+    # outer join - float64 output becomes Int64
+    overlap_dtypes = bioframe.overlap(df1, df2, how="inner").convert_dtypes().dtypes
+    assert overlap_dtypes["start"] == pd.UInt32Dtype()
+    assert overlap_dtypes["end"] == pd.UInt32Dtype()
+    assert overlap_dtypes["start_"] == pd.Int64Dtype()
+    assert overlap_dtypes["end_"] == pd.Int64Dtype()
+    overlap_dtypes = bioframe.overlap(df1, df2, how="outer").convert_dtypes().dtypes
+    assert overlap_dtypes["start"] == pd.Int64Dtype()
+    assert overlap_dtypes["end"] == pd.Int64Dtype()
+    assert overlap_dtypes["start_"] == pd.Int64Dtype()
+    assert overlap_dtypes["end_"] == pd.Int64Dtype()
 
 
 def test_cluster():
@@ -1575,9 +1627,6 @@ def test_assign_view():
         ],
         columns=["chrom", "start", "end", "strand", "view_region"],
     )
-    df_assigned = df_assigned.astype(
-        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
-    )
     pd.testing.assert_frame_equal(df_assigned, bioframe.assign_view(df, view_df))
 
     # non-default columns in view
@@ -1620,9 +1669,6 @@ def test_assign_view():
         ],
         columns=["chrom", "start", "end", "strand", "funny_view_region"],
     )
-    df_assigned = df_assigned.astype(
-        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
-    )
 
     pd.testing.assert_frame_equal(
         df_assigned,
@@ -1641,12 +1687,9 @@ def test_assign_view():
             ["chr1", 0, 10, "+", "apples"],
             ["chrX", 5, 10, "+", "oranges"],
             ["chrX", 0, 5, "+", "oranges"],
-            ["chr2", 5, 10, "+", pd.NA],
+            ["chr2", 5, 10, "+", None],
         ],
         columns=["chrom", "start", "end", "strand", "funny_view_region"],
-    )
-    df_assigned = df_assigned.astype(
-        {"chrom": str, "start": pd.Int64Dtype(), "end": pd.Int64Dtype()}
     )
 
     pd.testing.assert_frame_equal(
