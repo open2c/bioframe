@@ -74,6 +74,9 @@ changelog = "https://github.com/open2c/bioframe/blob/main/CHANGES.md"
 [tool.hatch.version]
 path = "bioframe/_version.py"
 
+[tool.hatch.envs.default]
+features = ["dev", "test", "docs"]
+
 [tool.hatch.envs.default.scripts]
 fix = "ruff --fix ."
 lint = "ruff bioframe tests"
