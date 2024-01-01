@@ -40,16 +40,18 @@ After forking and cloning the repository, you can create an isolated Python deve
 ```sh
 git clone https://github.com/open2c/bioframe.git
 hatch shell
+```
+
+The first time you run `hatch shell` the environment will be created and activated, and the package will be installed. In future sessions, running `hatch shell` will reactivate your development environment. If you prefer to manage your virtual environments differently, you can install the package for development using:
+
+```sh
 pip install -e '.[dev,test,docs]'
 ```
 
-The first time you run `hatch shell` the environment will be created and activated, and the package will be installed. In future sessions, running `hatch shell` will reactivate your development environment.
+For all pull requests, linting and unit tests are automatically run using the [GitHub Actions](https://docs.github.com/en/actions) Continuous Integration service. However, you are still encouraged to run these checks locally before pushing code to a PR.
 
 > [!NOTE]
 > Many custom command shortcuts are accessible through hatch (and shown below). See `tool.hatch.envs.default.scripts` in our project's `pyproject.toml` configuration file.
-
-For all pull requests, linting and unit tests are automatically run using the [GitHub Actions](https://docs.github.com/en/actions) Continuous Integration service. However, you are still encouraged to run these checks locally before pushing code to a PR.
-
 
 ## Linting
 
@@ -84,7 +86,7 @@ If a feature is stable and relatively finalized, it is time to add it to the doc
 
 We use [Numpy style docstrings](https://numpydoc.readthedocs.io/en/latest/format.html>) and [Sphinx](http://www.sphinx-doc.org/en/stable) to document this library. Sphinx, in turn, uses [reStructuredText](http://www.sphinx-doc.org/en/stable/rest.html) as its markup language for adding code.
 
-We use the [Sphinx Autosummary extension](http://www.sphinx-doc.org/en/stable/ext/autosummary.html) to generate API references. You may want to look at `docs/api.rst` to see how these files look and where to add new functions, classes or modules.
+We use the [Sphinx Autosummary extension](http://www.sphinx-doc.org/en/stable/ext/autosummary.html) to generate API references. You may want to look at `docs/api-*.rst` files to see how they look and where to add new functions, classes or modules. We also use the [myst_nb extension](https://myst-nb.readthedocs.io/en/latest/) to render Jupyter notebooks in the documentation.
 
 To build the documentation, run `sphinx-autobuild` using:
 
