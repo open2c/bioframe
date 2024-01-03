@@ -385,6 +385,7 @@ def overlap(
     cols1=None,
     cols2=None,
     on=None,
+    ensure_nullable=False,
 ):
     """
     Find pairs of overlapping genomic intervals.
@@ -436,15 +437,45 @@ def overlap(
         when considering overlaps. A common use would be passing on=['strand'].
         Default is None.
 
+    ensure_nullable : bool
+        If True, ensures that the output dataframe uses nullable Pandas
+        integer dtypes for start and end coordinates. This may involve
+        converting coordinate columns in the input dataframes.
+        Default False.
+
     Returns
     -------
     df_overlap : pandas.DataFrame
 
+    Notes
+    -----
+    By default, the dtypes of the `start` and `end` coordinate columns
+    returned in the output dataframe are preserved from the input dataframes,
+    following native type casting rules if missing data are introduced.
+
+    This means, for example, that if `df1` uses a NumPy integer dtype for
+    `start` and/or `end`, the output dataframe will use the same dtype after
+    an inner join, but, due to casting rules, may produce ``float64`` after a
+    left/right/outer join with missing data stored as ``NaN``. On the other
+    hand, if `df1` uses Pandas nullable dtypes, the corresponding coordinate
+    columns will preserve the same dtype in the output, with missing data
+    stored as ``NA``. If ``ensure_nullable`` is True, the output dataframe will
+    always return Pandas nullable dtypes for start and end coordinates.
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
     checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
     checks.is_bedframe(df2, raise_errors=True, cols=[ck2, sk2, ek2])
+
+    if ensure_nullable:
+        df1 = df1.assign(**{
+            sk1: df1[sk1].convert_dtypes(),
+            ek1: df1[ek1].convert_dtypes(),
+        })
+        df2 = df2.assign(**{
+            sk2: df2[sk2].convert_dtypes(),
+            ek2: df2[ek2].convert_dtypes(),
+        })
 
     if (how == "left") and (keep_order is None):
         keep_order = True
