@@ -2,7 +2,7 @@
 
 <img src="https://github.com/open2c/bioframe/raw/main/docs/figs/bioframe-logo.png" width=75%> 
 
-![Python package](https://github.com/open2c/bioframe/workflows/Python%20package/badge.svg)
+![CI](https://github.com/open2c/bioframe/actions/workflows/ci.yml/badge.svg)
 [![Docs status](https://readthedocs.org/projects/bioframe/badge/)](https://bioframe.readthedocs.io/en/latest/)
 [![Preprint](https://img.shields.io/badge/DOI-10.1101%2F2022.02.16.480748-blue)](https://doi.org/10.1101/2022.02.16.480748)
 [![Zenodo](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
