@@ -7,6 +7,7 @@
 [![Preprint](https://img.shields.io/badge/DOI-10.1101%2F2022.02.16.480748-blue)](https://doi.org/10.1101/2022.02.16.480748)
 [![Zenodo](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
 [![Slack](https://img.shields.io/badge/chat-slack-%233F0F3F?logo=slack)](https://bit.ly/open2c-slack)
+[![NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://www.numfocus.org)
 
 Bioframe enables flexible and scalable operations on genomic interval dataframes in Python. 
 
@@ -17,6 +18,8 @@ Bioframe is built directly on top of [Pandas](https://pandas.pydata.org/). Biofr
 * Conveniences for diverse tabular genomic data formats and loading genome assembly summary information.
 
 Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html), as well as the [bioframe preprint](https://doi.org/10.1101/2022.02.16.480748) for more information.
+
+Bioframe is an Affiliated Project of [NumFOCUS](https://www.numfocus.org).
 
 ## Installation
 
