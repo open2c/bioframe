@@ -373,6 +373,26 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
     return overlap_intidxs
 
 
+NUMPY_INT_TO_DTYPE = {
+    np.dtype(np.int8): pd.Int8Dtype(),
+    np.dtype(np.int16): pd.Int16Dtype(),
+    np.dtype(np.int32): pd.Int32Dtype(),
+    np.dtype(np.int64): pd.Int64Dtype(),
+    np.dtype(np.uint8): pd.UInt8Dtype(),
+    np.dtype(np.uint16): pd.UInt16Dtype(),
+    np.dtype(np.uint32): pd.UInt32Dtype(),
+    np.dtype(np.uint64): pd.UInt64Dtype(),
+}
+
+
+def _to_nullable_dtype(dtype):
+    try:
+        dtype = np.dtype(dtype)
+    except TypeError:
+        return dtype
+    return NUMPY_INT_TO_DTYPE.get(dtype, dtype)
+
+
 def overlap(
     df1,
     df2,
@@ -385,7 +405,7 @@ def overlap(
     cols1=None,
     cols2=None,
     on=None,
-    ensure_nullable=False,
+    ensure_int=True,
 ):
     """
     Find pairs of overlapping genomic intervals.
@@ -402,14 +422,14 @@ def overlap(
         outer: use the union of the set of intervals from df1 and df2
         inner: use intersection of the set of intervals from df1 and df2
 
-    return_input : bool
+    return_input : bool, optional
         If True, return columns from input dfs. Default True.
 
-    return_index : bool
+    return_index : bool, optional
         If True, return indicies of overlapping pairs as two new columns
         ('index'+suffixes[0] and 'index'+suffixes[1]). Default False.
 
-    return_overlap : bool
+    return_overlap : bool, optional
         If True, return overlapping intervals for the overlapping pairs
         as two additional columns (`overlap_start`, `overlap_end`).
         When `cols1` is modified, `start` and `end` are replaced accordingly.
@@ -417,7 +437,7 @@ def overlap(
         columns: `return_overlap + "_start"`, `return_overlap + "_end"`.
         Default False.
 
-    suffixes : (str, str)
+    suffixes : (str, str), optional
         The suffixes for the columns of the two overlapped sets.
 
     keep_order : bool, optional
@@ -427,21 +447,20 @@ def overlap(
         Note that it relies on sorting of index in the original dataframes,
         and will reorder the output by index.
 
-    cols1, cols2 : (str, str, str) or None
+    cols1, cols2 : (str, str, str) or None, optional
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
-    on : list or None
+    on : list or None, optional
         List of additional shared columns to consider as separate groups
         when considering overlaps. A common use would be passing on=['strand'].
         Default is None.
 
-    ensure_nullable : bool
-        If True, ensures that the output dataframe uses nullable Pandas
-        integer dtypes for start and end coordinates. This may involve
-        converting coordinate columns in the input dataframes.
-        Default False.
+    ensure_int : bool, optional [default: True]
+        If True, ensures that the output dataframe uses integer dtypes for
+        start and end coordinates. This may involve converting coordinate
+        columns to nullable types in outer joins. Default True.
 
     Returns
     -------
@@ -449,33 +468,20 @@ def overlap(
 
     Notes
     -----
-    By default, the dtypes of the `start` and `end` coordinate columns
-    returned in the output dataframe are preserved from the input dataframes,
-    following native type casting rules if missing data are introduced.
-
-    This means, for example, that if `df1` uses a NumPy integer dtype for
-    `start` and/or `end`, the output dataframe will use the same dtype after
-    an inner join, but, due to casting rules, may produce ``float64`` after a
-    left/right/outer join with missing data stored as ``NaN``. On the other
-    hand, if `df1` uses Pandas nullable dtypes, the corresponding coordinate
-    columns will preserve the same dtype in the output, with missing data
-    stored as ``NA``. If ``ensure_nullable`` is True, the output dataframe will
-    always return Pandas nullable dtypes for start and end coordinates.
+    If ``ensure_int`` is False, inner joins will preserve coordinate dtypes
+    from the input dataframes, but outer joins will be subject to native type
+    casting rules if missing data is introduced. For example, if `df1` uses a
+    NumPy integer dtype for `start` and/or `end`, the output dataframe will
+    use the same dtype after an inner join, but, due to casting rules, may
+    produce ``float64`` after a left/right/outer join with missing data stored
+    as ``NaN``. On the other hand, if `df1` uses Pandas nullable dtypes, the
+    corresponding coordinate columns will preserve the same dtype in the
+    output, with missing data stored as ``NA``.
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
     ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
     checks.is_bedframe(df1, raise_errors=True, cols=[ck1, sk1, ek1])
     checks.is_bedframe(df2, raise_errors=True, cols=[ck2, sk2, ek2])
-
-    if ensure_nullable:
-        df1 = df1.assign(**{
-            sk1: df1[sk1].convert_dtypes(),
-            ek1: df1[ek1].convert_dtypes(),
-        })
-        df2 = df2.assign(**{
-            sk2: df2[sk2].convert_dtypes(),
-            ek2: df2[ek2].convert_dtypes(),
-        })
 
     if (how == "left") and (keep_order is None):
         keep_order = True
@@ -524,35 +530,52 @@ def overlap(
             df2[ek2].values[events2],
         )
 
-        df_overlap = pd.DataFrame(
-            {
-                overlap_col_sk1: overlap_start,
-                overlap_col_ek1: overlap_end
-            }
-        )
+        df_overlap = pd.DataFrame({
+            overlap_col_sk1: overlap_start,
+            overlap_col_ek1: overlap_end
+        })
 
     df_input_1 = None
     df_input_2 = None
     if return_input or str(return_input) == "1" or return_input == "left":
         df_input_1 = df1.iloc[events1].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
+
     if return_input or str(return_input) == "2" or return_input == "right":
         df_input_2 = df2.iloc[events2].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
-        df_index_1[events1 == -1] = None
-        df_index_2[events2 == -1] = None
+        is_na_left = (events1 == -1)
+        is_na_right = (events2 == -1)
+        any_na_left = is_na_left.any()
+        any_na_right = is_na_right.any()
+        df_index_1[is_na_left] = None
+        df_index_2[is_na_right] = None
 
         if df_input_1 is not None:
-            df_input_1[events1 == -1] = None
+            if ensure_int and any_na_left:
+                df_input_1 = df_input_1.astype({
+                    sk1 + suffixes[0]: _to_nullable_dtype(df1[sk1].dtype),
+                    ek1 + suffixes[0]: _to_nullable_dtype(df1[ek1].dtype),
+                })
+            if any_na_left:
+                df_input_1[is_na_left] = None
 
         if df_input_2 is not None:
-            df_input_2[events2 == -1] = None
+            if ensure_int and any_na_right:
+                df_input_2 = df_input_2.astype({
+                    sk2 + suffixes[1]: _to_nullable_dtype(df2[sk2].dtype),
+                    ek2 + suffixes[1]: _to_nullable_dtype(df2[ek2].dtype),
+                })
+            if any_na_right:
+                df_input_2[is_na_right] = None
 
         if df_overlap is not None:
-            df_overlap[(events1 == -1) | (events2 == -1)] = None
+            if ensure_int and (any_na_left or any_na_right):
+                df_overlap = df_overlap.convert_dtypes()
+                df_overlap[is_na_left | is_na_right] = None
 
     out_df = pd.concat(
         [df_index_1, df_input_1, df_index_2, df_input_2, df_overlap], axis="columns"

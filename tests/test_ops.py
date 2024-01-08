@@ -535,28 +535,28 @@ def test_overlap_preserves_coord_dtypes():
         [
             ["chr1", 6, 10, "+"],
             [pd.NA, pd.NA, pd.NA, "-"],
-            ["chrX", 7, 10, "-"]
+            ["chrX", 7, 10, "-"],
+            ["chrX", 1000, 1200, "-"],
         ],
         columns=["chrom", "start", "end", "strand"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     # inner join - left keeps non-nullable numpy uint32
-    overlap_dtypes = bioframe.overlap(df1,  df2, how="inner").dtypes
-    overlap_dtypes = bioframe.overlap(df1,  df2, how="inner").dtypes
+    overlap_dtypes = bioframe.overlap(df1,  df2, ensure_int=False, how="inner").dtypes
     for col in ["start", "end"]:
         assert overlap_dtypes[col] == np.uint32
     for col in ["start_", "end_"]:
         assert overlap_dtypes[col] == pd.Int64Dtype()
 
-    # outer join - left uint32 gets cast to numpy float64
-    overlap_dtypes = bioframe.overlap(df1,  df2, how="outer").dtypes
+    # outer join - left uint32 gets cast to numpy float64 because of NaNs on left
+    overlap_dtypes = bioframe.overlap(df1,  df2, how="outer", ensure_int=False).dtypes
     assert overlap_dtypes["start"] == np.float64
     assert overlap_dtypes["end"] == np.float64
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
     assert overlap_dtypes["end_"] == pd.Int64Dtype()
 
     # convert left coords to nullable *before* joining
-    overlap_dtypes = bioframe.overlap(df1.convert_dtypes(), df2, how="inner").dtypes
+    overlap_dtypes = bioframe.overlap(df1.convert_dtypes(), df2, ensure_int=False, how="inner").dtypes
     assert overlap_dtypes["start"] == pd.UInt32Dtype()
     assert overlap_dtypes["end"] == pd.UInt32Dtype()
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
@@ -565,19 +565,19 @@ def test_overlap_preserves_coord_dtypes():
     # convert coords to nullable *after* joining
     # inner join - uint32 output becomes UInt32
     # outer join - float64 output becomes Int64
-    overlap_dtypes = bioframe.overlap(df1, df2, how="inner").convert_dtypes().dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, ensure_int=False, how="inner").convert_dtypes().dtypes
     assert overlap_dtypes["start"] == pd.UInt32Dtype()
     assert overlap_dtypes["end"] == pd.UInt32Dtype()
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
     assert overlap_dtypes["end_"] == pd.Int64Dtype()
-    overlap_dtypes = bioframe.overlap(df1, df2, how="outer").convert_dtypes().dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, ensure_int=False, how="outer").convert_dtypes().dtypes
     assert overlap_dtypes["start"] == pd.Int64Dtype()
     assert overlap_dtypes["end"] == pd.Int64Dtype()
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
     assert overlap_dtypes["end_"] == pd.Int64Dtype()
 
 
-def test_overlap_ensure_nullable_coords():
+def test_overlap_ensure_int():
     df1 = pd.DataFrame(
         [
             ["chr1", 8, 12, "+"],
@@ -595,18 +595,18 @@ def test_overlap_ensure_nullable_coords():
         columns=["chrom", "start", "end", "strand"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
-    # inner join - left uint32 gets cast to UInt32
+    # inner join
     overlap_dtypes = bioframe.overlap(
-        df1,  df2, how="inner", ensure_nullable=True
+        df1,  df2, how="inner", ensure_int=True
     ).dtypes
     for col in ["start", "end"]:
-        assert overlap_dtypes[col] == pd.UInt32Dtype()
+        assert overlap_dtypes[col] == np.uint32
     for col in ["start_", "end_"]:
         assert overlap_dtypes[col] == pd.Int64Dtype()
 
     # outer join - left uint32 gets cast to UInt32 before the join
     overlap_dtypes = bioframe.overlap(
-        df1,  df2, how="outer", ensure_nullable=True
+        df1,  df2, how="outer", ensure_int=True
     ).dtypes
     for col in ["start", "end"]:
         assert overlap_dtypes[col] == pd.UInt32Dtype()
