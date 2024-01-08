@@ -41,9 +41,3 @@ jobs:
           # Stop the build if there are Python syntax errors or undefined names
           ruff . --select=E9,F63,F7,F82 --show-source
           hatch run test
-
-  Release:
-    # Only run on v* tag events
-    if: startsWith(github.ref, 'refs/tags')
-    needs: [Lint, Test]
-    uses: open2c/bioframe/.github/workflows/publish.yml@main

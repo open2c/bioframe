@@ -6,6 +6,9 @@ on:
 
 jobs:
   Publish:
+    # prevents this action from running on forks
+    if: github.repository == 'open2c/bioframe'
+
     runs-on: ubuntu-latest
     permissions:
       id-token: write
