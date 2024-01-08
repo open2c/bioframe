@@ -6,7 +6,12 @@
 Date 2024-01-08
 
 API changes:
-* `overlap`: Default behavior of overlap was changed to minimize the possibility of regressions in libraries that depend on legacy behavior. The new option `ensure_nullable` is renamed `ensure_int` and is `True` by default. It ensures that output coordinate columns are always returned with an integer dtype, as was the case in prior versions. This is achieved by converting columns having non-nullable NumPy dtypes to Pandas nullable ones in the specific case where the result of an **outer** join generates missing values; otherwise, column dtypes are preserved unchanged in the output. Unlike previous minor versions of bioframe, the nullable dtype chosen will have the same underlying type as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output). This behavior can be turned off by setting `ensure_int` to `False`, in which case outer joins on dataframes using NumPy dtypes may produce floating point output columns when missing values are introduced as `NaN`, following the native casting behavior of such columns.
+
+Default behavior of `ensure_nullable` option in `overlap` was modified to minimize the possibility of regressions in libraries that depend on legacy behavior. 
+
+* The new option was renamed `ensure_int` and is `True` by default. It ensures that output coordinate columns are always returned with an integer dtype, as was the case in prior versions. This is achieved by converting columns having non-nullable NumPy dtypes to Pandas nullable ones in the specific case where the result of an **outer join** generates missing values; otherwise, column dtypes are preserved unchanged in the output. 
+* Unlike previous minor versions of bioframe, the nullable dtype chosen will have the **same underlying type** as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output). 
+* This behavior can be turned off by setting `ensure_int` to `False`, in which case outer joins on dataframes using NumPy dtypes may produce floating point output columns when missing values are introduced (stored as `NaN`), following the native casting behavior of such columns.
 
 ## [v0.6.0](https://github.com/open2c/bioframe/compare/v0.5.1...v0.6.0)
 Date 2024-01-04
