@@ -2,11 +2,17 @@
 
 ## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.0...HEAD)
 
+## [v0.6.1](https://github.com/open2c/bioframe/compare/v0.6.0...v0.6.1)
+Date 2024-01-08
+
+API changes:
+* `overlap`: Default behavior of overlap was changed to minimize the possibility of regressions in libraries that depend on legacy behavior. The new option `ensure_nullable` is renamed `ensure_int` and is `True` by default. It ensures that output coordinate columns are always returned with an integer dtype, as was the case in prior versions. This is achieved by converting columns having non-nullable NumPy dtypes to Pandas nullable ones in the specific case where the result of an **outer** join generates missing values; otherwise, column dtypes are preserved unchanged in the output. Unlike previous minor versions of bioframe, the nullable dtype chosen will have the same underlying type as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output). This behavior can be turned off by setting `ensure_int` to `False`, in which case outer joins on dataframes using NumPy dtypes may produce floating point output columns when missing values are introduced as `NaN`, following the native casting behavior of such columns.
+
 ## [v0.6.0](https://github.com/open2c/bioframe/compare/v0.5.1...v0.6.0)
 Date 2024-01-04
 
 API changes:
-* `overlap`: In previous versions, output coordinate columns were always converted to Pandas "nullable" `Int64` dtype before returning. In the interest of flexibility, memory efficiency, and least surprise, the coordinate columns returned in the output dataframe now preserve dtype from the input dataframes, following native type casting rules if missing data are introduced. We introduce the `ensure_nullable` argument to force Pandas nullable dtypes in the output coordinates. See the [docs](https://bioframe.readthedocs.io/en/latest/api-intervalops.html#bioframe.ops.overlap) for more details. (#178)
+* `overlap`: In previous versions, output coordinate columns were always converted to Pandas "nullable" `Int64` dtype before returning outer join results. In the interest of flexibility, memory efficiency, and least surprise, the coordinate columns returned in the output dataframe now preserve dtype from the input dataframes, following native type casting rules if missing data are introduced. We introduce the `ensure_nullable` argument to force Pandas nullable dtypes in the output coordinates. See the [docs](https://bioframe.readthedocs.io/en/latest/api-intervalops.html#bioframe.ops.overlap) for more details. (#178)
 
 Bug fixes:
 * Fixed `coverage` with custom `cols1` (#170)
