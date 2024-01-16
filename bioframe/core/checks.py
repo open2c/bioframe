@@ -291,7 +291,7 @@ def is_contained(
 
     if df_view_col is None:
         try:
-            df_view_assigned = ops.overlap(df, view_df)
+            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=df_view_col)
             assert (df_view_assigned["end_"].isna()).sum() == 0
             assert (df_view_assigned["start_"].isna()).sum() == 0
             assert (df_view_assigned["end"] <= df_view_assigned["end_"]).all()
