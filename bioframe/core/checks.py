@@ -257,6 +257,7 @@ def is_contained(
     df_view_col=None,
     view_name_col="name",
     cols=None,
+    view_cols=None,
 ):
     """
     Tests if all genomic intervals in a bioframe `df` are cataloged and do not
@@ -288,14 +289,15 @@ def is_contained(
     from ..ops import trim
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-
+    view_cols = _get_default_colnames() if view_cols is None else view_cols
+    ck2, sk2, ek2 = [col + '_' for col in view_cols]
     if df_view_col is None:
         try:
-            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=df_view_col)
-            assert (df_view_assigned["end_"].isna()).sum() == 0
-            assert (df_view_assigned["start_"].isna()).sum() == 0
-            assert (df_view_assigned["end"] <= df_view_assigned["end_"]).all()
-            assert (df_view_assigned["start"] >= df_view_assigned["start_"]).all()
+            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=view_cols)
+            assert (df_view_assigned[ek2].isna()).sum() == 0 # ek2 = end_ is the default value
+            assert (df_view_assigned[sk2].isna()).sum() == 0 # sk2 = start_ is the default value
+            assert (df_view_assigned[ek1] <= df_view_assigned[ek2]).all() # ek1 = end is the default value
+            assert (df_view_assigned[sk1] >= df_view_assigned[sk2]).all() # sk1 = start is the default value
         except AssertionError:
             if raise_errors:
                 raise AssertionError("df not contained in view_df")
