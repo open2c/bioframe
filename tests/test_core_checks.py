@@ -103,8 +103,39 @@ def test_is_contained():
     )
     # is contained, because assignments are inferred
     assert is_contained(df, view_df)
+    
+    # using previous assignments with non-standard column names in dataframes without argument
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["CHROM", "START", "END", "NAME"],
+    )
+    df = pd.DataFrame(
+        [
+            ["chr1", 12, 12, "chr1p"],
+            ["chr1", 13, 14, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom1", "start1", "end1", "VIEW_REGION"],
+    )
+    assert is_contained(df, view_df, cols=["chrom1", "start1", "end1"], cols_view=["CHROM", "START", "END"], df_view_col="VIEW_REGION", view_name_col="NAME")
+
+    with pytest.raises(TypeError):
+        # cols and view_cols are not passed as an arguments
+        is_contained(df, view_df, raise_errors=True)
 
     # is not contained, because assignments are not inferred
+    view_df = pd.DataFrame(
+        [
+            ["chr1", 0, 12, "chr1p"],
+            ["chr1", 13, 26, "chr1q"],
+            ["chrX", 1, 8, "chrX_0"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
     assert not is_contained(df, view_df, df_view_col="view_region")
 
     ### second interval falls completely out of the view
@@ -381,3 +412,6 @@ def test_is_sorted():
 
     # view_df specifies a different ordering, so should not be sorted
     assert not is_sorted(bfs)
+
+if __name__ == '__main__':
+    test_is_contained()
