@@ -440,6 +440,24 @@ def test_is_sorted():
         view_df, view_df=view_df, view_name_col="fruit", df_view_col="fruit"
     )
 
+    ## testing for non-standard column names
+    view_df = pd.DataFrame(
+        [
+            ["chrX", 1, 8, "oranges"],
+            ["chrX", 8, 20, "grapefruit"],
+            ["chr1", 0, 10, "apples"],
+        ],
+        columns=["CHROM", "START", "END", "FRUIT"],
+    )
+
+    assert is_sorted(
+        view_df, view_df=view_df, view_name_col="FRUIT", df_view_col="FRUIT", cols=["CHROM", "START", "END"], cols_view=["CHROM", "START", "END"]
+    )
+    
+    with pytest.raises(ValueError):
+        # cols and view_cols are not passed as an arguments
+        is_sorted(view_df, view_df=view_df)
+
     df = pd.DataFrame(
         [
             ["chr1", 0, 10, "+"],
@@ -452,6 +470,14 @@ def test_is_sorted():
 
     assert not is_sorted(df)
 
+    view_df = pd.DataFrame(
+        [
+            ["chrX", 1, 8, "oranges"],
+            ["chrX", 8, 20, "grapefruit"],
+            ["chr1", 0, 10, "apples"],
+        ],
+        columns=["chrom", "start", "end", "fruit"],
+    )
     bfs = sort_bedframe(df, view_df=view_df, view_name_col="fruit")
 
     assert is_sorted(bfs, view_df=view_df, view_name_col="fruit")
@@ -462,3 +488,4 @@ def test_is_sorted():
 if __name__ == "__main__":
     test_is_covering()
     test_is_tiling()
+    test_is_sorted()
