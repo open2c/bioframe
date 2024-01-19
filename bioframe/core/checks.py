@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from . import construction
-from .specs import (_get_default_colnames, _verify_column_dtypes,
-                    _verify_columns)
 from .. import ops
+from . import construction
+from .specs import _get_default_colnames, _verify_column_dtypes, _verify_columns
 
 __all__ = [
     "is_bedframe",
