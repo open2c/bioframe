@@ -247,6 +247,30 @@ def test_is_tiling():
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert is_tiling(df1, chromsizes)
 
+    ### testing for non-standard column names
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 0, 9, "chr1p"],
+            ["chr1", 11, 12, "chr1q"],
+            ["chr1", 12, 20, "chr1q"],
+        ],
+        columns=["chrom1", "start1", "end1", "view_region"],
+    )
+    chromsizes = pd.DataFrame(
+        [
+            ["chr1", 0, 9, "chr1p"], 
+            ["chr1", 11, 20, "chr1q"]
+        ],
+        columns=["CHROM", "START", "END", "NAME"],
+        )
+    assert is_tiling(df1, chromsizes, cols=["chrom1", "start1", "end1"], cols_view=["CHROM", "START", "END"], view_name_col="NAME")
+
+    with pytest.raises(KeyError):
+        # cols and view_cols are not passed as an arguments
+        is_tiling(df1, chromsizes)
+
+
+
     ### not tiling, since (chr1,0,9) is associated with chr1q
     df1 = pd.DataFrame(
         [
@@ -437,3 +461,4 @@ def test_is_sorted():
 
 if __name__ == "__main__":
     test_is_covering()
+    test_is_tiling()
