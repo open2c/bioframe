@@ -198,6 +198,24 @@ def test_is_covering():
     chromsizes = [("chr1", 0, 9, "chr1p"), ("chr1", 11, 20, "chr1q")]
     assert is_covering(df1, chromsizes)
 
+    ### test is_covering with non-standard columns names 
+    df1 = pd.DataFrame(
+        [
+            ["chr1", -5, 10],
+            ["chr1", 11, 12],
+            ["chr1", 12, 20],
+        ],
+        columns=["chrom1", "start1", "end1"],
+    )
+    chromsizes = pd.DataFrame(
+        [
+            ["chr1", 0, 9, "chr1p"], 
+            ["chr1", 11, 20, "chr1q"]
+        ],
+        columns=["CHROM", "START", "END", "NAME"],
+        )
+    assert is_covering(df1, chromsizes, cols=["chrom1", "start1", "end1"], cols_view=["CHROM", "START", "END"], view_name_col="NAME")
+
     ### test is_covering where two intervals from df overlap
     ### two different regions from view
     df1 = pd.DataFrame(
@@ -412,3 +430,6 @@ def test_is_sorted():
 
     # view_df specifies a different ordering, so should not be sorted
     assert not is_sorted(bfs)
+
+if __name__ == "__main__":
+    test_is_covering()
