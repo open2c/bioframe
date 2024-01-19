@@ -332,7 +332,7 @@ def is_contained(
         return True
 
 
-def is_covering(df, view_df, view_name_col="name", cols=None):
+def is_covering(df, view_df, view_name_col="name", cols=None, cols_view=None):
     """
     Tests if a view `view_df` is covered by the set of genomic intervals in
     the bedframe `df`.
@@ -368,6 +368,7 @@ def is_covering(df, view_df, view_name_col="name", cols=None):
         view_df=view_df,
         view_name_col=view_name_col,
         cols=cols,
+        cols_view=cols_view,
     ).empty:
         return True
     else:
