@@ -3,7 +3,9 @@ import pandas as pd
 
 from .. import ops
 from . import construction
-from .specs import _get_default_colnames, _verify_column_dtypes, _verify_columns
+from .specs import _get_default_colnames
+from .specs import _verify_column_dtypes
+from .specs import _verify_columns
 
 __all__ = [
     "is_bedframe",
@@ -29,7 +31,8 @@ def is_bedframe(
 
     - chrom, start, end columns
     - columns have valid dtypes
-    - for each interval, if any of chrom, start, end are null, then all are null
+    - for each interval, if any of chrom, start, end are null, then all are
+        null
     - all starts < ends.
 
     Parameters
@@ -61,7 +64,10 @@ def is_bedframe(
             raise TypeError("Invalid bedFrame: Invalid column names")
         return False
 
-    if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
+    if not _verify_column_dtypes(
+            df,
+            cols=[ck1, sk1, ek1],
+            return_as_bool=True):
         if raise_errors:
             raise TypeError("Invalid bedFrame: Invalid column dtypes")
         return False
@@ -87,8 +93,12 @@ def is_bedframe(
 
 
 def is_cataloged(
-    df, view_df, raise_errors=False, df_view_col="view_region", view_name_col="name"
-):
+        df,
+        view_df,
+        raise_errors=False,
+        df_view_col="view_region",
+        view_name_col="name"
+        ):
     """
     Tests if all region names in `df[df_view_col]` are present in
     `view_df[view_name_col]`.
@@ -125,7 +135,10 @@ def is_cataloged(
 
     if not _verify_columns(view_df, [view_name_col], return_as_bool=True):
         if raise_errors:
-            raise ValueError(f"Could not find `{view_name_col}` column in view_df")
+            raise ValueError(
+                f"Could not find \
+                `{view_name_col}` \
+                column in view_df")
         return False
 
     if not set(df[df_view_col].copy().dropna().values).issubset(
@@ -171,7 +184,10 @@ def is_overlapping(df, cols=None):
     df_merged = merge(df, cols=cols)
 
     total_interval_len = np.sum((df[ek1] - df[sk1]).values)
-    total_interval_len_merged = np.sum((df_merged[ek1] - df_merged[sk1]).values)
+    total_interval_len_merged = np.sum(
+        (
+            df_merged[ek1] - df_merged[sk1]
+        ).values)
 
     if total_interval_len > total_interval_len_merged:
         return True
@@ -179,7 +195,11 @@ def is_overlapping(df, cols=None):
         return False
 
 
-def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None):
+def is_viewframe(
+        region_df,
+        raise_errors=False,
+        view_name_col="name",
+        cols=None):
     """
     Checks that `region_df` is a valid viewFrame.
 
@@ -235,10 +255,12 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
             raise ValueError("Invalid view: cannot contain NAs")
         return False
 
-    if len(set(region_df[view_name_col])) < len(region_df[view_name_col].values):
+    if len(set(region_df[view_name_col])) < \
+       len(region_df[view_name_col].values):
         if raise_errors:
             raise ValueError(
-                "Invalid view: entries in region_df[view_name_col] must be unique"
+                "Invalid view: entries in \
+                region_df[view_name_col] must be unique"
             )
         return False
 
@@ -277,13 +299,12 @@ def is_contained(
     df_view_col:
         Column from df used to associate interviews with view regions.
         Default `view_region`.
-    
+
     view_name_col:
         Column from view_df with view region names. Default `name`.
 
     cols: (str, str, str)
         Column names for chrom, start, end in df.
-    
     cols_view: (str, str, str)
         Column names for chrom, start, end in view_df.
 
@@ -294,15 +315,23 @@ def is_contained(
     """
     from ..ops import trim
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    ck2, sk2, ek2 =_get_default_colnames() if cols_view is None else cols_view
-    
+    ck2, sk2, ek2 = _get_default_colnames() if cols_view is None else cols_view
     if df_view_col is None:
         try:
-            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=cols_view)
-            assert (df_view_assigned[ek2 + "_"].isna()).sum() == 0 # ek2 = end_ is the default value
-            assert (df_view_assigned[sk2 + "_"].isna()).sum() == 0 # sk2 = start_ is the default value
-            assert (df_view_assigned[ek1] <= df_view_assigned[ek2 + "_"]).all() # ek1 = end is the default value
-            assert (df_view_assigned[sk1] >= df_view_assigned[sk2 + "_"]).all() # sk1 = start is the default value
+            df_view_assigned = ops.overlap(
+                df,
+                view_df,
+                cols1=cols,
+                cols2=cols_view
+            )
+            # ek2 = end_ is the default value
+            assert (df_view_assigned[ek2 + "_"].isna()).sum() == 0
+            # sk2 = start_ is the default value
+            assert (df_view_assigned[sk2 + "_"].isna()).sum() == 0
+            assert (df_view_assigned[ek1] <= df_view_assigned[ek2 + "_"]).all()
+            # ek1 = end is the default value
+            # sk1 = start is the default value
+            assert (df_view_assigned[sk1] >= df_view_assigned[sk2 + "_"]).all()
         except AssertionError:
             if raise_errors:
                 raise AssertionError("df not contained in view_df")
@@ -318,7 +347,12 @@ def is_contained(
         return False
 
     df_trim = trim(
-        df, view_df=view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=cols, cols_view=cols_view
+        df,
+        view_df=view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view
     )
 
     is_start_trimmed = np.any(df[sk1].values != df_trim[sk1].values)
@@ -358,7 +392,8 @@ def is_covering(df, view_df, view_name_col="name", cols=None, cols_view=None):
 
     cols_view: (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in view_df, provided separately for each set. The default
+        genomic intervals in view_df, provided separately for
+        each set. The default
         values are 'chrom', 'start', 'end'.
 
     Returns
@@ -420,10 +455,10 @@ def is_tiling(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-    
     cols_view: (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in view_df, provided separately for each set. The default
+        genomic intervals in view_df, provided
+        separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
     Returns
@@ -440,12 +475,23 @@ def is_tiling(
         if raise_errors:
             raise ValueError("overlaps")
         return False
-    if not is_covering(df, view_df, view_name_col=view_name_col, cols=cols, cols_view=cols_view):
+    if not is_covering(
+        df,
+        view_df,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view
+            ):
         if raise_errors:
             raise ValueError("not covered")
         return False
     if not is_contained(
-        df, view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=cols, cols_view=cols_view
+        df,
+        view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view
     ):
         if raise_errors:
             raise ValueError("not contained")
@@ -492,10 +538,11 @@ def is_sorted(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
-    
+
     cols_view: (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
-        genomic intervals in view_df, provided separately for each set. The default
+        genomic intervals in view_df, provided separately for each set.
+        The default
         values are 'chrom', 'start', 'end'.
 
     Returns
