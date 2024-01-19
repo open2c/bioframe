@@ -460,6 +460,7 @@ def is_sorted(
     df_view_col=None,
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Tests if a bedframe is changed by sorting.
@@ -491,6 +492,11 @@ def is_sorted(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+    
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -506,6 +512,7 @@ def is_sorted(
         df_view_col=df_view_col,
         view_name_col=view_name_col,
         cols=cols,
+        cols_view=cols_view,
     )
 
     if df.equals(df_sorted):
