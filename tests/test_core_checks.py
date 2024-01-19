@@ -412,6 +412,3 @@ def test_is_sorted():
 
     # view_df specifies a different ordering, so should not be sorted
     assert not is_sorted(bfs)
-
-if __name__ == '__main__':
-    test_is_contained()
