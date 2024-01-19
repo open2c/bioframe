@@ -295,27 +295,15 @@ def is_contained(
     from ..ops import trim
     if cols is None :
         cols = _get_default_colnames()
-
-    if len(cols) == 3 : 
-        ck1, sk1, ek1 = cols
-    
-    if len(cols) == 4 :
-        ck1, sk1, ek1, df_view_col =  cols
+    ck1, sk1, ek1 = cols
     
     if cols_view is None :
         cols_view = _get_default_colnames()
-    
-    if len(cols_view) == 3 :
-        ck2, sk2, ek2 = cols_view
-    
-    if len(cols_view) == 4 : 
-        ck2, sk2, ek2, view_name_col = cols_view
+    ck2, sk2, ek2 = cols_view
     
     if df_view_col is None:
         try:
             df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=cols_view)
-            print('df_view_assigned')
-            print(df_view_assigned)
             assert (df_view_assigned[ek2 + "_"].isna()).sum() == 0 # ek2 = end_ is the default value
             assert (df_view_assigned[sk2 + "_"].isna()).sum() == 0 # sk2 = start_ is the default value
             assert (df_view_assigned[ek1] <= df_view_assigned[ek2 + "_"]).all() # ek1 = end is the default value
@@ -335,7 +323,7 @@ def is_contained(
         return False
 
     df_trim = trim(
-        df, view_df=view_df, df_view_col=df_view_col, view_name_col=view_name_col
+        df, view_df=view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=cols, cols_view=cols_view
     )
 
     is_start_trimmed = np.any(df[sk1].values != df_trim[sk1].values)
