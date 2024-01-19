@@ -216,6 +216,10 @@ def test_is_covering():
         )
     assert is_covering(df1, chromsizes, cols=["chrom1", "start1", "end1"], cols_view=["CHROM", "START", "END"], view_name_col="NAME")
 
+    with pytest.raises(ValueError):
+        # cols and view_cols are not passed as an arguments
+        is_covering(df1, chromsizes)
+
     ### test is_covering where two intervals from df overlap
     ### two different regions from view
     df1 = pd.DataFrame(
