@@ -293,13 +293,8 @@ def is_contained(
 
     """
     from ..ops import trim
-    if cols is None :
-        cols = _get_default_colnames()
-    ck1, sk1, ek1 = cols
-    
-    if cols_view is None :
-        cols_view = _get_default_colnames()
-    ck2, sk2, ek2 = cols_view
+    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    ck2, sk2, ek2 =_get_default_colnames() if cols_view is None else cols_view
     
     if df_view_col is None:
         try:
