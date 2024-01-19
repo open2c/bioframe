@@ -356,6 +356,11 @@ def is_covering(df, view_df, view_name_col="name", cols=None, cols_view=None):
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
+
     Returns
     -------
     is_covering:bool
@@ -382,6 +387,7 @@ def is_tiling(
     df_view_col="view_region",
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Tests if a view `view_df` is tiled by the set of genomic intervals in the
@@ -414,6 +420,11 @@ def is_tiling(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+    
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -422,19 +433,19 @@ def is_tiling(
     """
 
     view_df = construction.make_viewframe(
-        view_df, view_name_col=view_name_col, cols=cols
+        view_df, view_name_col=view_name_col, cols=cols_view
     )
 
-    if is_overlapping(df):
+    if is_overlapping(df, cols=cols):
         if raise_errors:
             raise ValueError("overlaps")
         return False
-    if not is_covering(df, view_df, view_name_col=view_name_col, cols=None):
+    if not is_covering(df, view_df, view_name_col=view_name_col, cols=cols, cols_view=cols_view):
         if raise_errors:
             raise ValueError("not covered")
         return False
     if not is_contained(
-        df, view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=None
+        df, view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=cols, cols_view=cols_view
     ):
         if raise_errors:
             raise ValueError("not contained")
