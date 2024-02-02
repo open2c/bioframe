@@ -264,6 +264,23 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
 
     return overlap_ids
 
+def get_pseudo_segment(starts, ends):
+    """
+    Get pseudo-segment for overlapping intervals.
+    
+    Parameters
+    ----------
+    starts, ends : numpy.ndarray
+
+    Returns
+    -------
+    pseudo_ends : numpy.ndarray
+        An array of pseudo-ends for overlapping intervals.
+    
+    """
+    pseudo_ends = ends.copy()
+    pseudo_ends[ends == starts] += 1
+    return [starts, pseudo_ends]
 
 def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     """
@@ -296,8 +313,11 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
 
     starts1 = np.asarray(starts1)
     ends1 = np.asarray(ends1)
+    starts1, ends1 = get_pseudo_segment(starts1, ends1)
+
     starts2 = np.asarray(starts2)
     ends2 = np.asarray(ends2)
+    starts2, ends2 = get_pseudo_segment(starts2, ends2)
 
     # Concatenate intervals lists
     n1 = len(starts1)
