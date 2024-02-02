@@ -427,6 +427,94 @@ def test_overlap():
     )
     assert len(b) == 3
 
+    ### test overlap with point and segment data
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df1,
+        df2,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 0
+    b = bioframe.overlap(
+        df2,
+        df1,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 0
+
+    b = bioframe.overlap(
+        df1,
+        df2,
+        on=None,
+        how="right",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index"].values)) == 0
+    b = bioframe.overlap(
+        df2,
+        df1,
+        on=None,
+        how="right",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index"].values)) == 0
+
+    ### Two adjacent point should not overlap with each other
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 2, 2]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df1,
+        df2,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 1
+    b = bioframe.overlap(
+        df2,
+        df1,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 1
+
+
     ### test keep_order and NA handling
     df1 = pd.DataFrame(
         [
