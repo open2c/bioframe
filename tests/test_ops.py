@@ -431,14 +431,14 @@ def test_overlap():
     df1 = pd.DataFrame(
         [
             ['chr1', 1, 1]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     df2 = pd.DataFrame(
         [
             ['chr1', 1, 2]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
@@ -484,14 +484,14 @@ def test_overlap():
     df1 = pd.DataFrame(
         [
             ['chr1', 1, 1]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     df2 = pd.DataFrame(
         [
             ['chr1', 2, 2]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
