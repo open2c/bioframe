@@ -1491,6 +1491,73 @@ def test_subtract():
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True)
     )
+    pd.testing.assert_frame_equal(
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df1, df2)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
+    )
+
+    # Test the case when substraction from point bioframe
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 0, 2]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chr1", 0, 1],
+                ["chr1", 1, 2],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
+   
+    pd.testing.assert_frame_equal(
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df1, df2)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
+    )
+
+    # Test the case when substraction from point is at the beginning bioframe
+
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ], 
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chr1", 1, 2],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
 
     pd.testing.assert_frame_equal(
         df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
