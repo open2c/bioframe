@@ -1502,14 +1502,14 @@ def test_subtract():
     df1 = pd.DataFrame(
         [
             ['chr1', 1, 1]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     df2 = pd.DataFrame(
         [
             ['chr1', 0, 2]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
@@ -1524,7 +1524,6 @@ def test_subtract():
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True)
     )
-   
     pd.testing.assert_frame_equal(
         df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df2, df1)
@@ -1537,14 +1536,14 @@ def test_subtract():
     df1 = pd.DataFrame(
         [
             ['chr1', 1, 1]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     df2 = pd.DataFrame(
         [
             ['chr1', 1, 2]
-        ], 
+        ],
         columns=['chrom','start','end']
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
