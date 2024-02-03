@@ -1527,7 +1527,7 @@ def test_subtract():
    
     pd.testing.assert_frame_equal(
         df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
-        bioframe.subtract(df1, df2)
+        bioframe.subtract(df2, df1)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
     )
@@ -1561,7 +1561,7 @@ def test_subtract():
 
     pd.testing.assert_frame_equal(
         df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
-        bioframe.subtract(df1, df2)
+        bioframe.subtract(df2, df1)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
     )
