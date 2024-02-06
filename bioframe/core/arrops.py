@@ -709,6 +709,9 @@ def closest_intervals(
         [left_dists, right_dists, np.zeros(overlap_ids.shape[0])]
     )
 
+    if len(closest_ids)==0:
+        return np.empty((0,2), dtype=int)
+
     # Sort by distance to set 1 intervals and, if present, by the tie-breaking
     # data array.
     if tie_arr is None:

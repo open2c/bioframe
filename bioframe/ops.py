@@ -1066,14 +1066,25 @@ def _closest_intidxs(
             direction=direction_arr,
         )
 
-        # Convert local per-chromosome indices into the
-        # indices of the original table.
-        closest_idxs_group = np.vstack(
-            [
-                df1_group_idxs.values[closest_idxs_group[:, 0]],
-                df2_group_idxs.values[closest_idxs_group[:, 1]],
-            ]
-        ).T
+        na_idxs = np.isin(np.arange(len(df1_group_idxs)), closest_idxs_group[:, 0], invert=True)
+
+        # 1) Convert local per-chromosome indices into the
+        # indices of the original table,
+        # 2) Fill in the intervals that do not have closest values.
+        closest_idxs_group = np.concatenate([
+            np.vstack(
+                [
+                    df1_group_idxs.values[closest_idxs_group[:, 0]],
+                    df2_group_idxs.values[closest_idxs_group[:, 1]],
+                ]
+            ).T,
+            np.vstack(
+                [
+                    df1_group_idxs.values[na_idxs],
+                    -1 * np.ones_like(df1_group_idxs.values[na_idxs]),
+                ]
+            ).T
+        ])
 
         closest_intidxs.append(closest_idxs_group)
 
@@ -1219,9 +1230,6 @@ def closest(
         cols2=cols2,
     )
     na_mask = closest_df_idxs[:, 1] == -1
-
-    if len(closest_df_idxs) == 0:
-        return  # case of no closest intervals
 
     # Generate output tables.
     df_index_1 = None
