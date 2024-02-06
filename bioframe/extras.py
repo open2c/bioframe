@@ -513,7 +513,9 @@ def pair_by_distance(
     idxs["intervening"] = (
         np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
     )
-    idxs = idxs[(idxs['intervening']<=max_intervening) & (idxs['intervening']>=min_intervening)]
+    idxs = idxs[
+        (idxs['intervening']<=max_intervening) & (idxs['intervening']>=min_intervening)
+        ]
 
     left_ivals = (
         df.iloc[idxs[f"index{suffixes[0]}"].values]
