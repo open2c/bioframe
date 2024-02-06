@@ -511,8 +511,8 @@ def overlap(
     index_col = return_index if isinstance(return_index, str) else "index"
     index_col_1 = index_col + suffixes[0]
     index_col_2 = index_col + suffixes[1]
-    df_index_1 = pd.DataFrame({index_col_1: df1.index[events1]})
-    df_index_2 = pd.DataFrame({index_col_2: df2.index[events2]})
+    df_index_1 = pd.DataFrame({index_col_1: df1.index[events1]}, dtype=pd.Int64Dtype())
+    df_index_2 = pd.DataFrame({index_col_2: df2.index[events2]}, dtype=pd.Int64Dtype())
 
     df_overlap = None
     if return_overlap:
