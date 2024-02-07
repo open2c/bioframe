@@ -300,7 +300,6 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
         both_groups_nonempty = (df1_group_idxs.size > 0) and (df2_group_idxs.size > 0)
 
         if both_groups_nonempty:
-
             overlap_idxs_loc = arrops.overlap_intervals(
                 starts1[df1_group_idxs],
                 ends1[df1_group_idxs],
@@ -530,10 +529,9 @@ def overlap(
             df2[ek2].values[events2],
         )
 
-        df_overlap = pd.DataFrame({
-            overlap_col_sk1: overlap_start,
-            overlap_col_ek1: overlap_end
-        })
+        df_overlap = pd.DataFrame(
+            {overlap_col_sk1: overlap_start, overlap_col_ek1: overlap_end}
+        )
 
     df_input_1 = None
     df_input_2 = None
@@ -547,8 +545,8 @@ def overlap(
 
     # Masking non-overlapping regions if using non-inner joins.
     if how != "inner":
-        is_na_left = (events1 == -1)
-        is_na_right = (events2 == -1)
+        is_na_left = events1 == -1
+        is_na_right = events2 == -1
         any_na_left = is_na_left.any()
         any_na_right = is_na_right.any()
         df_index_1[is_na_left] = None
@@ -556,19 +554,23 @@ def overlap(
 
         if df_input_1 is not None:
             if ensure_int and any_na_left:
-                df_input_1 = df_input_1.astype({
-                    sk1 + suffixes[0]: _to_nullable_dtype(df1[sk1].dtype),
-                    ek1 + suffixes[0]: _to_nullable_dtype(df1[ek1].dtype),
-                })
+                df_input_1 = df_input_1.astype(
+                    {
+                        sk1 + suffixes[0]: _to_nullable_dtype(df1[sk1].dtype),
+                        ek1 + suffixes[0]: _to_nullable_dtype(df1[ek1].dtype),
+                    }
+                )
             if any_na_left:
                 df_input_1[is_na_left] = None
 
         if df_input_2 is not None:
             if ensure_int and any_na_right:
-                df_input_2 = df_input_2.astype({
-                    sk2 + suffixes[1]: _to_nullable_dtype(df2[sk2].dtype),
-                    ek2 + suffixes[1]: _to_nullable_dtype(df2[ek2].dtype),
-                })
+                df_input_2 = df_input_2.astype(
+                    {
+                        sk2 + suffixes[1]: _to_nullable_dtype(df2[sk2].dtype),
+                        ek2 + suffixes[1]: _to_nullable_dtype(df2[ek2].dtype),
+                    }
+                )
             if any_na_right:
                 df_input_2[is_na_right] = None
 
@@ -1066,27 +1068,29 @@ def _closest_intidxs(
             direction=direction_arr,
         )
 
-        na_idxs = np.isin(np.arange(len(df1_group_idxs)), 
-            closest_idxs_group[:, 0], 
-            invert=True)
+        na_idxs = np.isin(
+            np.arange(len(df1_group_idxs)), closest_idxs_group[:, 0], invert=True
+        )
 
         # 1) Convert local per-chromosome indices into the
         # indices of the original table,
         # 2) Fill in the intervals that do not have closest values.
-        closest_idxs_group = np.concatenate([
-            np.vstack(
-                [
-                    df1_group_idxs.values[closest_idxs_group[:, 0]],
-                    df2_group_idxs.values[closest_idxs_group[:, 1]],
-                ]
-            ).T,
-            np.vstack(
-                [
-                    df1_group_idxs.values[na_idxs],
-                    -1 * np.ones_like(df1_group_idxs.values[na_idxs]),
-                ]
-            ).T
-        ])
+        closest_idxs_group = np.concatenate(
+            [
+                np.vstack(
+                    [
+                        df1_group_idxs.values[closest_idxs_group[:, 0]],
+                        df2_group_idxs.values[closest_idxs_group[:, 1]],
+                    ]
+                ).T,
+                np.vstack(
+                    [
+                        df1_group_idxs.values[na_idxs],
+                        -1 * np.ones_like(df1_group_idxs.values[na_idxs]),
+                    ]
+                ).T,
+            ]
+        )
 
         closest_intidxs.append(closest_idxs_group)
 
@@ -1740,7 +1744,10 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
         df_group_idxs = df_groups[group_key].values
         df_group = df.loc[df_group_idxs]
 
-        (complement_starts_group, complement_ends_group,) = arrops.complement_intervals(
+        (
+            complement_starts_group,
+            complement_ends_group,
+        ) = arrops.complement_intervals(
             df_group[sk].values.astype(np.int64),
             df_group[ek].values.astype(np.int64),
             bounds=(region_start, region_end),
