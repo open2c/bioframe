@@ -1066,7 +1066,9 @@ def _closest_intidxs(
             direction=direction_arr,
         )
 
-        na_idxs = np.isin(np.arange(len(df1_group_idxs)), closest_idxs_group[:, 0], invert=True)
+        na_idxs = np.isin(np.arange(len(df1_group_idxs)), 
+            closest_idxs_group[:, 0], 
+            invert=True)
 
         # 1) Convert local per-chromosome indices into the
         # indices of the original table,
