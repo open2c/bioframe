@@ -65,7 +65,6 @@ def mock_bioframe(num_entries=100):
 
 ############# tests #####################
 def test_trim():
-
     ### trim with view_df
     view_df = pd.DataFrame(
         [
@@ -216,7 +215,6 @@ def test_trim():
 
 
 def test_expand():
-
     d = """chrom  start  end
          0  chr1      1    5
          1  chr1     50   55
@@ -289,6 +287,7 @@ def test_expand():
     )
     pd.testing.assert_frame_equal(df, fake_expanded)
 
+
 def test_expand_amount_args():
     d = """chrom  start  end
          0  chr1      3    5
@@ -298,8 +297,8 @@ def test_expand_amount_args():
     with pytest.raises(ValueError):
         bioframe.expand(df, pad=10, scale=2.0)
 
-def test_overlap():
 
+def test_overlap():
     ### test consistency of overlap(how='inner') with pyranges.join ###
     ### note does not test overlap_start or overlap_end columns of bioframe.overlap
     df1 = mock_bioframe()
@@ -467,17 +466,14 @@ def test_overlap():
         columns=["chrom2", "start2", "end2", "strand", "animal"],
     ).astype({"start2": pd.Int64Dtype(), "end2": pd.Int64Dtype()})
 
-    assert (
-        bioframe.overlap(
-            df1,
-            df2,
-            how="outer",
-            cols2=["chrom2", "start2", "end2"],
-            return_index=True,
-            keep_order=False,
-        ).shape
-        == (3, 12)
-    )
+    assert bioframe.overlap(
+        df1,
+        df2,
+        how="outer",
+        cols2=["chrom2", "start2", "end2"],
+        return_index=True,
+        keep_order=False,
+    ).shape == (3, 12)
 
     ### result of overlap should still have bedframe-like properties
     overlap_df = bioframe.overlap(
@@ -542,14 +538,14 @@ def test_overlap_preserves_coord_dtypes():
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     # inner join - left keeps non-nullable numpy uint32
-    overlap_dtypes = bioframe.overlap(df1,  df2, ensure_int=False, how="inner").dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, ensure_int=False, how="inner").dtypes
     for col in ["start", "end"]:
         assert overlap_dtypes[col] == np.uint32
     for col in ["start_", "end_"]:
         assert overlap_dtypes[col] == pd.Int64Dtype()
 
     # outer join - left uint32 gets cast to numpy float64 because of NaNs on left
-    overlap_dtypes = bioframe.overlap(df1,  df2, how="outer", ensure_int=False).dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, how="outer", ensure_int=False).dtypes
     assert overlap_dtypes["start"] == np.float64
     assert overlap_dtypes["end"] == np.float64
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
@@ -567,16 +563,20 @@ def test_overlap_preserves_coord_dtypes():
     # convert coords to nullable *after* joining
     # inner join - uint32 output becomes UInt32
     # outer join - float64 output becomes Int64
-    overlap_dtypes = bioframe.overlap(
-        df1, df2, ensure_int=False, how="inner"
-    ).convert_dtypes().dtypes
+    overlap_dtypes = (
+        bioframe.overlap(df1, df2, ensure_int=False, how="inner")
+        .convert_dtypes()
+        .dtypes
+    )
     assert overlap_dtypes["start"] == pd.UInt32Dtype()
     assert overlap_dtypes["end"] == pd.UInt32Dtype()
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
     assert overlap_dtypes["end_"] == pd.Int64Dtype()
-    overlap_dtypes = bioframe.overlap(
-        df1, df2, ensure_int=False, how="outer"
-    ).convert_dtypes().dtypes
+    overlap_dtypes = (
+        bioframe.overlap(df1, df2, ensure_int=False, how="outer")
+        .convert_dtypes()
+        .dtypes
+    )
     assert overlap_dtypes["start"] == pd.Int64Dtype()
     assert overlap_dtypes["end"] == pd.Int64Dtype()
     assert overlap_dtypes["start_"] == pd.Int64Dtype()
@@ -593,27 +593,19 @@ def test_overlap_ensure_int():
         columns=["chrom", "start", "end", "strand"],
     ).astype({"start": np.uint32, "end": np.uint32})
     df2 = pd.DataFrame(
-        [
-            ["chr1", 6, 10, "+"],
-            [pd.NA, pd.NA, pd.NA, "-"],
-            ["chrX", 7, 10, "-"]
-        ],
+        [["chr1", 6, 10, "+"], [pd.NA, pd.NA, pd.NA, "-"], ["chrX", 7, 10, "-"]],
         columns=["chrom", "start", "end", "strand"],
     ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     # inner join
-    overlap_dtypes = bioframe.overlap(
-        df1,  df2, how="inner", ensure_int=True
-    ).dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, how="inner", ensure_int=True).dtypes
     for col in ["start", "end"]:
         assert overlap_dtypes[col] == np.uint32
     for col in ["start_", "end_"]:
         assert overlap_dtypes[col] == pd.Int64Dtype()
 
     # outer join - left uint32 gets cast to UInt32 before the join
-    overlap_dtypes = bioframe.overlap(
-        df1,  df2, how="outer", ensure_int=True
-    ).dtypes
+    overlap_dtypes = bioframe.overlap(df1, df2, how="outer", ensure_int=True).dtypes
     for col in ["start", "end"]:
         assert overlap_dtypes[col] == pd.UInt32Dtype()
     for col in ["start_", "end_"]:
@@ -1078,10 +1070,8 @@ def test_closest():
     )
 
     df2 = pd.DataFrame(
-        [["chr1", 1, 2],
-         ["chr1", 2, 8],
-         ["chr1", 10, 11]],
-        columns=["chrom", "start", "end"]
+        [["chr1", 1, 2], ["chr1", 2, 8], ["chr1", 10, 11]],
+        columns=["chrom", "start", "end"],
     )
 
     ### closest(df1, df2, k=1, direction_col="strand") ###
@@ -1113,13 +1103,18 @@ def test_closest():
             "distance": pd.Int64Dtype(),
         }
     )
-    pd.testing.assert_frame_equal(df,
-        bioframe.closest(df1, df2,
-                k=1,
-                ignore_upstream=False,
-                ignore_downstream=True,
-                ignore_overlaps=True,
-                direction_col="strand"))
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=1,
+            ignore_upstream=False,
+            ignore_downstream=True,
+            ignore_overlaps=True,
+            direction_col="strand",
+        ),
+    )
 
     ### closest(df1, df2, k=1, ignore_upstream=True, ignore_downstream=False,
     ### ignore_overlaps=True, direction_col="strand") ###
@@ -1134,17 +1129,119 @@ def test_closest():
             "distance": pd.Int64Dtype(),
         }
     )
-    pd.testing.assert_frame_equal(df,
-        bioframe.closest(df1, df2,
-                k=1,
-                ignore_upstream=True,
-                ignore_downstream=False,
-                ignore_overlaps=True,
-                direction_col="strand"))
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=1,
+            ignore_upstream=True,
+            ignore_downstream=False,
+            ignore_overlaps=True,
+            direction_col="strand",
+        ),
+    )
+
+    ### closest(df1, df2, k=1, ignore_upstream=False, ignore_downstream=True,
+    ### ignore_overlaps=True) when upstream region is present ###
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 3, 5],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+
+    df2 = pd.DataFrame(
+        [["chr1", 1, 2], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
+    )
+
+    d = """chrom  start  end chrom_  start_  end_  distance
+        0    chr1        3      5    chr1        1      2         1
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=1,
+            ignore_upstream=False,
+            ignore_downstream=True,
+            ignore_overlaps=True,
+        ),
+    )
+
+    ### closest(df1, df2, k=1, ignore_upstream=False, ignore_downstream=True,
+    ### ignore_overlaps=True) when upstream region is absent ###
+
+    df2 = pd.DataFrame(
+        [["chr1", 5, 6], ["chr1", 10, 11]], columns=["chrom", "start", "end"]
+    )
+
+    d = """chrom  start  end chrom_  start_  end_  distance
+        0    chr1        3      5    NaN        NaN      NaN         NaN
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "chrom_": "O",
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=1,
+            ignore_upstream=False,
+            ignore_downstream=True,
+            ignore_overlaps=True,
+        ),
+    )
+
+    ### closest(df1, df2, k=1, ignore_upstream=True, ignore_downstream=False,
+    ### ignore_overlaps=True) when upstream region is absent ###
+
+    df2 = pd.DataFrame(
+        [
+            ["chr1", 1, 2],
+        ],
+        columns=["chrom", "start", "end"],
+    )
+
+    d = """chrom  start  end chrom_  start_  end_  distance
+        0    chr1        3      5    NaN        NaN      NaN         NaN
+        """
+    df = pd.read_csv(StringIO(d), sep=r"\s+").astype(
+        {
+            "chrom_": "O",
+            "start_": pd.Int64Dtype(),
+            "end_": pd.Int64Dtype(),
+            "distance": pd.Int64Dtype(),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df,
+        bioframe.closest(
+            df1,
+            df2,
+            k=1,
+            ignore_upstream=True,
+            ignore_downstream=False,
+            ignore_overlaps=True,
+        ),
+    )
 
 
 def test_coverage():
-
     #### coverage does not exceed length of original interval
     df1 = pd.DataFrame([["chr1", 3, 8]], columns=["chrom", "start", "end"])
     df2 = pd.DataFrame([["chr1", 2, 10]], columns=["chrom", "start", "end"])
@@ -1180,8 +1277,7 @@ def test_coverage():
          0  chr1     3       8     5"""
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     pd.testing.assert_frame_equal(
-        df,
-        bioframe.coverage(df1, df2, cols1=cols1, cols2=cols2)
+        df, bioframe.coverage(df1, df2, cols1=cols1, cols2=cols2)
     )
 
     ### coverage of NA interval returns zero for coverage
@@ -1461,7 +1557,6 @@ def test_subtract():
 
 
 def test_setdiff():
-
     cols1 = ["chrom1", "start", "end"]
     cols2 = ["chrom2", "start", "end"]
     df1 = pd.DataFrame(
@@ -1624,7 +1719,12 @@ def test_count_overlaps():
 
     counts_nans_inserted_after = (
         pd.concat([pd.DataFrame([pd.NA]), counts_no_nans, pd.DataFrame([pd.NA])])
-    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),})[
+    ).astype(
+        {
+            "start": pd.Int64Dtype(),
+            "end": pd.Int64Dtype(),
+        }
+    )[
         ["chrom1", "start", "end", "strand", "animal", "count"]
     ]
 
@@ -1666,7 +1766,6 @@ def test_count_overlaps():
 
 
 def test_assign_view():
-
     ## default assignment case
     view_df = pd.DataFrame(
         [
@@ -1785,7 +1884,6 @@ def test_assign_view():
 
 
 def test_sort_bedframe():
-
     view_df = pd.DataFrame(
         [
             ["chrX", 1, 8, "oranges"],
