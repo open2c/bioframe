@@ -246,7 +246,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
 
 
 class UCSCClient:
-    BASE_URL = "http://hgdownload.cse.ucsc.edu/"
+    BASE_URL = "https://hgdownload.soe.ucsc.edu/"
 
     def __init__(self, db: str):
         self._db = db
