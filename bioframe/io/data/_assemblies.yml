@@ -15,7 +15,7 @@
   cytobands: hg19.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/analysisSet/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/analysisSet/
 - organism: homo sapiens
   provider: ncbi
   provider_build: GRCh38
@@ -33,7 +33,7 @@
   cytobands: hg38.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/
 - organism: homo sapiens
   provider: ncbi
   provider_build: T2T-CHM13v2.0
@@ -51,7 +51,7 @@
   cytobands: hs1.cytoband.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/hs1/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/hs1/bigZips/
 - organism: mus musculus
   provider: ncbi
   provider_build: MGSCv37
@@ -67,7 +67,7 @@
   seqinfo: mm9.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/mm9/bigZips/
 - organism: mus musculus
   provider: ncbi
   provider_build: GRCm38
@@ -83,7 +83,7 @@
   seqinfo: mm10.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/mm10/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/
 - organism: mus musculus
   provider: ncbi
   provider_build: GRCm39
@@ -99,7 +99,7 @@
   seqinfo: mm39.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/mm39/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/
 - organism: drosophila melanogaster
   provider: ucsc
   provider_build: dm3
@@ -107,7 +107,7 @@
   seqinfo: dm3.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/dm3/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/dm3/bigZips/
 - organism: drosophila melanogaster
   provider: ucsc
   provider_build: dm6
@@ -115,7 +115,7 @@
   seqinfo: dm6.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/dm6/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/
 - organism: caenorhabditis elegans
   provider: ucsc
   provider_build: ce10
@@ -123,7 +123,7 @@
   seqinfo: ce10.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/ce10/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/ce10/bigZips/
 - organism: caenorhabditis elegans
   provider: ucsc
   provider_build: ce11
@@ -131,7 +131,7 @@
   seqinfo: ce11.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/ce11/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/ce11/bigZips/
 - organism: danio rerio
   provider: ucsc
   provider_build: danRer10
@@ -139,7 +139,7 @@
   seqinfo: danRer10.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/danRer10/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/danRer10/bigZips/
 - organism: danio rerio
   provider: ucsc
   provider_build: danRer11
@@ -147,7 +147,7 @@
   seqinfo: danRer10.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/danRer11/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/danRer11/bigZips/
 - organism: saccharomyces cerevisiae
   provider: ucsc
   provider_build: sacCer3
@@ -155,4 +155,4 @@
   seqinfo: sacCer3.seqinfo.tsv
   default_roles: [assembled]
   default_units: [primary, non-nuclear]
-  url: https://hgdownload.cse.ucsc.edu/goldenPath/sacCer3/bigZips/
+  url: https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/
