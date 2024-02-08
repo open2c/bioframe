@@ -1,6 +1,14 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.0...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.2...HEAD)
+
+## [v0.6.2](https://github.com/open2c/bioframe/compare/v0.6.1...v0.6.2)
+
+Changes:
+* cols and df_view_col passed to downstream functions by @smitkadvani in https://github.com/open2c/bioframe/pull/182
+
+Fixes:
+* Update to new UCSC hgdownload url by @golobor and @nvictus in https://github.com/open2c/bioframe/pull/187
 
 ## [v0.6.1](https://github.com/open2c/bioframe/compare/v0.6.0...v0.6.1)
 Date 2024-01-08
