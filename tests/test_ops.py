@@ -550,7 +550,7 @@ def test_overlap():
     )
     assert np.sum(pd.isna(b["index_"].values)) == 1
 
-    ### Point adjacent to the start of the segment should 
+    ### Point adjacent to the start of the segment should
     ### overlap with the segment
     df1 = pd.DataFrame(
         [
@@ -2115,7 +2115,3 @@ def test_sort_bedframe():
     assert (
         df.dtypes == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()
-
-
-if __name__ == '__main__':
-    test_overlap()
