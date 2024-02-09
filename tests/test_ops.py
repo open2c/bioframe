@@ -514,6 +514,78 @@ def test_overlap():
     )
     assert np.sum(pd.isna(b["index_"].values)) == 1
 
+    ### Point adjacent to the end of the segment should not
+    ### overlap with the segment
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 2, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df1,
+        df2,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 1
+
+    b = bioframe.overlap(
+        df2,
+        df1,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 1
+
+    ### Point adjacent to the start of the segment should 
+    ### overlap with the segment
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df1,
+        df2,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 0
+
+    b = bioframe.overlap(
+        df2,
+        df1,
+        on=None,
+        how="left",
+        return_index=True,
+        return_input=False,
+    )
+    assert np.sum(pd.isna(b["index_"].values)) == 0
+
 
     ### test keep_order and NA handling
     df1 = pd.DataFrame(
@@ -2043,3 +2115,7 @@ def test_sort_bedframe():
     assert (
         df.dtypes == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()
+
+
+if __name__ == '__main__':
+    test_overlap()
