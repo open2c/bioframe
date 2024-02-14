@@ -266,8 +266,8 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
 
 def _convert_points_to_len1_segments(starts, ends):
     """
-    Convert points to len1 segments for internal use in overlap(). 
-    This enables desired overlap behavior for points and preserves 
+    Convert points to len1 segments for internal use in overlap().
+    This enables desired overlap behavior for points and preserves
     behavior for semi-open intervals of len>=1.
     Parameters
     ----------
