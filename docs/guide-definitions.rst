@@ -7,7 +7,7 @@ Interval:
     - An *interval* is a tuple of integers (start, end) with start <= end.  
     - Coordinates are assumed to be 0-based and intervals half-open (1-based ends) i.e. [start, end). 
     - An interval has a *length* equal to (end - start). 
-    - A special case where start and end are the same, i.e. [X, X), is interpreted as a *point* (aka an *empty interval*, i.e. an edge between 1-bp bins). A point has zero length. For consistency of the operations such as subtract, overlap, etc. point intervals are treated as len1 segments. 
+    - A special case where start and end are the same, i.e. [X, X), is interpreted as a *point* (aka an *empty interval*, i.e. an edge between 1-bp bins). A point has zero length. 
     - Negative coordinates are permissible for both ends of an interval.
     
 Properties of a pair of intervals:
