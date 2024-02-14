@@ -266,8 +266,9 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
 
 def _convert_points_to_len1_segments(starts, ends):
     """
-    Get pseudo-segment for overlapping intervals.
-
+    Convert points to len1 segments for internal use in overlap(). 
+    This enables desired overlap behavior for points and preserves 
+    behavior for semi-open intervals of len>=1.
     Parameters
     ----------
     starts, ends : numpy.ndarray
@@ -312,14 +313,10 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
 
     starts1 = np.asarray(starts1)
     ends1 = np.asarray(ends1)
-    ### Convert single points to length-1 segments to handle
-    ### expected behaviour semi-open intervals
     starts1, ends1 = _convert_points_to_len1_segments(starts1, ends1)
 
     starts2 = np.asarray(starts2)
     ends2 = np.asarray(ends2)
-    ### Convert single points to length-1 segments to handle
-    ### expected behaviour semi-open intervals
     starts2, ends2 = _convert_points_to_len1_segments(starts2, ends2)
 
     # Concatenate intervals lists
