@@ -46,12 +46,15 @@ identifiers:
     description: Zenodo
   - type: doi
     value: 10.1101/2022.02.16.480748
-    description: bioRxiv
+    description: bioRxiv preprint
+  - type: doi
+    value: 10.1093/bioinformatics/btae088
+    description: Publication
 preferred-citation:
   type: article
   title: "Bioframe: Operations on Genomic Intervals in Pandas Dataframes"
   authors:
-    - given-names: Open2C
+    - family-names: Open2C
     - given-names: Nezar
       family-names: Abdennur
       orcid: 'https://orcid.org/0000-0001-5814-0864'
@@ -60,9 +63,11 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0001-5905-6517"
     - given-names: Ilya
       family-names: Flyamer
+      name-suffix: M
       orcid: "https://orcid.org/0000-0002-4892-4208"
     - given-names: Aleksandra
       family-names: Galitsyna
+      name-suffix: A
       orcid: "https://orcid.org/0000-0001-8969-5694"
     - given-names: Anton
       family-names: Goloborodko
@@ -73,6 +78,7 @@ preferred-citation:
     - given-names: Sergey
       family-names: Venev
       orcid: "https://orcid.org/0000-0002-1507-7460"
-  journal: bioRxiv
-  year: 2022
-  doi: "10.1101/2022.02.16.480748"
+  journal: Bioinformatics
+  year: 2024
+  url: "https://doi.org/10.1093/bioinformatics/btae088"
+  doi: "10.1093/bioinformatics/btae088"

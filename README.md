@@ -97,11 +97,11 @@ See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/
 If you use ***bioframe*** in your work, please cite:  
 
 ```bibtex
-@article{bioframe_2022,
-author = {Open2C and Abdennur, Nezar and Fudenberg, Geoffrey and Flyamer, Ilya and Galitsyna, Aleksandra and Goloborodko, Anton and Imakaev, Maxim and Venev, Sergey},
-doi = {10.1101/2022.02.16.480748},
-journal = {bioRxiv},
+@article{bioframe_2024,
+author = {Open2C and Abdennur, Nezar and Fudenberg, Geoffrey and Flyamer, Ilya M and Galitsyna, Aleksandra A and Goloborodko, Anton and Imakaev, Maxim and Venev, Sergey},
+doi = {10.1093/bioinformatics/btae088},
+journal = {Bioinformatics},
 title = {{Bioframe: Operations on Genomic Intervals in Pandas Dataframes}},
-year = {2022}
+year = {2024}
 }
 ```
