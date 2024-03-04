@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/open2c/bioframe/actions/workflows/ci.yml/badge.svg)
 [![Docs status](https://readthedocs.org/projects/bioframe/badge/)](https://bioframe.readthedocs.io/en/latest/)
-[![Preprint](https://img.shields.io/badge/DOI-10.1101%2F2022.02.16.480748-blue)](https://doi.org/10.1101/2022.02.16.480748)
+[![Paper](https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtae088-blue)](https://doi.org/10.1093/bioinformatics/btae088)
 [![Zenodo](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
 [![Slack](https://img.shields.io/badge/chat-slack-%233F0F3F?logo=slack)](https://bit.ly/open2c-slack)
 [![NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://www.numfocus.org)
