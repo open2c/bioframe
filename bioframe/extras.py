@@ -112,7 +112,7 @@ def make_chromarms(
             "chromosome split into more than two arms, double-check midpoints"
         )
     df_chromarms["name"] = df_chromarms[ck1] + [
-        suffixes[i] for i in df_chromarms["sub_index_"].values
+        suffixes[int(i)] for i in df_chromarms["sub_index_"].values
     ]
     # df_chromarms.drop(columns=columns_to_drop, inplace=True)
     return df_chromarms[[ck1, sk1, ek1, "name"]]
