@@ -1095,7 +1095,7 @@ def _closest_intidxs(
         closest_intidxs.append(closest_idxs_group)
 
     if len(closest_intidxs) == 0:
-        return np.ndarray(shape=(0, 2), dtype=np.int)
+        return np.ndarray(shape=(0, 2), dtype=int)
     closest_intidxs = np.vstack(closest_intidxs)
 
     return closest_intidxs
