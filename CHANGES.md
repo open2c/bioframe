@@ -1,8 +1,18 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.2...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.3...HEAD)
+
+## [v0.6.3](https://github.com/open2c/bioframe/compare/v0.6.2...v0.6.3)
+Date 2024-03-11
+
+Fixes:
+* Prevent dropout from `closest` in some cases of left intervals with no neighbors by @agalitsyna in https://github.com/open2c/bioframe/pull/185
+* Fix overlap returning float indexes causing failing tests (numpy v1.22.4, pandas v1.5.2)  by @agalitsyna in https://github.com/open2c/bioframe/pull/185
+
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.2...v0.6.3
 
 ## [v0.6.2](https://github.com/open2c/bioframe/compare/v0.6.1...v0.6.2)
+Date 2024-02-08
 
 Changes:
 * cols and df_view_col passed to downstream functions by @smitkadvani in https://github.com/open2c/bioframe/pull/182
