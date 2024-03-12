@@ -1,7 +1,8 @@
 name: Publish Python Package to PyPI
 
 on:
-  workflow_call:
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
