@@ -8,7 +8,6 @@ import bioframe
 import bioframe.core.checks as checks
 from bioframe.core.construction import make_viewframe
 
-
 # import pyranges as pr
 
 # def bioframe_to_pyranges(df):
@@ -452,13 +451,12 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-                    ['chr1', 1, 1, None, pd.NA, pd.NA]], 
-                    columns=['chrom', 'start', 
+                    ['chr1', 1, 1, None, pd.NA, pd.NA]],
+                    columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
-
 
     ### test for changed order of input point and segment
     b = bioframe.overlap(
@@ -471,10 +469,10 @@ def test_overlap():
     )
 
     df_expected = pd.DataFrame([
-            ['chr1', 1, 2, 'chr1', 1, 1]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 2, 'chr1', 1, 1]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -488,10 +486,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            [None, pd.NA, pd.NA, 'chr1', 1, 2]], 
-            columns=['chrom', 'start', 
+            [None, pd.NA, pd.NA, 'chr1', 1, 2]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -505,10 +503,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 2,'chr1', 1, 1]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 2,'chr1', 1, 1]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -536,10 +534,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 1, None, pd.NA, pd.NA]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 1, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -553,10 +551,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 2, 2, None, pd.NA, pd.NA]], 
-            columns=['chrom', 'start', 
+            ['chr1', 2, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -585,10 +583,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 2, None, pd.NA, pd.NA]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -601,10 +599,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 2, 2, None, pd.NA, pd.NA]], 
-            columns=['chrom', 'start', 
+            ['chr1', 2, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
                       'end','chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -633,10 +631,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 1, None, pd.NA, pd.NA]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 1, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
@@ -649,10 +647,10 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 2, 'chr1', 1, 1]], 
-            columns=['chrom', 'start', 
+            ['chr1', 1, 2, 'chr1', 1, 1]],
+            columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
-                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
                            "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
     pd.testing.assert_frame_equal(df_expected, b)
 
