@@ -8,6 +8,7 @@ import bioframe
 import bioframe.core.checks as checks
 from bioframe.core.construction import make_viewframe
 
+
 # import pyranges as pr
 
 # def bioframe_to_pyranges(df):
@@ -433,7 +434,7 @@ def test_overlap():
             ['chr1', 1, 1]
         ],
         columns=['chrom','start','end']
-    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+    ).astype({ "chrom": "object", "start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     df_segment12 = pd.DataFrame(
         [
@@ -447,10 +448,17 @@ def test_overlap():
         df_segment12,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 0
+    df_expected = pd.DataFrame([
+                    ['chr1', 1, 1, None, pd.NA, pd.NA]], 
+                    columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
 
     ### test for changed order of input point and segment
     b = bioframe.overlap(
@@ -458,10 +466,17 @@ def test_overlap():
         df_point1,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 0
+
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, 'chr1', 1, 1]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### test for overlap with point and segment with right method
     b = bioframe.overlap(
@@ -469,10 +484,16 @@ def test_overlap():
         df_segment12,
         on=None,
         how="right",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index"].values)) == 0
+    df_expected = pd.DataFrame([
+            [None, pd.NA, pd.NA, 'chr1', 1, 2]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### test for swapped order of input point and segment
     b = bioframe.overlap(
@@ -480,10 +501,16 @@ def test_overlap():
         df_point1,
         on=None,
         how="right",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index"].values)) == 0
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2,'chr1', 1, 1]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### Two adjacent point should not overlap with each other
     df_point1 = pd.DataFrame(
@@ -505,10 +532,16 @@ def test_overlap():
         df_point2,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 1
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 1, None, pd.NA, pd.NA]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### test for changed order of input point
     b = bioframe.overlap(
@@ -516,10 +549,16 @@ def test_overlap():
         df_point1,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 1
+    df_expected = pd.DataFrame([
+            ['chr1', 2, 2, None, pd.NA, pd.NA]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### Point adjacent to the end of the segment should not
     ### overlap with the segment
@@ -542,20 +581,32 @@ def test_overlap():
         df_point2,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 1
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, None, pd.NA, pd.NA]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     b = bioframe.overlap(
         df_point2,
         df_segment12,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 1
+    df_expected = pd.DataFrame([
+            ['chr1', 2, 2, None, pd.NA, pd.NA]], 
+            columns=['chrom', 'start', 
+                      'end','chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### Point adjacent to the start of the segment should
     ### overlap with the segment
@@ -578,21 +629,32 @@ def test_overlap():
         df_segment12,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 0
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 1, None, pd.NA, pd.NA]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     b = bioframe.overlap(
         df_segment12,
         df_point1,
         on=None,
         how="left",
-        return_index=True,
-        return_input=False,
+        return_index=False,
+        return_input=True,
     )
-    assert np.sum(pd.isna(b["index_"].values)) == 0
-
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, 'chr1', 1, 1]], 
+            columns=['chrom', 'start', 
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(), 
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
 
     ### test keep_order and NA handling
     df1 = pd.DataFrame(
