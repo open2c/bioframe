@@ -451,7 +451,7 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-                    ['chr1', 1, 1, None, pd.NA, pd.NA]],
+                    ['chr1', 1, 1, 'chr1', 1, 2]],
                     columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
                           {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
@@ -486,7 +486,7 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            [None, pd.NA, pd.NA, 'chr1', 1, 2]],
+            ['chr1', 1, 1, 'chr1', 1, 2]],
             columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
                           {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
@@ -631,7 +631,7 @@ def test_overlap():
         return_input=True,
     )
     df_expected = pd.DataFrame([
-            ['chr1', 1, 1, None, pd.NA, pd.NA]],
+            ['chr1', 1, 1, 'chr1', 1, 2]],
             columns=['chrom', 'start',
                       'end', 'chrom_', 'start_', 'end_']).astype(
                           {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
