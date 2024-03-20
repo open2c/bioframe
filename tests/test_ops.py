@@ -426,6 +426,233 @@ def test_overlap():
     )
     assert len(b) == 3
 
+    ### test overlap with point and segment data
+    df_point1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({ "chrom": "object", "start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_segment12 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df_point1,
+        df_segment12,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+                    ['chr1', 1, 1, 'chr1', 1, 2]],
+                    columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### test for changed order of input point and segment
+    b = bioframe.overlap(
+        df_segment12,
+        df_point1,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, 'chr1', 1, 1]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### test for overlap with point and segment with right method
+    b = bioframe.overlap(
+        df_point1,
+        df_segment12,
+        on=None,
+        how="right",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 1, 'chr1', 1, 2]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### test for swapped order of input point and segment
+    b = bioframe.overlap(
+        df_segment12,
+        df_point1,
+        on=None,
+        how="right",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2,'chr1', 1, 1]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### Two adjacent point should not overlap with each other
+    df_point1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_point2 = pd.DataFrame(
+        [
+            ['chr1', 2, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df_point1,
+        df_point2,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 1, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### test for changed order of input point
+    b = bioframe.overlap(
+        df_point2,
+        df_point1,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 2, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### Point adjacent to the end of the segment should not
+    ### overlap with the segment
+    df_segment12 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_point2 = pd.DataFrame(
+        [
+            ['chr1', 2, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df_segment12,
+        df_point2,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    b = bioframe.overlap(
+        df_point2,
+        df_segment12,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 2, 2, None, pd.NA, pd.NA]],
+            columns=['chrom', 'start',
+                      'end','chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    ### Point adjacent to the start of the segment should
+    ### overlap with the segment
+    df_point1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_segment12 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    b = bioframe.overlap(
+        df_point1,
+        df_segment12,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 1, 'chr1', 1, 2]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
+    b = bioframe.overlap(
+        df_segment12,
+        df_point1,
+        on=None,
+        how="left",
+        return_index=False,
+        return_input=True,
+    )
+    df_expected = pd.DataFrame([
+            ['chr1', 1, 2, 'chr1', 1, 1]],
+            columns=['chrom', 'start',
+                      'end', 'chrom_', 'start_', 'end_']).astype(
+                          {"start": pd.Int64Dtype(), "end": pd.Int64Dtype(),
+                           "start_": pd.Int64Dtype(), "end_": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(df_expected, b)
+
     ### test keep_order and NA handling
     df1 = pd.DataFrame(
         [
@@ -1499,10 +1726,76 @@ def test_subtract():
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True)
     )
-
     pd.testing.assert_frame_equal(
         df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
         bioframe.subtract(df1, df2)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
+    )
+
+    # Test the case when substraction from point bioframe
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 0, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chr1", 0, 1],
+                ["chr1", 1, 2],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
+    pd.testing.assert_frame_equal(
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df2, df1)
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True),
+    )
+
+    # Test the case when substraction from point is at the beginning bioframe
+
+    df1 = pd.DataFrame(
+        [
+            ['chr1', 1, 1]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df2 = pd.DataFrame(
+        [
+            ['chr1', 1, 2]
+        ],
+        columns=['chrom','start','end']
+    ).astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
+
+    df_result = (
+        pd.DataFrame(
+            [
+                ["chr1", 1, 2],
+            ],
+            columns=["chrom", "start", "end"],
+        )
+        .sort_values(["chrom", "start", "end"])
+        .reset_index(drop=True)
+    )
+
+    pd.testing.assert_frame_equal(
+        df_result.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()}),
+        bioframe.subtract(df2, df1)
         .sort_values(["chrom", "start", "end"])
         .reset_index(drop=True),
     )
