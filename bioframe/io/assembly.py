@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
-import pkg_resources
+from importlib import resources
 
 try:
     from typing import Literal
@@ -16,7 +16,7 @@ from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
 
-ASSEMBLY_MANIFEST_PATH = "data/_assemblies.yml"
+ASSEMBLY_METADATA_ROOT = resources.files("bioframe.io") / "data"
 
 
 @dataclass
@@ -73,8 +73,7 @@ def assemblies_available() -> pd.DataFrame:
         'provider', 'provider_build', 'default_roles', 'default_units',
         and names of seqinfo and cytoband files.
     """
-    path = pkg_resources.resource_filename("bioframe.io", ASSEMBLY_MANIFEST_PATH)
-    with open(path) as f:
+    with open(ASSEMBLY_METADATA_ROOT / "_assemblies.yml") as f:
         assemblies = yaml.safe_load(f)
     return pd.DataFrame.from_records(assemblies)
 
@@ -148,9 +147,8 @@ def assembly_info(
     default_roles = assembly["default_roles"]
     default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
-    seqinfo = pd.read_table(
-        pkg_resources.resource_filename("bioframe.io", f"data/{seqinfo_path}")
-    )
+    seqinfo = pd.read_table(ASSEMBLY_METADATA_ROOT / seqinfo_path)
+
     mask = np.ones(len(seqinfo), dtype=bool)
     if roles is None:
         mask &= seqinfo["role"].isin(default_roles)
@@ -169,11 +167,7 @@ def assembly_info(
     cytobands = None
     cytobands_path = assembly["cytobands"]
     if cytobands_path is not None:
-        cytobands = pd.read_table(
-            pkg_resources.resource_filename(
-                "bioframe.io", f"data/{cytobands_path}"
-            )
-        )
+        cytobands = pd.read_table(ASSEMBLY_METADATA_ROOT / cytobands_path)
 
     return GenomeAssembly(
         organism=assembly["organism"],
