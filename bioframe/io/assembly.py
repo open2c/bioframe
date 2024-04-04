@@ -1,7 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
 
-from importlib import resources
+try:
+    from importlib.resources import files as resource_path
+except ImportError:
+    from importlib_resources import files as resource_path
+
+from typing import Dict, List, Optional, Tuple, Union
 
 try:
     from typing import Literal
@@ -16,7 +20,7 @@ from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
 
-ASSEMBLY_METADATA_ROOT = resources.files("bioframe.io") / "data"
+ASSEMBLY_METADATA_ROOT = resource_path("bioframe.io") / "data"
 
 
 @dataclass
