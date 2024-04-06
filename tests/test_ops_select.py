@@ -6,33 +6,24 @@ import bioframe
 
 def test_select():
     df = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chr1", 4, 5],
-         ["chrX", 1, 5]],
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
 
-    result = pd.DataFrame(
-        [["chr1", 4, 5]],
-        columns=["chrom", "start", "end"]
-    )
+    result = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
     pd.testing.assert_frame_equal(
         result, bioframe.select(df, "chr1:4-10").reset_index(drop=True)
     )
 
     result = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chrX", 1, 5]],
-         columns=["chrom", "start", "end"]
+        [["chrX", 3, 8], ["chrX", 1, 5]], columns=["chrom", "start", "end"]
     )
     pd.testing.assert_frame_equal(
         result, bioframe.select(df, "chrX").reset_index(drop=True)
     )
 
     result = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chrX", 1, 5]],
-         columns=["chrom", "start", "end"]
+        [["chrX", 3, 8], ["chrX", 1, 5]], columns=["chrom", "start", "end"]
     )
     pd.testing.assert_frame_equal(
         result, bioframe.select(df, "chrX:4-6").reset_index(drop=True)
@@ -52,14 +43,11 @@ def test_select__with_colnames():
     ### select with non-standard column names
     new_names = ["chr", "chrstart", "chrend"]
     df = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chr1", 4, 5],
-         ["chrX", 1, 5]],
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
         columns=new_names,
     )
     result = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chrX", 1, 5]],
+        [["chrX", 3, 8], ["chrX", 1, 5]],
         columns=new_names,
     )
     pd.testing.assert_frame_equal(
@@ -94,47 +82,32 @@ def test_select__with_nulls():
 
 def test_select__mask_indices_labels():
     df = pd.DataFrame(
-        [["chrX", 3, 8],
-         ["chr1", 4, 5],
-         ["chrX", 1, 5]],
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
         columns=["chrom", "start", "end"],
     )
 
     region = "chr1:4-10"
-    answer = pd.DataFrame(
-        [["chr1", 4, 5]],
-        columns=["chrom", "start", "end"]
-    )
+    answer = pd.DataFrame([["chr1", 4, 5]], columns=["chrom", "start", "end"])
 
     result = bioframe.select(df, region)
-    pd.testing.assert_frame_equal(
-        answer, result.reset_index(drop=True)
-    )
+    pd.testing.assert_frame_equal(answer, result.reset_index(drop=True))
     mask = bioframe.select_mask(df, region)
-    pd.testing.assert_frame_equal(
-        answer, df.loc[mask].reset_index(drop=True)
-    )
+    pd.testing.assert_frame_equal(answer, df.loc[mask].reset_index(drop=True))
     labels = bioframe.select_labels(df, region)
-    pd.testing.assert_frame_equal(
-        answer, df.loc[labels].reset_index(drop=True)
-    )
+    pd.testing.assert_frame_equal(answer, df.loc[labels].reset_index(drop=True))
     idx = bioframe.select_indices(df, region)
-    pd.testing.assert_frame_equal(
-        answer, df.iloc[idx].reset_index(drop=True)
-    )
+    pd.testing.assert_frame_equal(answer, df.iloc[idx].reset_index(drop=True))
 
 
 def test_select__query_intervals_are_half_open():
-    df = pd.DataFrame({
-        "chrom": ["chr1", "chr1",
-                  "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
-        "start": [0, 10,
-                  10, 20, 30, 40, 50, 60],
-        "end":  [10, 20,
-                 20, 30, 40, 50, 60, 70],
-        "name": ["a", "b",
-                 "A", "B", "C", "D", "E", "F"],
-    })
+    df = pd.DataFrame(
+        {
+            "chrom": ["chr1", "chr1", "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
+            "start": [0, 10, 10, 20, 30, 40, 50, 60],
+            "end": [10, 20, 20, 30, 40, 50, 60, 70],
+            "name": ["a", "b", "A", "B", "C", "D", "E", "F"],
+        }
+    )
 
     result = bioframe.select(df, "chr1")
     assert (result["name"] == ["a", "b"]).all()
@@ -172,16 +145,14 @@ def test_select__query_intervals_are_half_open():
 
 def test_select__with_point_intervals():
     # Dataframe containing "point intervals"
-    df = pd.DataFrame({
-        "chrom": ["chr1", "chr1",
-                  "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
-        "start": [0, 10,
-                  10, 20, 30, 40, 50, 60],
-        "end":  [10, 10,
-                 20, 30, 40, 50, 50, 70],
-        "name": ["a", "b",
-                 "A", "B", "C", "D", "E", "F"],
-    })
+    df = pd.DataFrame(
+        {
+            "chrom": ["chr1", "chr1", "chr2", "chr2", "chr2", "chr2", "chr2", "chr2"],
+            "start": [0, 10, 10, 20, 30, 40, 50, 60],
+            "end": [10, 10, 20, 30, 40, 50, 50, 70],
+            "name": ["a", "b", "A", "B", "C", "D", "E", "F"],
+        }
+    )
     result = bioframe.select(df, "chr1")
     assert (result["name"] == ["a", "b"]).all()
 
@@ -213,9 +184,7 @@ def test_select__with_point_intervals():
 def test_select__with_points():
     # Dataframe of points
     df = pd.DataFrame(
-        [["chrX", 3, "A"],
-         ["chr1", 4, "C"],
-         ["chrX", 1, "B"]],
+        [["chrX", 3, "A"], ["chr1", 4, "C"], ["chrX", 1, "B"]],
         columns=["chrom", "pos", "name"],
     )
 

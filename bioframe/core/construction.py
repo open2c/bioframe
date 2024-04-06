@@ -156,8 +156,8 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
         raise ValueError(f"Unknown input format: {type(regions)}")
 
     if fill_null:
+        out_df[sk1] = pd.to_numeric(out_df[sk1]).fillna(0)
         try:
-            out_df[sk1].fillna(0, inplace=True)
             ends = []
             for i in range(len(out_df)):
                 if out_df[ek1].values[i] is None:

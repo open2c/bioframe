@@ -1633,8 +1633,8 @@ def trim(
     lower_vector = df_trimmed[sk + "_view"].values
     upper_vector = df_trimmed[ek + "_view"].values
 
-    df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector, inplace=True)
-    df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector, inplace=True)
+    df_trimmed[sk] = df_trimmed[sk].clip(lower=lower_vector, upper=upper_vector)
+    df_trimmed[ek] = df_trimmed[ek].clip(lower=lower_vector, upper=upper_vector)
 
     if return_view_columns:
         return df_trimmed

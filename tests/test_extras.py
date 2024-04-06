@@ -34,8 +34,7 @@ def test_make_chromarms():
         cols_mids=["chromosome", "loc"],
     )
     pd.testing.assert_frame_equal(
-        result,
-        arms.rename(columns={"chrom": "chromosome", "start": "lo", "end": "hi"})
+        result, arms.rename(columns={"chrom": "chromosome", "start": "lo", "end": "hi"})
     )
 
     # test passing 2 columns
@@ -52,9 +51,7 @@ def test_make_chromarms():
 
     # test for passing Series or dict
     result = bioframe.make_chromarms(
-        pd.Series({"chrX": 8}),
-        mids,
-        cols_mids=["chromosome", "loc"]
+        pd.Series({"chrX": 8}), mids, cols_mids=["chromosome", "loc"]
     )
     pd.testing.assert_frame_equal(arms, result)
 
@@ -196,11 +193,11 @@ def test_frac_gc():
 
 def test_seq_gc():
 
-    assert (0 == bioframe.seq_gc("AT"))
-    assert (np.isnan( bioframe.seq_gc("NNN")))
-    assert (1 == bioframe.seq_gc("NGnC"))
-    assert (0.5 == bioframe.seq_gc("GTCA"))
-    assert (0.25 == bioframe.seq_gc("nnnNgTCa", mapped_only=False))
+    assert 0 == bioframe.seq_gc("AT")
+    assert np.isnan(bioframe.seq_gc("NNN"))
+    assert 1 == bioframe.seq_gc("NGnC")
+    assert 0.5 == bioframe.seq_gc("GTCA")
+    assert 0.25 == bioframe.seq_gc("nnnNgTCa", mapped_only=False)
     with pytest.raises(ValueError):
         bioframe.seq_gc(["A", "T"])
     with pytest.raises(ValueError):
