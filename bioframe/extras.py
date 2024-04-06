@@ -305,11 +305,11 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         seq = str(seq[:])
         gc = []
         for _, bin in chrom_group.iterrows():
-            s = seq[bin.start : bin.end]
+            s = seq[bin["start"] : bin["end"]]
             gc.append(seq_gc(s, mapped_only=mapped_only))
         return gc
 
-    agg = df.groupby("chrom", sort=False).apply(_each, include_groups=False)
+    agg = df.groupby("chrom", sort=False)[["start", "end"]].apply(_each)
     out_col = pd.Series(data=np.concatenate(agg.values), index=df.index).rename("GC")
 
     if return_input:
