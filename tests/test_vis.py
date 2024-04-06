@@ -28,11 +28,13 @@ def test_to_ucsc_colorstring():
     with pytest.raises(ValueError):
         bioframe.to_ucsc_colorstring("notacolor")
 
-    df = bioframe.from_any([
-        ["chr1", 0, 10, "red"],
-        ["chr1", 10, 20, "blue"],
-        ["chr2", 0, 10, "green"],
-        ["chr2", 10, 20, None],
-    ])
+    df = bioframe.from_any(
+        [
+            ["chr1", 0, 10, "red"],
+            ["chr1", 10, 20, "blue"],
+            ["chr2", 0, 10, "green"],
+            ["chr2", 10, 20, None],
+        ]
+    )
     df["itemRgb"] = df["name"].apply(bioframe.to_ucsc_colorstring)
     assert df["itemRgb"].tolist() == ["255,0,0", "0,0,255", "0,128,0", "0"]

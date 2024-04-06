@@ -56,10 +56,7 @@ def test_is_cataloged():
         columns=["chrom", "start", "end", "funny_view_region"],
     )
     assert is_cataloged(
-        df,
-        view_df,
-        df_view_col="funny_view_region",
-        view_name_col="funny_name"
+        df, view_df, df_view_col="funny_view_region", view_name_col="funny_name"
     )
 
 
@@ -131,8 +128,8 @@ def test_is_contained():
         cols=["chrom1", "start1", "end1"],
         cols_view=["CHROM", "START", "END"],
         df_view_col="VIEW_REGION",
-        view_name_col="NAME"
-        )
+        view_name_col="NAME",
+    )
 
     with pytest.raises(TypeError):
         # cols and view_cols are not passed as an arguments
@@ -219,19 +216,16 @@ def test_is_covering():
         columns=["chrom1", "start1", "end1"],
     )
     chromsizes = pd.DataFrame(
-        [
-            ["chr1", 0, 9, "chr1p"],
-            ["chr1", 11, 20, "chr1q"]
-        ],
+        [["chr1", 0, 9, "chr1p"], ["chr1", 11, 20, "chr1q"]],
         columns=["CHROM", "START", "END", "NAME"],
-        )
+    )
     assert is_covering(
-                        df1,
-                        chromsizes,
-                        cols=["chrom1", "start1", "end1"],
-                        cols_view=["CHROM", "START", "END"],
-                        view_name_col="NAME"
-                    )
+        df1,
+        chromsizes,
+        cols=["chrom1", "start1", "end1"],
+        cols_view=["CHROM", "START", "END"],
+        view_name_col="NAME",
+    )
 
     with pytest.raises(ValueError):
         # cols and view_cols are not passed as an arguments
@@ -274,19 +268,16 @@ def test_is_tiling():
         columns=["chrom1", "start1", "end1", "view_region"],
     )
     chromsizes = pd.DataFrame(
-        [
-            ["chr1", 0, 9, "chr1p"],
-            ["chr1", 11, 20, "chr1q"]
-        ],
+        [["chr1", 0, 9, "chr1p"], ["chr1", 11, 20, "chr1q"]],
         columns=["CHROM", "START", "END", "NAME"],
-        )
+    )
     assert is_tiling(
-                        df1,
-                        chromsizes,
-                        cols=["chrom1", "start1", "end1"],
-                        cols_view=["CHROM", "START", "END"],
-                        view_name_col="NAME"
-                    )
+        df1,
+        chromsizes,
+        cols=["chrom1", "start1", "end1"],
+        cols_view=["CHROM", "START", "END"],
+        view_name_col="NAME",
+    )
 
     with pytest.raises(KeyError):
         # cols and view_cols are not passed as an arguments
@@ -477,7 +468,7 @@ def test_is_sorted():
         view_name_col="FRUIT",
         df_view_col="FRUIT",
         cols=["CHROM", "START", "END"],
-        cols_view=["CHROM", "START", "END"]
+        cols_view=["CHROM", "START", "END"],
     )
 
     with pytest.raises(ValueError):
