@@ -309,15 +309,13 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
             gc.append(seq_gc(s, mapped_only=mapped_only))
         return gc
 
-    out = df.groupby("chrom", sort=False).apply(_each)
+    agg = df.groupby("chrom", sort=False).apply(_each, include_groups=False)
+    out_col = pd.Series(data=np.concatenate(agg.values), index=df.index).rename("GC")
 
     if return_input:
-        return pd.concat(
-            [df, pd.Series(data=np.concatenate(out), index=df.index).rename("GC")],
-            axis="columns",
-        )
+        return pd.concat([df, out_col], axis="columns")
     else:
-        return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
+        return out_col
 
 
 def seq_gc(seq, mapped_only=True):
