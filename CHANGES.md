@@ -1,6 +1,22 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.3...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.4...HEAD)
+
+## [v0.6.4](https://github.com/open2c/bioframe/compare/v0.6.3...v0.6.4)
+Date 2024-04-06
+
+Maintenance:
+* Migrate from setuptools `pkg_resources` to `importlib.resources` by @nvictus in https://github.com/open2c/bioframe/pull/194
+* Use `importlib.metadata` for versioning by @nvictus in https://github.com/open2c/bioframe/pull/195
+
+Bug fixes:
+* Overlap point segment patch #183 by @smitkadvani in https://github.com/open2c/bioframe/pull/184
+* #167: Replaced np.int with int as the attribute is deprecated by numpy by @harshit148 in https://github.com/open2c/bioframe/pull/192
+
+New Contributors:
+* @harshit148 made a first contribution in https://github.com/open2c/bioframe/pull/192
+
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.3...v0.6.4
 
 ## [v0.6.3](https://github.com/open2c/bioframe/compare/v0.6.2...v0.6.3)
 Date 2024-03-11
