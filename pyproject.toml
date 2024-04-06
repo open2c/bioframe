@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bioframe"
-version = "0.6.3"
+version = "0.6.4"
 description = "Operations and utilities for Genomic Interval Dataframes."
 license = {text = "MIT"}
 authors = [
