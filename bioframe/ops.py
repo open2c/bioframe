@@ -174,6 +174,10 @@ def shift(df, amount, along=None, drop_invalid=False, cols=None):
         feature. The column should contain compliant strand values
         ("+", "-", ".").
 
+    drop_invalid: bool, optional [default: False]
+        Remove any intervals having negative length after shifting bounds.
+        By default, they will not be removed but a warning will be raised.
+
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. Default values are 'chrom', 'start', 'end'.
@@ -190,7 +194,7 @@ def shift(df, amount, along=None, drop_invalid=False, cols=None):
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     if along is not None:
-        if not along in df.columns:
+        if along not in df.columns:
             raise ValueError(
                 f'Cannot do strand-aware operation: {along} column is missing.'
             )
