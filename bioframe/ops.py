@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -18,6 +20,7 @@ __all__ = [
     "closest",
     "subtract",
     "setdiff",
+    "shift",
     "count_overlaps",
     "trim",
     "complement",
@@ -147,7 +150,104 @@ def select(df, region, cols=None):
     return df.loc[select_mask(df, region, cols)]
 
 
-def expand(df, pad=None, scale=None, side="both", cols=None, direction_col=None):
+def shift(df, amount, along=None, drop_invalid=False, cols=None):
+    """
+    Translate the bounds of each genomic interval.
+
+    Different shift amounts can be applied to leading and trailing bounds, and
+    can be applied in a strand-aware manner. Negative values indicate a shift
+    leftwards or upstream.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    amount : int, array-like, or pair of int or array-like, optional
+        The amount(s) by which the bounds are linearly shifted. If a pair
+        ``(x, y)``, shift the leading bound by ``x`` and the trailing bound by
+        ``y``. Negative and positive values shift in the upstream and
+        downstream directions, respectively. Features are taken to assume the
+        reference orientation unless ``along`` is specified.
+
+    along: str, array-like, or None
+        Name of column that will set up/downstream orientation for each
+        feature. The column should contain compliant strand values
+        ("+", "-", ".").
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. Default values are 'chrom', 'start', 'end'.
+
+    Returns
+    -------
+    pandas.DataFrame
+
+    Notes
+    -----
+    See :func:`bioframe.trim` for trimming interals after expansion or shift.
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+    checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
+
+    if along is not None:
+        if not along in df.columns:
+            raise ValueError(
+                f'Cannot do strand-aware operation: {along} column is missing.'
+            )
+        if not df[along].isin(['+', '-', '.']).all():
+            missing_strand = (~df[along].isin(['+', '-', '.'])).sum()
+            raise ValueError(
+                'Cannot do strand-aware operation: strand information missing '
+                f'for {missing_strand}/{df.shape[0]} ranges.'
+            )
+
+    if not isinstance(amount, (list, tuple)):
+        amount =  (amount, amount)
+    elif len(amount) != 2:
+        raise ValueError(
+            "`amount` should be a single object or a sequence of length 2; "
+            f"got length {len(amount)}."
+        )
+
+    out = df.copy()
+    if along is None:
+        out[sk] = df[sk] + amount[0]
+        out[ek] = df[ek] + amount[1]
+    else:
+        out[sk] = np.where(
+            df[along] == '+',
+            df[sk] + amount[0],
+            np.where(
+                df[along] == '-',
+                df[sk] - amount[1],
+                df[sk]
+            )
+        )
+        out[ek] = np.where(
+            df[along] == '+',
+            df[ek] + amount[1],
+            np.where(
+                df[along] == '-',
+                df[ek] - amount[0],
+                df[ek]
+            )
+        )
+
+    is_neglen = (out[ek] - out[sk]) < 0
+    if is_neglen.any():
+        if drop_invalid:
+            out = out.loc[~is_neglen]
+        else:
+            warnings.warn(
+                f"Operation produced {is_neglen.sum()}/{out.shape[0]} "
+                "intervals with negative length."
+            )
+
+    return out
+
+
+def expand(df, pad=None, scale=None, side="both", cols=None):
+
     """
     Expand each interval by an amount specified with `pad`.
 
@@ -177,10 +277,6 @@ def expand(df, pad=None, scale=None, side="both", cols=None, direction_col=None)
     cols : (str, str, str) or None
         The names of columns containing the chromosome, start and end of the
         genomic intervals. Default values are 'chrom', 'start', 'end'.
-    
-    direction_col: str or None
-        Name of direction column that will set upstream/downstream orientation for each feature.
-        The column should contain bioframe-compliant strand ("+", "-", ".").
 
     Returns
     -------
@@ -189,17 +285,9 @@ def expand(df, pad=None, scale=None, side="both", cols=None, direction_col=None)
     Notes
     -----
     See :func:`bioframe.trim` for trimming interals after expansion.
-
     """
-
     ck, sk, ek = _get_default_colnames() if cols is None else cols
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
-    if direction_col is not None:
-        if not direction_col in df.columns:
-            raise ValueError(f'{direction_col} column is missing - strand-aware expansion is not possible')
-        if not df.strand.isin(['+', '-', '.']).all():
-            missing_strand = (~df[direction_col].isin(['+', '-', '.'])).sum()
-            raise ValueError(f'strand information missing for {missing_strand}/{df.shape[0]} ranges - strand-aware expansion is not possible')
 
     if scale is not None and pad is not None:
         raise ValueError("only one of pad or scale can be supplied")
@@ -216,21 +304,10 @@ def expand(df, pad=None, scale=None, side="both", cols=None, direction_col=None)
         raise ValueError("either pad or scale must be supplied")
 
     df_expanded = df.copy()
-    if side == 'both':
+    if side == "both" or side == "left":
         df_expanded[sk] = df[sk].values - pads
+    if side == "both" or side == "right":
         df_expanded[ek] = df[ek] + pads
-    if side == "left":
-        if direction_col is not None:
-            df_expanded[sk] = np.where(df[direction_col] == '-', df[sk]       , df[sk] - pads)
-            df_expanded[ek] = np.where(df[direction_col] == '-', df[ek] + pads, df[ek]       )
-        else:
-            df_expanded[sk] = df[sk].values - pads
-    if side == "right":
-        if direction_col is not None:
-            df_expanded[sk] = np.where(df[direction_col] == '-', df[sk] - pads, df[sk]       )
-            df_expanded[ek] = np.where(df[direction_col] == '-', df[ek]       , df[ek] + pads)
-        else:
-            df_expanded[ek] = df[ek] + pads
 
     if pad is not None:
         if pad < 0:

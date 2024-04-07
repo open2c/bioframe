@@ -214,6 +214,148 @@ def test_trim():
     )
 
 
+def test_shift():
+    df = pd.DataFrame(
+        [
+            ["chr1", 1000, 1200, "+"],
+            ["chr1", 800, 1200, "-"],
+            ["chrX", 1000, 1500, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, 10),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 + 10, 1200 + 10, "+"],
+                ["chr1", 800 + 10, 1200 + 10, "-"],
+                ["chrX", 1000 + 10, 1500 + 10, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, -10),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 - 10, 1200 - 10, "+"],
+                ["chr1", 800 - 10, 1200 - 10, "-"],
+                ["chrX", 1000 - 10, 1500 - 10, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (-10, 20)),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 - 10, 1200 + 20, "+"],
+                ["chr1", 800 - 10, 1200 + 20, "-"],
+                ["chrX", 1000 - 10, 1500 + 20, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (10, -20)),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 + 10, 1200 - 20, "+"],
+                ["chr1", 800 + 10, 1200 - 20, "-"],
+                ["chrX", 1000 + 10, 1500 - 20, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (10, -200), drop_invalid=True),
+        pd.DataFrame(
+            [
+                ["chr1", 800 + 10, 1200 - 200, "-"],
+                ["chrX", 1000 + 10, 1500 - 200, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+            index=[1, 2],
+        )
+    )
+
+
+def test_shift_strand_aware():
+    df = pd.DataFrame(
+        [
+            ["chr1", 1000, 1200, "+"],
+            ["chr1", 800, 1200, "-"],
+            ["chrX", 1000, 1500, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, 10, along="strand"),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 + 10, 1200 + 10, "+"],
+                ["chr1", 800 - 10, 1200 - 10, "-"],
+                ["chrX", 1000 + 10, 1500 + 10, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, -10, along="strand"),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 - 10, 1200 - 10, "+"],
+                ["chr1", 800 + 10, 1200 + 10, "-"],
+                ["chrX", 1000 - 10, 1500 - 10, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (-10, 20), along="strand"),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 - 10, 1200 + 20, "+"],
+                ["chr1", 800 - 20, 1200 + 10, "-"],
+                ["chrX", 1000 - 10, 1500 + 20, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (10, -20), along="strand"),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 + 10, 1200 - 20, "+"],
+                ["chr1", 800 + 20, 1200 - 10, "-"],
+                ["chrX", 1000 + 10, 1500 - 20, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+        )
+    )
+
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (10, -200), along="strand", drop_invalid=True),
+        pd.DataFrame(
+            [
+                ["chr1", 800 + 200, 1200 - 10, "-"],
+                ["chrX", 1000 + 10, 1500 - 200, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
+            index=[1, 2],
+        )
+    )
+
+
 def test_expand():
     d = """chrom  start  end
          0  chr1      1    5
@@ -296,54 +438,6 @@ def test_expand_amount_args():
     df = pd.read_csv(StringIO(d), sep=r"\s+")
     with pytest.raises(ValueError):
         bioframe.expand(df, pad=10, scale=2.0)
-        
-def test_expand_strand_aware():
-    df_test = pd.DataFrame(
-            [
-                ["chr1", 1000, 1200, "+"],
-                ["chr1", 800, 1200, "-"],
-                ["chrX", 1000, 1500, "+"],
-            ],
-            columns=["chrom", "start", "end", "strand"],
-        )
-    df_test_expanded_right = bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
-    df_test_expanded_left = bioframe.expand(df_test, pad=100, side='left', direction_col='strand')
-
-    df_right = pd.DataFrame(
-            [
-                ["chr1", 1000, 1300, "+"],
-                ["chr1", 700, 1200, "-"],
-                ["chrX", 1000, 1600, "+"],
-            ],
-            columns=["chrom", "start", "end", "strand"],
-        )
-    df_left = pd.DataFrame(
-            [
-                ["chr1", 900, 1200, "+"],
-                ["chr1", 800, 1300, "-"],
-                ["chrX", 900, 1500, "+"],
-            ],
-            columns=["chrom", "start", "end", "strand"],
-        )
-
-    pd.testing.assert_frame_equal(df_right, df_test_expanded_right)
-    pd.testing.assert_frame_equal(df_left, df_test_expanded_left)
-    
-    # Test strand information is correct
-    df_test = pd.DataFrame(
-            [
-                ["chr1", 1000, 1200, "x"],
-                ["chr1", 800, 1200, "-"],
-                ["chrX", 1000, 1500, "+"],
-            ],
-            columns=["chrom", "start", "end", "strand"],
-        )
-    with pytest.raises(ValueError):
-        bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
-    
-    df_test.drop('strand', axis=1, inplace=True)
-    with pytest.raises(ValueError):
-        bioframe.expand(df_test, pad=100, side='right', direction_col='strand')
 
 
 def test_overlap():
