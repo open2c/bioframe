@@ -172,7 +172,7 @@ def shift(df, amount, along=None, drop_invalid=False, cols=None):
     along: str, array-like, or None
         Name of column that will set up/downstream orientation for each
         feature. The column should contain compliant strand values
-        ("+", "-", ".").
+        ("+", "-", "."). Unstranded features will be ignored.
 
     drop_invalid: bool, optional [default: False]
         Remove any intervals having negative length after shifting bounds.
@@ -194,19 +194,24 @@ def shift(df, amount, along=None, drop_invalid=False, cols=None):
     checks.is_bedframe(df, raise_errors=True, cols=[ck, sk, ek])
 
     if along is not None:
-        if along not in df.columns:
-            raise ValueError(
-                f'Cannot do strand-aware operation: {along} column is missing.'
-            )
-        if not df[along].isin(['+', '-', '.']).all():
-            missing_strand = (~df[along].isin(['+', '-', '.'])).sum()
+        if isinstance(along, str):
+            if along not in df.columns:
+                raise ValueError(
+                    f'Cannot do strand-aware operation: {along} column is missing.'
+                )
+            strands = df[along]
+        else:
+            strands = along
+
+        if not strands.isin(['+', '-', '.']).all():
+            missing_strand = (~strands.isin(['+', '-', '.'])).sum()
             raise ValueError(
                 'Cannot do strand-aware operation: strand information missing '
                 f'for {missing_strand}/{df.shape[0]} ranges.'
             )
 
     if not isinstance(amount, (list, tuple)):
-        amount =  (amount, amount)
+        amount = (amount, amount)
     elif len(amount) != 2:
         raise ValueError(
             "`amount` should be a single object or a sequence of length 2; "
@@ -219,19 +224,19 @@ def shift(df, amount, along=None, drop_invalid=False, cols=None):
         out[ek] = df[ek] + amount[1]
     else:
         out[sk] = np.where(
-            df[along] == '+',
+            strands == '+',
             df[sk] + amount[0],
             np.where(
-                df[along] == '-',
+                strands == '-',
                 df[sk] - amount[1],
                 df[sk]
             )
         )
         out[ek] = np.where(
-            df[along] == '+',
+            strands == '+',
             df[ek] + amount[1],
             np.where(
-                df[along] == '-',
+                strands == '-',
                 df[ek] - amount[0],
                 df[ek]
             )
