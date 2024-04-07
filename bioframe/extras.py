@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import collections
 
 from . import ops
 from .core.specs import _get_default_colnames, _verify_columns
@@ -29,15 +28,15 @@ def make_chromarms(
 
     Parameters
     ----------
-    chromsizes : pandas.Dataframe or pandas.Series
-        If pandas.Series, a map from chromosomes to lengths in bp.
+    chromsizes : pandas.Dataframe or dict-like
+        If dict or pandas.Series, a map from chromosomes to lengths in bp.
         If pandas.Dataframe, a dataframe with columns defined by cols_chroms.
         If cols_chroms is a triplet (e.g. 'chrom','start','end'), then
         values in chromsizes[cols_chroms[1]].values must all be zero.
 
     midpoints : pandas.Dataframe or dict-like
         Mapping of chromosomes to midpoint (aka centromere) locations.
-        If pandas.Series, a map from chromosomes to midpoints in bp.
+        If dict or pandas.Series, a map from chromosomes to midpoints in bp.
         If pandas.Dataframe, a dataframe with columns defined by cols_mids.
 
     cols_chroms : (str, str) or (str, str, str)
@@ -60,9 +59,13 @@ def make_chromarms(
     elif len(cols_chroms) == 3:
         ck1, sk1, ek1 = cols_chroms
 
-    if isinstance(chromsizes, pd.Series):
+    if isinstance(chromsizes, (pd.Series, dict)):
+        chromsizes = dict(chromsizes)
         df_chroms = (
-            pd.DataFrame(chromsizes).reset_index().rename(columns={"index": ck1})
+            pd.DataFrame({
+                ck1: list(chromsizes.keys()),
+                "length": list(chromsizes.values()),
+            })
         )
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
@@ -78,13 +81,14 @@ def make_chromarms(
     elif len(cols_chroms) == 3:
         ck1, sk1, ek1 = cols_chroms
         _verify_columns(df_chroms, [ck1, sk1, ek1], unique_cols=True)
-        if any((df_chroms[sk1].values != 0)):
+        if any(df_chroms[sk1].values != 0):
             raise ValueError("all values in starts column must be zero")
     else:
         raise ValueError("invalid number of cols_chroms")
 
     ck2, sk2 = cols_mids
-    if isinstance(midpoints, dict):
+    if isinstance(midpoints, (pd.Series, dict)):
+        midpoints = dict(midpoints)
         df_mids = pd.DataFrame.from_dict(midpoints, orient="index", columns=[sk2])
         df_mids.reset_index(inplace=True)
         df_mids.rename(columns={"index": ck2}, inplace=True)
@@ -186,17 +190,18 @@ def digest(fasta_records, enzyme):
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
     except AttributeError:
-        raise ValueError("Unknown enzyme name: {}".format(enzyme))
+        raise ValueError(f"Unknown enzyme name: {enzyme}")
 
     def _each(chrom):
         seq = bioseq.Seq(str(fasta_records[chrom][:]))
-        cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(int)
+        cuts = np.r_[0, np.array(cut_finder(seq)) + 1, len(seq)].astype(np.int64)
         n_frags = len(cuts) - 1
 
         frags = pd.DataFrame(
@@ -233,11 +238,13 @@ def frac_mapped(df, fasta_records, return_input=True):
 
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
         raise ValueError(
-            "chrom from intervals not in fasta_records: double-check genome agreement"
+            "chrom from intervals not in fasta_records: "
+            "double-check genome agreement"
         )
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
 
     def _each(bin):
@@ -288,7 +295,8 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         )
     if not isinstance(fasta_records, dict):
         raise ValueError(
-            "fasta records must be provided as an OrderedDict, can be created by bioframe.load_fasta"
+            "fasta records must be provided as an OrderedDict, can be created "
+            "by bioframe.load_fasta"
         )
 
     def _each(chrom_group):
@@ -297,19 +305,17 @@ def frac_gc(df, fasta_records, mapped_only=True, return_input=True):
         seq = str(seq[:])
         gc = []
         for _, bin in chrom_group.iterrows():
-            s = seq[bin.start : bin.end]
+            s = seq[bin["start"] : bin["end"]]
             gc.append(seq_gc(s, mapped_only=mapped_only))
         return gc
 
-    out = df.groupby("chrom", sort=False).apply(_each)
+    agg = df.groupby("chrom", sort=False)[["start", "end"]].apply(_each)
+    out_col = pd.Series(data=np.concatenate(agg.values), index=df.index).rename("GC")
 
     if return_input:
-        return pd.concat(
-            [df, pd.Series(data=np.concatenate(out), index=df.index).rename("GC")],
-            axis="columns",
-        )
+        return pd.concat([df, out_col], axis="columns")
     else:
-        return pd.Series(data=np.concatenate(out), index=df.index).rename("GC")
+        return out_col
 
 
 def seq_gc(seq, mapped_only=True):
@@ -331,7 +337,7 @@ def seq_gc(seq, mapped_only=True):
         calculated gc content.
 
     """
-    if not type(seq) == str:
+    if not isinstance(seq, str):
         raise ValueError("reformat input sequence as a str")
     g = seq.count("G")
     g += seq.count("g")
@@ -385,6 +391,8 @@ def pair_by_distance(
     max_intervening=None,
     relative_to="midpoints",
     cols=None,
+    return_index=False,
+    keep_order=False,
     suffixes=("_1", "_2"),
 ):
     """
@@ -408,6 +416,14 @@ def pair_by_distance(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+    return_index : bool
+        If True, return indicies of pairs as two new columns
+        ('index'+suffixes[0] and 'index'+suffixes[1]). Default False.
+    keep_order : bool, optional
+        If True, sort the output dataframe to preserve the order
+        of the intervals in df1. Default False.
+        Note that it relies on sorting of index in the original dataframes,
+        and will reorder the output by index.
     suffixes : (str, str), optional
         The column name suffixes for the two interval sets in the output.
         The first interval of each output pair is always upstream of the
@@ -419,10 +435,22 @@ def pair_by_distance(
         A BEDPE-like dataframe of paired intervals from ``df``.
 
     """
+
+    # Create the copy of original dataset:
+    df = df.copy()
+
+    # Index column name
+    index_col = return_index if isinstance(return_index, str) else "index"
+    index_col_1 = index_col + suffixes[0]
+    index_col_2 = index_col + suffixes[1]
+    if return_index or keep_order:
+        df.index.name = index_col
+
+    # Get columns for pairing
     ck, sk, ek = _get_default_colnames() if cols is None else cols
 
     # Sort intervals by genomic coordinates
-    df = df.sort_values([ck, sk, ek]).reset_index(drop=True)
+    df = df.sort_values([ck, sk, ek]).reset_index(drop=False)
 
     if min_sep >= max_sep:
         raise ValueError("min_sep must be less than max_sep")
@@ -448,7 +476,9 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    right_probe = df[[ck]].copy()
+    right_probe = (
+        df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    )
     right_probe[sk] = ref + min_sep // 2
     right_probe[ek] = ref + (max_sep + 1) // 2
 
@@ -459,7 +489,9 @@ def pair_by_distance(
         ref = mids
     else:
         raise ValueError("relative_to must either specify 'midpoints' or 'endpoints' ")
-    left_probe = df[[ck]].copy()
+    left_probe = (
+        df[[ck, index_col]].copy() if (return_index or keep_order) else df[[ck]].copy()
+    )
     left_probe[sk] = ref - max_sep // 2
     left_probe[ek] = ref - (min_sep + 1) // 2
 
@@ -479,9 +511,9 @@ def pair_by_distance(
     idxs["intervening"] = (
         np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
     )
-    idxs = idxs.query(
-        f"intervening<={max_intervening} and intervening>={min_intervening}"
-    )
+    idxs = idxs[
+        (idxs['intervening']<=max_intervening) & (idxs['intervening']>=min_intervening)
+        ]
 
     left_ivals = (
         df.iloc[idxs[f"index{suffixes[0]}"].values]
@@ -494,4 +526,14 @@ def pair_by_distance(
         .reset_index(drop=True)
     )
 
-    return pd.concat([left_ivals, right_ivals], axis=1)
+    out_df = pd.concat([left_ivals, right_ivals], axis=1)
+
+    if keep_order:
+        out_df = out_df.sort_values([index_col_1, index_col_2])
+
+    if not return_index:
+        out_df = out_df.drop([index_col_1, index_col_2], axis=1)
+
+    out_df.reset_index(drop=True, inplace=True)
+
+    return out_df

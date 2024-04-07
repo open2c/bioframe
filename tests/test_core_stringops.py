@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import pytest
 
@@ -62,9 +61,9 @@ def test_parse_region_string():
 
 
 def test_is_complete_ucsc_string():
-    assert stringops.is_complete_ucsc_string("chrX:1M-2M") is True
-    assert stringops.is_complete_ucsc_string("chrX") is False
-    assert stringops.is_complete_ucsc_string("1M-2M") is False
-    assert stringops.is_complete_ucsc_string(1000) is False
-    assert stringops.is_complete_ucsc_string(np.array([100, 200])) is False
-    assert stringops.is_complete_ucsc_string(np.array(["chr1:100-200"])) is False
+    assert stringops.is_complete_ucsc_string("chrX:1M-2M")
+    assert not stringops.is_complete_ucsc_string("chrX")
+    assert not stringops.is_complete_ucsc_string("1M-2M")
+    assert not stringops.is_complete_ucsc_string(1000)
+    assert not stringops.is_complete_ucsc_string(np.array([100, 200]))
+    assert not stringops.is_complete_ucsc_string(np.array(["chr1:100-200"]))

@@ -1,8 +1,7 @@
-from io import StringIO
 import os.path as op
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 import bioframe
@@ -13,46 +12,60 @@ testdir = op.realpath(op.dirname(__file__))
 def test_make_chromarms():
 
     ### test the case where columns have different names
-    df1 = pd.DataFrame(
+    df = pd.DataFrame(
         [["chrX", 0, 8]],
         columns=["chromosome", "lo", "hi"],
     )
-
-    df2 = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
-
-    df_result = pd.DataFrame(
+    mids = pd.DataFrame([["chrX", 4]], columns=["chromosome", "loc"])
+    arms = pd.DataFrame(
         [
             ["chrX", 0, 4, "chrX_p"],
             ["chrX", 4, 8, "chrX_q"],
         ],
-        columns=["chromosome", "lo", "hi", "name"],
+        columns=["chrom", "start", "end", "name"],
     )
+    arms = arms.astype({"start": pd.Int64Dtype(), "end": pd.Int64Dtype()})
 
     # test passing 3 columns
+    result = bioframe.make_chromarms(
+        df,
+        mids,
+        cols_chroms=["chromosome", "lo", "hi"],
+        cols_mids=["chromosome", "loc"],
+    )
     pd.testing.assert_frame_equal(
-        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}),
-        bioframe.make_chromarms(
-            df1,
-            df2,
-            cols_chroms=["chromosome", "lo", "hi"],
-            cols_mids=["chromosome", "loc"],
-        ),
+        result, arms.rename(columns={"chrom": "chromosome", "start": "lo", "end": "hi"})
     )
 
     # test passing 2 columns
+    result = bioframe.make_chromarms(
+        df,
+        mids,
+        cols_chroms=["chromosome", "hi"],
+        cols_mids=["chromosome", "loc"],
+    )
     pd.testing.assert_frame_equal(
-        df_result.astype({"lo": pd.Int64Dtype(), "hi": pd.Int64Dtype()}).rename(
-            columns={"lo": "start", "hi": "end"}
-        ),
-        bioframe.make_chromarms(
-            df1,
-            df2,
-            cols_chroms=["chromosome", "hi"],
-            cols_mids=["chromosome", "loc"],
-        ),
+        result,
+        arms.rename(columns={"chrom": "chromosome"}),
     )
 
-    # todo: test for passing pd.series !
+    # test for passing Series or dict
+    result = bioframe.make_chromarms(
+        pd.Series({"chrX": 8}), mids, cols_mids=["chromosome", "loc"]
+    )
+    pd.testing.assert_frame_equal(arms, result)
+
+    result = bioframe.make_chromarms(pd.Series({"chrX": 8}), pd.Series({"chrX": 4}))
+    pd.testing.assert_frame_equal(arms, result)
+
+    bioframe.make_chromarms({"chrX": 8}, mids, cols_mids=["chromosome", "loc"])
+    pd.testing.assert_frame_equal(arms, result)
+
+    bioframe.make_chromarms({"chrX": 8}, pd.Series({"chrX": 4}))
+    pd.testing.assert_frame_equal(arms, result)
+
+    bioframe.make_chromarms({"chrX": 8}, {"chrX": 4})
+    pd.testing.assert_frame_equal(arms, result)
 
 
 def test_binnify():
@@ -180,11 +193,11 @@ def test_frac_gc():
 
 def test_seq_gc():
 
-    assert (0 == bioframe.seq_gc("AT"))
-    assert (np.isnan( bioframe.seq_gc("NNN")))
-    assert (1 == bioframe.seq_gc("NGnC"))
-    assert (0.5 == bioframe.seq_gc("GTCA"))
-    assert (0.25 == bioframe.seq_gc("nnnNgTCa", mapped_only=False))
+    assert 0 == bioframe.seq_gc("AT")
+    assert np.isnan(bioframe.seq_gc("NNN"))
+    assert 1 == bioframe.seq_gc("NGnC")
+    assert 0.5 == bioframe.seq_gc("GTCA")
+    assert 0.25 == bioframe.seq_gc("nnnNgTCa", mapped_only=False)
     with pytest.raises(ValueError):
         bioframe.seq_gc(["A", "T"])
     with pytest.raises(ValueError):

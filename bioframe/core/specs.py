@@ -1,6 +1,7 @@
 import collections
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 __all__ = [
     "update_default_colnames",
@@ -73,7 +74,7 @@ def _verify_columns(df, colnames, unique_cols=False, return_as_bool=False):
 
     """
 
-    if not type(df) is pd.core.frame.DataFrame:
+    if not isinstance(df, pd.DataFrame):
         if return_as_bool:
             return False
         raise ValueError("df is not a dataframe")
@@ -147,6 +148,6 @@ def is_chrom_dtype(chrom_dtype):
         [
             pd.api.types.is_string_dtype(chrom_dtype),
             pd.api.types.is_object_dtype(chrom_dtype),
-            pd.api.types.is_categorical_dtype(chrom_dtype),
+            isinstance(chrom_dtype, pd.api.types.CategoricalDtype),
         ]
     )

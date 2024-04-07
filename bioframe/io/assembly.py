@@ -1,20 +1,26 @@
-from typing import List, Tuple, Union, Dict
 from dataclasses import dataclass
-import pkg_resources
+
+try:
+    from importlib.resources import files as resource_path
+except ImportError:
+    from importlib_resources import files as resource_path
+
+from typing import Dict, List, Optional, Tuple, Union
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import yaml
+
 from bioframe import make_viewframe
 
 __all__ = ["assemblies_available", "assembly_info"]
 
-ASSEMBLY_MANIFEST_PATH = "data/_assemblies.yml"
+ASSEMBLY_METADATA_ROOT = resource_path("bioframe.io") / "data"
 
 
 @dataclass
@@ -51,26 +57,35 @@ class GenomeAssembly:
     @property
     def viewframe(self) -> pd.DataFrame:
         return make_viewframe(self.chromsizes.to_dict())
-    
+
     def __repr__(self) -> str:
         return (
             f"GenomeAssembly(organism='{self.organism}', provider='{self.provider}', "
-            f"provider_build='{self.provider_build}', release_year='{self.release_year}', "
-            f"...)"
+            f"provider_build='{self.provider_build}', "
+            f"release_year='{self.release_year}', ...)"
         )
 
 
 def assemblies_available() -> pd.DataFrame:
-    path = pkg_resources.resource_filename("bioframe.io", ASSEMBLY_MANIFEST_PATH)
-    with open(path) as f:
+    """
+    Get a list of available genome assembly metadata in local storage.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with metadata fields for available assemblies, including
+        'provider', 'provider_build', 'default_roles', 'default_units',
+        and names of seqinfo and cytoband files.
+    """
+    with open(ASSEMBLY_METADATA_ROOT / "_assemblies.yml") as f:
         assemblies = yaml.safe_load(f)
     return pd.DataFrame.from_records(assemblies)
 
 
 def assembly_info(
     name: str,
-    roles: Union[List, Tuple, Literal["all"]] = None,
-    units: Union[List, Tuple, Literal["all"]] = None,
+    roles: Optional[Union[List, Tuple, Literal["all"]]] = None,
+    units: Optional[Union[List, Tuple, Literal["all"]]] = None,
 ) -> GenomeAssembly:
     """
     Get information about a genome assembly.
@@ -136,9 +151,8 @@ def assembly_info(
     default_roles = assembly["default_roles"]
     default_units = assembly["default_units"]
     seqinfo_path = assembly["seqinfo"]
-    seqinfo = pd.read_table(
-        pkg_resources.resource_filename("bioframe.io", f"data/{seqinfo_path}")
-    )
+    seqinfo = pd.read_table(ASSEMBLY_METADATA_ROOT / seqinfo_path)
+
     mask = np.ones(len(seqinfo), dtype=bool)
     if roles is None:
         mask &= seqinfo["role"].isin(default_roles)
@@ -157,11 +171,7 @@ def assembly_info(
     cytobands = None
     cytobands_path = assembly["cytobands"]
     if cytobands_path is not None:
-        cytobands = pd.read_table(
-            pkg_resources.resource_filename(
-                "bioframe.io", f"data/{cytobands_path}"
-            )
-        )
+        cytobands = pd.read_table(ASSEMBLY_METADATA_ROOT / cytobands_path)
 
     return GenomeAssembly(
         organism=assembly["organism"],

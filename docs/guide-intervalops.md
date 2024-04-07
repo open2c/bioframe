@@ -64,7 +64,7 @@ BedFrames satisfy the following properties:
 - chrom, start, end columns  
 - columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype(), int/pd.Int64Dtype())  
 - for each interval, if any of chrom, start, end are null, then all are null
-- all starts < ends.  
+- all starts <= ends.  
 
 Whether a dataframe satisfies these properties can be checked with :func:`bioframe.core.checks.is_bedframe`:
 ```
@@ -234,6 +234,7 @@ If the features in df1 have direction (e.g., genes have transcription direction)
 direction can be changed to the direction of the features by `direction_col`:
 ```
 ```{code-cell} ipython3
+df1["strand"] = np.where(np.random.rand(len(df1)) > 0.5, "+", "-")
 bf.closest(df1, df2, 
     ignore_overlaps=True, 
     ignore_downstream=True, 

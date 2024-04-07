@@ -1,4 +1,0 @@
-autodocsumm
-myst_nb
-sphinx<4,>=2.1
-sphinx_rtd_theme

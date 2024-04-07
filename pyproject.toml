@@ -1,0 +1,110 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bioframe"
+version = "0.6.4"
+description = "Operations and utilities for Genomic Interval Dataframes."
+license = {text = "MIT"}
+authors = [
+  {name = "Open2C", email = "open.chromosome.collective@gmail.com"},
+]
+keywords = [
+    "pandas",
+    "dataframe",
+    "genomics",
+    "epigenomics",
+    "bioinformatics",
+    "interval operations",
+    "genomic ranges",
+    "bedtools",
+    "bedframe",
+    "viewframe",
+    "bed",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+readme = "README.md"
+dependencies = [
+    "matplotlib",
+    "numpy>=1.10",
+    "pandas>=1.3",
+    "pyyaml",
+    "requests",
+    "typing-extensions ; python_version<'3.9'",
+    "importlib-metadata ; python_version<'3.8'",
+    "importlib-resources ; python_version<'3.9'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "biopython",
+    "isort",
+    "pysam",
+    "pybbi",
+    "pytest",
+    "ruff",
+]
+test = [
+    "pytest",
+]
+docs = [
+    "autodocsumm",
+    "myst_nb",
+    "jinja2",
+    "Sphinx",
+    "sphinx-autobuild",
+    "sphinx_rtd_theme",
+]
+
+[project.urls]
+homepage = "https://github.com/open2c/bioframe"
+documentation = "https://bioframe.readthedocs.io/en/latest"
+repository = "https://github.com/open2c/bioframe"
+changelog = "https://github.com/open2c/bioframe/blob/main/CHANGES.md"
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+known_first_party = "bioframe"
+
+[tool.ruff]
+target-version = "py37"
+exclude = [
+    ".venv",
+]
+lint.extend-select = [
+    # "C",  # mccabe complexity
+    # "D",  # pydocstyle
+    "E",  # style errors
+    "F",  # pyflakes
+    "I",  # isort
+    "RUF", # ruff-specific rules
+    "UP", # pyupgrade
+    "W",  # style  warnings
+]
+
+[tool.hatch.envs.default]
+features = ["dev", "test", "docs"]
+
+[tool.hatch.envs.default.scripts]
+fix = "ruff check --fix ."
+lint = "ruff check bioframe tests"
+test = "pytest ."
+docs = "sphinx-autobuild docs docs/_build/html"
+
+[tool.hatch.envs.test]
+features = ["dev", "test"]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11"]

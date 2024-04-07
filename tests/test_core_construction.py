@@ -1,11 +1,11 @@
 from io import StringIO
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
-from bioframe.core.construction import from_any
 from bioframe.core import construction
+from bioframe.core.construction import from_any
 
 
 def test_add_ucsc_name_column():
@@ -29,7 +29,7 @@ def test_any():
         {"chrom": [f"chr{i}" for i in range(3)], "start": [1, 2, 3], "end": [4, 5, 6]}
     )
     parsed = from_any(df)
-    assert not "name" in parsed.columns
+    assert "name" not in parsed.columns
     assert parsed.iloc[0]["chrom"] == "chr0"
 
     # re-create dataframe from UCSC name alone

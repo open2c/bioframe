@@ -1,10 +1,10 @@
 from io import StringIO
 
 import pandas as pd
-import numpy as np
 import pytest
 
 import bioframe
+
 
 ############# tests #####################
 def test_read_table():
@@ -20,9 +20,9 @@ def test_read_table():
     d = """chr1      5    10
            chr1     10   20
            chr2    30  40"""
-    assert bioframe.read_table(StringIO(d), schema="bed3", sep="\s+").shape == (3, 3)
-    assert bioframe.read_table(StringIO(d), schema="bed6", sep="\s+").shape == (3, 6)
-    assert bioframe.read_table(StringIO(d), schema="bed12", sep="\s+").shape == (3, 12)
+    assert bioframe.read_table(StringIO(d), schema="bed3", sep="\\s+").shape == (3, 3)
+    assert bioframe.read_table(StringIO(d), schema="bed6", sep="\\s+").shape == (3, 6)
+    assert bioframe.read_table(StringIO(d), schema="bed12", sep="\\s+").shape == (3, 12)
 
     # bedpe has 10 columns
     d = """chr1    5    10  chr2   5   10   interval1  .  +  -
@@ -30,7 +30,7 @@ def test_read_table():
            chr2    30   40  chr2   5   10   interval3  12  +  -
         """
     assert bioframe.read_table(
-        StringIO(d), schema="bedpe", sep="\s+", schema_is_strict=True
+        StringIO(d), schema="bedpe", sep=r"\s+", schema_is_strict=True
     ).shape == (3, 10)
 
 
@@ -42,7 +42,7 @@ def test_read_chromsizes():
 
     d = """chr1\t1\nchr3\t2\nchr2\t3\n """
     chromsizes = bioframe.read_chromsizes(StringIO(d))
-    assert type(chromsizes) is pd.Series
+    assert isinstance(chromsizes, pd.Series)
     assert chromsizes.name == "length"
     assert list(chromsizes.index) == ["chr1", "chr2", "chr3"]
     assert list(chromsizes.values) == [1, 3, 2]

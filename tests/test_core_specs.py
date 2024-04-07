@@ -1,11 +1,9 @@
-from io import StringIO
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
-from bioframe.core import specs
 import bioframe
+from bioframe.core import specs
 
 
 def test_get_default_colnames():
@@ -31,7 +29,7 @@ def test_update_default_colnames():
             ["chr1", 14, 100, "chr1"],
             ["chrX", 0, 100, "chrX"],
         ],
-        columns=list(new_names) + ["view_region"],
+        columns=[*list(new_names), "view_region"],
     )
 
     pd.testing.assert_frame_equal(
@@ -86,20 +84,20 @@ def test_verify_column_dtypes():
     assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True)
 
     df1["chromStart"] = df1["chromStart"].astype(float)
-    assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True) is False
+    assert not specs._verify_column_dtypes(df1, new_names, return_as_bool=True)
 
     df1["chromStart"] = df1["chromStart"].astype(pd.Int64Dtype())
     assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True)
 
-    df1["C"] = df1["C"].str.replace("chr", "").astype(int)
-    assert specs._verify_column_dtypes(df1, new_names, return_as_bool=True) is False
+    df1["C"] = df1["C"].str.replace("chr", "").astype(np.int64)
+    assert not specs._verify_column_dtypes(df1, new_names, return_as_bool=True)
 
 
 def test_is_chrom_dtype():
-    assert specs.is_chrom_dtype(type("chrX"))
+    assert specs.is_chrom_dtype(str)
     fruit = pd.CategoricalDtype(
         categories=["oranges", "grapefruit", "apples"], ordered=True
     )
     assert specs.is_chrom_dtype(fruit)
-    assert not specs.is_chrom_dtype(type(1))
-    assert not specs.is_chrom_dtype(type(10.0))
+    assert not specs.is_chrom_dtype(int)
+    assert not specs.is_chrom_dtype(float)

@@ -1,8 +1,9 @@
-import pandas as pd
 import numpy as np
-from .specs import _get_default_colnames, _verify_columns, is_chrom_dtype
-from .stringops import parse_region_string, to_ucsc_string, is_complete_ucsc_string
+import pandas as pd
+
 from . import checks
+from .specs import _get_default_colnames, _verify_columns, is_chrom_dtype
+from .stringops import is_complete_ucsc_string, parse_region_string, to_ucsc_string
 
 __all__ = [
     "from_dict",
@@ -18,7 +19,8 @@ __all__ = [
 
 def from_dict(regions, cols=None):
     """
-    Makes a dataframe from a dictionary of {str,int} pairs, interpreted as chromosome names.
+    Makes a dataframe from a dictionary of {str,int} pairs, interpreted as
+    chromosome names.
 
     Note that {str,(int,int)} dictionaries of tuples are no longer supported!
 
@@ -80,7 +82,8 @@ def from_ucsc_string_list(region_list, cols=None):
 
 def from_any(regions, fill_null=False, name_col="name", cols=None):
     """
-    Attempts to make a genomic interval dataframe with columns [chr, start, end, name_col] from a variety of input types.
+    Attempts to make a genomic interval dataframe with columns
+    [chr, start, end, name_col] from a variety of input types.
 
     Parameters
     ----------
@@ -90,9 +93,12 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
             - dataframe
             - series of UCSC strings
             - dictionary of {str:int} key value pairs
-            - pandas series where the index is interpreted as chromosomes and values are interpreted as end
-            - list of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
-            - tuple of tuples or lists, either [(chrom,start,end)] or [(chrom,start,end,name)]
+            - pandas series where the index is interpreted as chromosomes and
+              values are interpreted as end
+            - list of tuples or lists, either [(chrom,start,end)] or
+              [(chrom,start,end,name)]
+            - tuple of tuples or lists, either [(chrom,start,end)] or
+              [(chrom,start,end,name)]
 
     fill_null : False or dictionary
         Accepts a dictionary of {str:int} pairs, interpreted as chromosome sizes.
@@ -112,8 +118,8 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
-    if type(regions) is pd.core.frame.DataFrame:
-        if set([ck1, sk1, ek1]).issubset(regions.columns):
+    if isinstance(regions, pd.DataFrame):
+        if {ck1, sk1, ek1}.issubset(regions.columns):
             out_df = regions.copy()
         elif (len(regions[name_col].values.shape) == 1) and is_complete_ucsc_string(
             regions[name_col].values[0]
@@ -124,25 +130,25 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
         else:
             raise ValueError("Unknown dataFrame format: check column names")
 
-    elif type(regions) is dict:
+    elif isinstance(regions, dict):
         out_df = from_dict(regions, cols=[ck1, sk1, ek1])
 
-    elif type(regions) is pd.core.series.Series:
+    elif isinstance(regions, pd.Series):
         out_df = from_series(regions, cols=[ck1, sk1, ek1])
 
-    elif type(regions) is tuple:
+    elif isinstance(regions, tuple):
         if np.shape(regions) == (3,):
             out_df = from_list([regions], name_col=name_col, cols=[ck1, sk1, ek1])
 
-        elif len(np.shape(regions)) == 1 and type(regions[0]) is str:
+        elif len(np.shape(regions)) == 1 and isinstance(regions[0], str):
             out_df = from_ucsc_string_list(regions, cols=[ck1, sk1, ek1])
         else:
             out_df = from_list(list(regions), name_col=name_col, cols=[ck1, sk1, ek1])
 
-    elif type(regions) is list:
+    elif isinstance(regions, list):
         if np.shape(regions) == (3,):
             out_df = from_list([regions], name_col=name_col, cols=[ck1, sk1, ek1])
-        elif len(np.shape(regions)) == 1 and type(regions[0]) is str:
+        elif len(np.shape(regions)) == 1 and isinstance(regions[0], str):
             out_df = from_ucsc_string_list(regions, cols=[ck1, sk1, ek1])
         else:
             out_df = from_list(regions, name_col=name_col, cols=[ck1, sk1, ek1])
@@ -150,8 +156,8 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
         raise ValueError(f"Unknown input format: {type(regions)}")
 
     if fill_null:
+        out_df[sk1] = pd.to_numeric(out_df[sk1]).fillna(0)
         try:
-            out_df[sk1].fillna(0, inplace=True)
             ends = []
             for i in range(len(out_df)):
                 if out_df[ek1].values[i] is None:
@@ -159,7 +165,7 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
                 else:
                     ends.append(out_df[ek1].values[i])
             out_df[ek1] = ends
-        except:
+        except Exception:
             raise ValueError("could not fill ends with provided chromsizes")
 
     return out_df
@@ -167,12 +173,10 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
 
 def add_ucsc_name_column(reg_df, name_col="name", cols=None):
     """
-    Auto-creates a UCSC name 'chrom:start-end' for each region (chrom,start,end) in reg_df.
+    Auto-creates a UCSC name 'chrom:start-end' for each region
+    (chrom,start,end) in reg_df.
 
     Replaces name_col if it exists.
-
-
-
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     df = reg_df.copy()
@@ -197,7 +201,8 @@ def make_viewframe(
     regions : supported input type
         Currently supported input types:
 
-            - a dictionary where keys are strings and values are integers {str:int}, specifying regions (chrom, 0, end, chrom)
+            - a dictionary where keys are strings and values are integers
+              {str:int}, specifying regions (chrom, 0, end, chrom)
             - a pandas series of chromosomes lengths with index specifying region names
             - a list of tuples [(chrom,start,end), ...] or [(chrom,start,end,name), ...]
             - a pandas DataFrame, skips to validation step
@@ -207,9 +212,9 @@ def make_viewframe(
         If "ucsc" and no column view_name_col, create UCSC style names
 
     check_bounds : None, or chromosome sizes provided as any of valid formats above
-        Optional, if provided checks if regions in the view are contained by regions
-        supplied in check_bounds, typically provided as a series of chromosome sizes.
-        Default None.
+        Optional, if provided checks if regions in the view are contained by
+        regions supplied in check_bounds, typically provided as a series of
+        chromosome sizes. Default None.
 
     view_name_col : str
         Specifies column name of the view regions. Default 'name'.
@@ -241,7 +246,7 @@ def make_viewframe(
                 "Invalid input to make a viewFrame, regions not contained by bounds"
             )
 
-    if not view_name_col in view_df.columns:
+    if view_name_col not in view_df.columns:
         if name_style is None:
             view_df[view_name_col] = view_df[ck1].values
         elif name_style.lower() == "ucsc":
@@ -296,7 +301,8 @@ def sanitize_bedframe(
 
     Notes
     ------
-    The option ``start_exceed_end_action='flip'`` may be useful for gff files with strand information but starts > ends.
+    The option ``start_exceed_end_action='flip'`` may be useful for gff files
+    with strand information but starts > ends.
 
     """
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
