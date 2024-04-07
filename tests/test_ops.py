@@ -285,7 +285,7 @@ def test_shift():
     )
 
 
-def test_shift_strand_aware():
+def test_shift_strandaware():
     df = pd.DataFrame(
         [
             ["chr1", 1000, 1200, "+"],
@@ -352,6 +352,28 @@ def test_shift_strand_aware():
             ],
             columns=["chrom", "start", "end", "strand"],
             index=[1, 2],
+        )
+    )
+
+
+def test_shift_strandaware_unstranded():
+    df = pd.DataFrame(
+        [
+            ["chr1", 1000, 1200, "+"],
+            ["chr1", 800, 1200, "."],
+            ["chrX", 1000, 1500, "+"],
+        ],
+        columns=["chrom", "start", "end", "strand"],
+    )
+    pd.testing.assert_frame_equal(
+        bioframe.shift(df, (10, -20), along="strand"),
+        pd.DataFrame(
+            [
+                ["chr1", 1000 + 10, 1200 - 20, "+"],
+                ["chr1", 800, 1200, "."],
+                ["chrX", 1000 + 10, 1500 - 20, "+"],
+            ],
+            columns=["chrom", "start", "end", "strand"],
         )
     )
 
