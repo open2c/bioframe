@@ -16,7 +16,7 @@ kernelspec:
 
 ## `bedtools intersect`
 
-### Original entries from the first bed
+### Original entries from the first bed `-wa`
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed > out.bed
@@ -27,7 +27,7 @@ overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 ```
 
-### Original entries from the second bed
+### Original entries from the second bed `-wb`
 
 ```sh
 bedtools intersect -wb -a A.bed -b B.bed > out.bed
@@ -50,7 +50,7 @@ overlap = bf.overlap(A, others, how='inner', suffixes=('_1','_2'), return_index=
 out = A.loc[overlap['index_1']]
 ```
 
-### Keep no overlap
+### Keep no overlap `-v`
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed -v > out.bed
