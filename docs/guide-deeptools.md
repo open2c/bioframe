@@ -27,6 +27,17 @@ overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 ```
 
+### Original entries from the second bed
+
+```sh
+bedtools intersect -wb -a A.bed -b B.bed > out.bed
+```
+
+```py
+overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
+out = B.loc[overlap['index_2']]
+```
+
 ### Intersect with multiple beds
 
 ```sh
