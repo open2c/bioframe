@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# How do I
+# Emulating bedtools commands
 
 ## `bedtools intersect`
 
