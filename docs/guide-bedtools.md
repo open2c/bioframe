@@ -57,7 +57,6 @@ bedtools intersect -wa -a A.bed -b B.bed -v > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
-out = A.loc[~A.index.isin(set(overlap['index_1'].unique()))]
+out = bf.setdiff(A, B)
 ```
 
