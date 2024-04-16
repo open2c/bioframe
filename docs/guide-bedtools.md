@@ -14,6 +14,10 @@ kernelspec:
 
 # Emulating bedtools commands
 
+If you want to work on `gtf` files, you do not need to turn them into bed files,
+you can directly read them (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master))
+and turn them into bedframe by renaming the `seqname` column into `chrom`.
+
 ## `bedtools intersect`
 
 ### Original entries from the first bed `-wa`
@@ -60,3 +64,38 @@ bedtools intersect -wa -a A.bed -b B.bed -v > out.bed
 out = bf.setdiff(A, B)
 ```
 
+### Force strandedness `-s`
+
+For intersection
+
+```sh
+bedtools intersect -wa -a A.bed -b B.bed -s > out.bed
+```
+
+```py
+overlap = bf.overlap(A, B, on=['strand'], suffixes=('_1','_2'), return_index=True)
+out = A.loc[overlap['index_1']]
+```
+
+For non intersection
+
+```sh
+bedtools intersect -wa -a A.bed -b B.bed -v -s > out.bed
+```
+
+```py
+out = bf.setdiff(A, B, on=['strand'])
+```
+
+### Minimum overlap a as fraction of A `-f`
+
+We want to keep rows of A that are covered at least 70% by elements from B
+
+```sh
+bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
+```
+
+```py
+cov = bf.coverage(A, B)
+out = A[cov['coverage'] / (cov['end']-cov['start']) ) >=0.70]
+```
