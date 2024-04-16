@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Emulating bedtools commands
+# Bioframe for bedtools users
 
 If you want to work on `gtf` files, you do not need to turn them into bed files,
 you can directly read them (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master))
@@ -73,7 +73,7 @@ bedtools intersect -wa -a A.bed -b B.bed -s > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, on=['strand'], suffixes=('_1','_2'), return_index=True)
+overlap = bf.overlap(A, B, on=['strand'], suffixes=('_1','_2'), return_index=True, how='inner')
 out = A.loc[overlap['index_1']]
 ```
 
