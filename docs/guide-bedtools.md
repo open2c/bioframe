@@ -97,5 +97,5 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 
 ```py
 cov = bf.coverage(A, B)
-out = A[cov['coverage'] / (cov['end']-cov['start']) ) >=0.70]
+out = A[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
 ```
