@@ -26,6 +26,19 @@ This project uses the [hatch](https://hatch.pypa.io/latest/) project manager and
 pipx install hatch
 ```
 
+> [!NOTE]
+> Many custom command shortcuts are accessible through hatch (and shown below). See `tool.hatch.envs.default.scripts` in our project's `pyproject.toml` configuration file.
+
+After forking and cloning the repository, you can create an isolated Python development environment and install the package in "editable" (i.e. development) mode as follows:
+
+```sh
+git clone https://github.com/open2c/bioframe.git
+cd bioframe
+hatch shell
+```
+
+The first time you run `hatch shell` the environment will be created and activated, and the package will be installed. In future sessions, running `hatch shell` will reactivate your development environment.
+
 > [!TIP]
 > If you prefer to store your virtual environments in your working directory (like classic virtualenvs) rather than in a centralized location (similar to conda), configure hatch as follows:
 >
@@ -35,40 +48,49 @@ pipx install hatch
 >
 > This will make hatch set up its environments within the current working directory under `.venv`.
 
-After forking and cloning the repository, you can create an isolated Python development environment and install the package in "editable" (i.e. development) mode as follows:
+Alternatively, if you prefer to manage your virtual environments differently, you can install the package for development using, for example:
 
 ```sh
-git clone https://github.com/open2c/bioframe.git
-hatch shell
-```
-
-The first time you run `hatch shell` the environment will be created and activated, and the package will be installed. In future sessions, running `hatch shell` will reactivate your development environment. If you prefer to manage your virtual environments differently, you can install the package for development using:
-
-```sh
+python -m venv .venv
 pip install -e '.[dev,test,docs]'
 ```
 
 For all pull requests, linting and unit tests are automatically run using the [GitHub Actions](https://docs.github.com/en/actions) Continuous Integration service. However, you are still encouraged to run these checks locally before pushing code to a PR.
 
-> [!NOTE]
-> Many custom command shortcuts are accessible through hatch (and shown below). See `tool.hatch.envs.default.scripts` in our project's `pyproject.toml` configuration file.
+## Linting and formatting
 
-## Linting
-
-We use [ruff](https://docs.astral.sh/ruff/) for style checking. Run `ruff .` or:
+We use [ruff](https://docs.astral.sh/ruff/) for style checking. Run `ruff check .` or:
 
 ```sh
 hatch run lint
 ```
 
-Ruff can fix a lot of errors itself. Run `ruff --fix .` or:
+Ruff can fix a lot of errors itself. Run `ruff check --fix .` or:
 
 ```sh
 hatch run fix
 ```
 
-You can also use tools like [black](https://black.readthedocs.io/en/stable/) to reformat your code.
+Ruff includes a formatter that mimics [black](https://black.readthedocs.io/en/stable/). To automatically reformat your code, you can use `ruff format .` or:
 
+```sh
+hatch run format
+```
+
+We use [pre-commit](https://github.com/pre-commit/pre-commit) to make sure the coding style is enforced. You first need to install pre-commit and the corresponding git commit hooks:
+
+```sh
+pip install pre-commit
+pre-commit install
+```
+
+After that you can make sure your code satisfies the coding style:
+
+```sh
+pre-commit run --all-files
+```
+
+If you install pre-commit in your repo, these checks will also run automatically before every commit.
 
 ## Running/Adding Unit Tests
 
