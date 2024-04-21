@@ -49,7 +49,6 @@ def test_update_default_colnames():
 
 
 def test_verify_columns():
-
     new_names = ("C", "chromStart", "chromStop")
     df1 = pd.DataFrame(
         [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14]],
@@ -71,7 +70,6 @@ def test_verify_columns():
 
 
 def test_verify_column_dtypes():
-
     new_names = ("C", "chromStart", "chromStop")
     df1 = pd.DataFrame(
         [["chr1", 1, 5], ["chr1", 3, 8], ["chr1", 8, 10], ["chr1", 12, 14]],

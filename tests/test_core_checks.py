@@ -61,7 +61,6 @@ def test_is_cataloged():
 
 
 def test_is_contained():
-
     view_df = pd.DataFrame(
         [
             ["chr1", 0, 20, "chr1p"],
@@ -434,7 +433,6 @@ def test_is_viewframe():
 
 
 def test_is_sorted():
-
     view_df = pd.DataFrame(
         [
             ["chrX", 1, 8, "oranges"],

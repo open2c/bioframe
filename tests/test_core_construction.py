@@ -22,7 +22,6 @@ def test_add_ucsc_name_column():
 
 
 def test_any():
-
     ### tests copied from old parse_regions
     # main functionality: convert to dataframe and create name
     df = pd.DataFrame(
@@ -170,7 +169,6 @@ def test_sanitize_bedframe():
 
 
 def test_make_viewframe():
-
     # test dict input
     view_df = pd.DataFrame(
         [

@@ -8,7 +8,6 @@ import bioframe
 
 ############# tests #####################
 def test_read_table():
-
     d = """chr1\nchr2\nchr2"""
     assert bioframe.read_table(StringIO(d), schema="bed3").shape == (3, 3)
 
@@ -35,7 +34,6 @@ def test_read_table():
 
 
 def test_read_chromsizes():
-
     d = """chr1\nchr2\nchr2"""
     with pytest.raises(ValueError):
         bioframe.read_chromsizes(StringIO(d))
