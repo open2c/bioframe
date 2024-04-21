@@ -10,7 +10,6 @@ testdir = op.realpath(op.dirname(__file__))
 
 
 def test_make_chromarms():
-
     ### test the case where columns have different names
     df = pd.DataFrame(
         [["chrX", 0, 8]],
@@ -192,7 +191,6 @@ def test_frac_gc():
 
 
 def test_seq_gc():
-
     assert 0 == bioframe.seq_gc("AT")
     assert np.isnan(bioframe.seq_gc("NNN"))
     assert 1 == bioframe.seq_gc("NGnC")

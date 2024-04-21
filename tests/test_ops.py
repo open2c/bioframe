@@ -2028,9 +2028,7 @@ def test_count_overlaps():
             "start": pd.Int64Dtype(),
             "end": pd.Int64Dtype(),
         }
-    )[
-        ["chrom1", "start", "end", "strand", "animal", "count"]
-    ]
+    )[["chrom1", "start", "end", "strand", "animal", "count"]]
 
     counts_nans = bioframe.count_overlaps(
         df1_na,
