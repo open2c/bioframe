@@ -8,7 +8,7 @@ def to_parquet(
     compression="snappy",
     use_dictionary=True,
     version=2.0,
-    **kwargs
+    **kwargs,
 ):
     """
     Save an iterable of dataframe chunks to a single Apache Parquet file. For
@@ -55,7 +55,7 @@ def to_parquet(
                     compression=compression,
                     use_dictionary=use_dictionary,
                     version=version,
-                    **kwargs
+                    **kwargs,
                 )
             writer.write_table(table, row_group_size=row_group_size)
     finally:

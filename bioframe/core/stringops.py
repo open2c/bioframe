@@ -19,10 +19,8 @@ RANGE_TOKEN_SPEC = [
 ]
 
 RANGE_REGEX = re.compile(
-    r"\s*" + r"|\s*".join(
-        rf"(?P<{name}>{token})" for name, token in RANGE_TOKEN_SPEC
-    ),
-    re.IGNORECASE
+    r"\s*" + r"|\s*".join(rf"(?P<{name}>{token})" for name, token in RANGE_TOKEN_SPEC),
+    re.IGNORECASE,
 )
 
 
@@ -114,16 +112,12 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
     def _parse_range(token_stream):
         name, token = next(token_stream, (None, None))
         if name != "COORD":
-            raise ValueError(
-                f"Expected COORD; got unexpected token: {name}: {token}"
-            )
+            raise ValueError(f"Expected COORD; got unexpected token: {name}: {token}")
         start = _parse_humanized_int(token)
 
         name, token = next(token_stream, (None, None))
         if name != "HYPHEN":
-            raise ValueError(
-                f"Expected HYPHEN; got unexpected token: {name}: {token}"
-            )
+            raise ValueError(f"Expected HYPHEN; got unexpected token: {name}: {token}")
 
         name, token = next(token_stream, (None, None))
         if name is None:  # No end coordinate
@@ -131,9 +125,7 @@ def parse_region_string(s: str) -> Tuple[str, int, int]:
         elif name == "COORD":
             end = _parse_humanized_int(token)
         else:
-            raise ValueError(
-                f"Expected COORD; got unexpected token: {name}: {token}"
-            )
+            raise ValueError(f"Expected COORD; got unexpected token: {name}: {token}")
 
         return start, end
 

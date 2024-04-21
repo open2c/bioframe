@@ -9,9 +9,7 @@ def parse_gtf_attributes(attrs, kv_sep="=", item_sep=";", quotechar='"', **kwarg
     stripchars = quotechar + " "
     item_lists = item_lists.apply(
         lambda items: [
-            [x.strip(stripchars) for x in item]
-            for item in items
-            if len(item) == 2
+            [x.strip(stripchars) for x in item] for item in items if len(item) == 2
         ]
     )
     kv_records = item_lists.apply(dict)

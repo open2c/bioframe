@@ -10,7 +10,6 @@ import requests
 
 
 class EncodeClient:
-
     BASE_URL = "http://www.encodeproject.org/"
 
     # 2020-05-15 compatible with ENCODE Metadata at:
@@ -41,7 +40,6 @@ class EncodeClient:
             metadata_path = op.join(cachedir, "metadata.tsv")
 
             if not op.exists(metadata_path):
-
                 print(
                     "getting metadata from ENCODE, please wait while "
                     "(~240Mb) file downloads"

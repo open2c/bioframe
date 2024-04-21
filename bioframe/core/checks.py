@@ -62,8 +62,7 @@ def is_bedframe(
             raise TypeError("Invalid bedFrame: Invalid column names")
         return False
 
-    if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1],
-                                 return_as_bool=True):
+    if not _verify_column_dtypes(df, cols=[ck1, sk1, ek1], return_as_bool=True):
         if raise_errors:
             raise TypeError("Invalid bedFrame: Invalid column dtypes")
         return False
@@ -79,18 +78,18 @@ def is_bedframe(
 
     if ((df[ek1] - df[sk1]) < 0).any():
         if raise_errors:
-            raise ValueError(f"Invalid bedframe: starts exceed ends for "
-                             f"{sum((df[ek1] - df[sk1]) < 0)} intervals")
+            raise ValueError(
+                f"Invalid bedframe: starts exceed ends for "
+                f"{sum((df[ek1] - df[sk1]) < 0)} intervals"
+            )
         return False
 
     return True
 
 
-def is_cataloged(df,
-                 view_df,
-                 raise_errors=False,
-                 df_view_col="view_region",
-                 view_name_col="name"):
+def is_cataloged(
+    df, view_df, raise_errors=False, df_view_col="view_region", view_name_col="name"
+):
     """
     Tests if all region names in `df[df_view_col]` are present in
     `view_df[view_name_col]`.
@@ -133,13 +132,16 @@ def is_cataloged(df,
         return False
 
     if not set(df[df_view_col].copy().dropna().values).issubset(
-            set(view_df[view_name_col].values)):
+        set(view_df[view_name_col].values)
+    ):
         if raise_errors:
             missing_regions = set(df[df_view_col].values).difference(
-                set(view_df[view_name_col].values))
+                set(view_df[view_name_col].values)
+            )
             raise ValueError(
                 f"The following regions in df[df_view_col] not in "
-                f"view_df[view_name_col]: \n{missing_regions}")
+                f"view_df[view_name_col]: \n{missing_regions}"
+            )
         return False
 
     return True
@@ -172,8 +174,7 @@ def is_overlapping(df, cols=None):
     df_merged = merge(df, cols=cols)
 
     total_interval_len = np.sum((df[ek1] - df[sk1]).values)
-    total_interval_len_merged = np.sum(
-        (df_merged[ek1] - df_merged[sk1]).values)
+    total_interval_len_merged = np.sum((df_merged[ek1] - df_merged[sk1]).values)
 
     if total_interval_len > total_interval_len_merged:
         return True
@@ -181,10 +182,7 @@ def is_overlapping(df, cols=None):
         return False
 
 
-def is_viewframe(region_df,
-                 raise_errors=False,
-                 view_name_col="name",
-                 cols=None):
+def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None):
     """
     Checks that `region_df` is a valid viewFrame.
 
@@ -223,8 +221,9 @@ def is_viewframe(region_df,
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
-    if not _verify_columns(region_df, [ck1, sk1, ek1, view_name_col],
-                           return_as_bool=True):
+    if not _verify_columns(
+        region_df, [ck1, sk1, ek1, view_name_col], return_as_bool=True
+    ):
         if raise_errors:
             raise TypeError("Invalid view: invalid column names")
         return False
@@ -239,11 +238,12 @@ def is_viewframe(region_df,
             raise ValueError("Invalid view: cannot contain NAs")
         return False
 
-    if len(set(region_df[view_name_col])) < \
-       len(region_df[view_name_col].values):
+    if len(set(region_df[view_name_col])) < len(region_df[view_name_col].values):
         if raise_errors:
-            raise ValueError("Invalid view: entries in \
-                region_df[view_name_col] must be unique")
+            raise ValueError(
+                "Invalid view: entries in \
+                region_df[view_name_col] must be unique"
+            )
         return False
 
     if is_overlapping(region_df, cols=cols):
@@ -296,14 +296,12 @@ def is_contained(
 
     """
     from ..ops import trim
+
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
     ck2, sk2, ek2 = _get_default_colnames() if cols_view is None else cols_view
     if df_view_col is None:
         try:
-            df_view_assigned = ops.overlap(df,
-                                           view_df,
-                                           cols1=cols,
-                                           cols2=cols_view)
+            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=cols_view)
             # ek2 = end_ is the default value
             assert (df_view_assigned[ek2 + "_"].isna()).sum() == 0
             # sk2 = start_ is the default value
@@ -320,17 +318,20 @@ def is_contained(
         return True
 
     if not is_cataloged(
-            df, view_df, df_view_col=df_view_col, view_name_col=view_name_col):
+        df, view_df, df_view_col=df_view_col, view_name_col=view_name_col
+    ):
         if raise_errors:
             raise ValueError("df not cataloged in view_df")
         return False
 
-    df_trim = trim(df,
-                   view_df=view_df,
-                   df_view_col=df_view_col,
-                   view_name_col=view_name_col,
-                   cols=cols,
-                   cols_view=cols_view)
+    df_trim = trim(
+        df,
+        view_df=view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view,
+    )
 
     is_start_trimmed = np.any(df[sk1].values != df_trim[sk1].values)
     is_end_trimmed = np.any(df[ek1].values != df_trim[ek1].values)
@@ -381,11 +382,11 @@ def is_covering(df, view_df, view_name_col="name", cols=None, cols_view=None):
     from ..ops import complement
 
     if complement(
-            df,
-            view_df=view_df,
-            view_name_col=view_name_col,
-            cols=cols,
-            cols_view=cols_view,
+        df,
+        view_df=view_df,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view,
     ).empty:
         return True
     else:
@@ -444,28 +445,28 @@ def is_tiling(
 
     """
 
-    view_df = construction.make_viewframe(view_df,
-                                          view_name_col=view_name_col,
-                                          cols=cols_view)
+    view_df = construction.make_viewframe(
+        view_df, view_name_col=view_name_col, cols=cols_view
+    )
 
     if is_overlapping(df, cols=cols):
         if raise_errors:
             raise ValueError("overlaps")
         return False
-    if not is_covering(df,
-                       view_df,
-                       view_name_col=view_name_col,
-                       cols=cols,
-                       cols_view=cols_view):
+    if not is_covering(
+        df, view_df, view_name_col=view_name_col, cols=cols, cols_view=cols_view
+    ):
         if raise_errors:
             raise ValueError("not covered")
         return False
-    if not is_contained(df,
-                        view_df,
-                        df_view_col=df_view_col,
-                        view_name_col=view_name_col,
-                        cols=cols,
-                        cols_view=cols_view):
+    if not is_contained(
+        df,
+        view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view,
+    ):
         if raise_errors:
             raise ValueError("not contained")
         return False

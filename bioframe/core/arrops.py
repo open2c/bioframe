@@ -264,6 +264,7 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
 
     return overlap_ids
 
+
 def _convert_points_to_len1_segments(starts, ends):
     """
     Convert points to len1 segments for internal use in overlap().
@@ -281,6 +282,7 @@ def _convert_points_to_len1_segments(starts, ends):
     pseudo_ends = ends.copy()
     pseudo_ends[ends == starts] += 1
     return [starts, pseudo_ends]
+
 
 def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     """
@@ -729,8 +731,8 @@ def closest_intervals(
         [left_dists, right_dists, np.zeros(overlap_ids.shape[0])]
     )
 
-    if len(closest_ids)==0:
-        return np.empty((0,2), dtype=int)
+    if len(closest_ids) == 0:
+        return np.empty((0, 2), dtype=int)
 
     # Sort by distance to set 1 intervals and, if present, by the tie-breaking
     # data array.
