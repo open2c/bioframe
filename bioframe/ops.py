@@ -823,7 +823,7 @@ def merge(df, min_dist=0, cols=None, on=None):
         ) = arrops.merge_intervals(
             df_group[sk].values.astype(np.int64),
             df_group[ek].values.astype(np.int64),
-            min_dist=min_dist
+            min_dist=min_dist,
             # df_group[sk].values, df_group[ek].values, min_dist=min_dist
         )
         interval_counts = np.bincount(cluster_ids_group)

@@ -88,7 +88,7 @@ def read_chromsizes(
     chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
     natsort=True,
     as_bed=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Read a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
@@ -132,7 +132,7 @@ def read_chromsizes(
         usecols=[0, 1],
         names=["name", "length"],
         dtype={"name": str},
-        **kwargs
+        **kwargs,
     )
 
     if filter_chroms:
@@ -184,7 +184,7 @@ def read_pairix(
     columns=None,
     usecols=None,
     dtypes=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Read a pairix-indexed file into DataFrame.
@@ -397,9 +397,7 @@ def read_bigwig(path, chrom, start=None, end=None, engine="auto"):
         df.insert(0, "chrom", chrom)
 
     else:
-        raise ValueError(
-            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
-        )
+        raise ValueError(f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}")
 
     return df
 
@@ -454,9 +452,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
         df.insert(0, "chrom", chrom)
 
     else:
-        raise ValueError(
-            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
-        )
+        raise ValueError(f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}")
 
     return df
 
@@ -516,9 +512,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
         is_bedgraph = False
 
     if not is_bedgraph:
-        raise ValueError(
-            f"A bedGraph-like DataFrame is required, got {df.columns}"
-        )
+        raise ValueError(f"A bedGraph-like DataFrame is required, got {df.columns}")
 
     if value_field is None:
         value_field = df.columns[3]
@@ -529,8 +523,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
     bg = bg.sort_values(["chrom", "start", "end"])
 
     with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
-         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs: # fmt: skip
-
+         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 
@@ -610,7 +603,6 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
     with tempfile.NamedTemporaryFile(suffix=".bed") as f, tempfile.NamedTemporaryFile(
         "wt", suffix=".chrom.sizes"
     ) as cs:
-
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 

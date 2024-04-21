@@ -61,11 +61,11 @@ def make_chromarms(
 
     if isinstance(chromsizes, (pd.Series, dict)):
         chromsizes = dict(chromsizes)
-        df_chroms = (
-            pd.DataFrame({
+        df_chroms = pd.DataFrame(
+            {
                 ck1: list(chromsizes.keys()),
                 "length": list(chromsizes.values()),
-            })
+            }
         )
     elif isinstance(chromsizes, pd.DataFrame):
         df_chroms = chromsizes.copy()
@@ -512,8 +512,9 @@ def pair_by_distance(
         np.abs(idxs[f"index{suffixes[0]}"] - idxs[f"index{suffixes[1]}"]) - 1
     )
     idxs = idxs[
-        (idxs['intervening']<=max_intervening) & (idxs['intervening']>=min_intervening)
-        ]
+        (idxs["intervening"] <= max_intervening)
+        & (idxs["intervening"] >= min_intervening)
+    ]
 
     left_ivals = (
         df.iloc[idxs[f"index{suffixes[0]}"].values]
