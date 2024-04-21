@@ -48,16 +48,17 @@ The first time you run `hatch shell` the environment will be created and activat
 >
 > This will make hatch set up its environments within the current working directory under `.venv`.
 
-Alternatively, if you prefer to manage your virtual environments differently, you can install the package for development using, for example:
+Alternatively, if you prefer to manage your virtual environments yourself, you can install the package for development using, for example:
 
 ```sh
 python -m venv .venv
+source .venv/bin/activate
 pip install -e '.[dev,test,docs]'
 ```
 
 For all pull requests, linting and unit tests are automatically run using the [GitHub Actions](https://docs.github.com/en/actions) Continuous Integration service. However, you are still encouraged to run these checks locally before pushing code to a PR.
 
-## Linting and formatting
+## Linting and Formatting
 
 We use [ruff](https://docs.astral.sh/ruff/) for style checking. Run `ruff check .` or:
 
@@ -71,11 +72,7 @@ Ruff can fix a lot of errors itself. Run `ruff check --fix .` or:
 hatch run fix
 ```
 
-Ruff includes a formatter that mimics [black](https://black.readthedocs.io/en/stable/). To automatically reformat your code, you can use `ruff format .` or:
-
-```sh
-hatch run format
-```
+Ruff includes a formatter that mimics [black](https://black.readthedocs.io/en/stable/). To automatically reformat your code, you can use `ruff format {source_file}`.
 
 We use [pre-commit](https://github.com/pre-commit/pre-commit) to make sure the coding style is enforced. You first need to install pre-commit and the corresponding git commit hooks:
 
@@ -84,15 +81,13 @@ pip install pre-commit
 pre-commit install
 ```
 
-After that you can make sure your code satisfies the coding style:
+The last command installs the hooks listed in `.pre-commit-config.yaml` locally into your git repo. If you do this, the checks will run automatically before every commit. You can also manually make sure your code satisfies the coding style:
 
 ```sh
 pre-commit run --all-files
 ```
 
-If you install pre-commit in your repo, these checks will also run automatically before every commit.
-
-## Running/Adding Unit Tests
+## Testing
 
 It is best if all new functionality and/or bug fixes have unit tests added with each use-case.
 
@@ -102,7 +97,7 @@ We use [pytest](https://docs.pytest.org/en/latest) as our unit testing framework
 hatch run test
 ```
 
-## Adding/Building the Documentation
+## Documentation
 
 If a feature is stable and relatively finalized, it is time to add it to the documentation. If you are adding any private/public functions, it is best to add docstrings, to aid in reviewing code and also for the API reference.
 
