@@ -1,9 +1,8 @@
 .. _API_ops:
 
-Interval operations 
+Interval operations
 ===================
 
 .. automodule:: bioframe.ops
    :autosummary:
    :members:
-

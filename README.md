@@ -1,6 +1,6 @@
 # Bioframe: Operations on Genomic Interval Dataframes
 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/bioframe-logo.png" width=75%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/bioframe-logo.png" width=75%>
 
 ![CI](https://github.com/open2c/bioframe/actions/workflows/ci.yml/badge.svg)
 [![Docs status](https://readthedocs.org/projects/bioframe/badge/)](https://bioframe.readthedocs.io/en/latest/)
@@ -9,9 +9,9 @@
 [![Slack](https://img.shields.io/badge/chat-slack-%233F0F3F?logo=slack)](https://bit.ly/open2c-slack)
 [![NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://www.numfocus.org)
 
-Bioframe enables flexible and scalable operations on genomic interval dataframes in Python. 
+Bioframe enables flexible and scalable operations on genomic interval dataframes in Python.
 
-Bioframe is built directly on top of [Pandas](https://pandas.pydata.org/). Bioframe provides: 
+Bioframe is built directly on top of [Pandas](https://pandas.pydata.org/). Bioframe provides:
 
 * A variety of genomic interval operations that work directly on dataframes.
 * Operations for special classes of genomic intervals, including chromosome arms and fixed-size bins.
@@ -38,10 +38,10 @@ Interested in contributing to bioframe? That's great! To get started, check out 
 
 Key genomic interval operations in bioframe include:
 - `overlap`: Find pairs of overlapping genomic intervals between two dataframes.
-- `closest`: For every interval in a dataframe, find the closest intervals in a second dataframe. 
+- `closest`: For every interval in a dataframe, find the closest intervals in a second dataframe.
 - `cluster`: Group overlapping intervals in a dataframe into clusters.
 - `complement`: Find genomic intervals that are not covered by any interval from a dataframe.
- 
+
 Bioframe additionally has functions that are frequently used for genomic interval operations and can be expressed as combinations of these core operations and dataframe operations, including: `coverage`, `expand`, `merge`, `select`, and `subtract`.
 
 To `overlap` two dataframes, call:
@@ -53,13 +53,13 @@ bf.overlap(df1, df2)
 
 For these two input dataframes, with intervals all on the same chromosome:
 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%> 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df2.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%>
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df2.png" width=60%>
 
 `overlap` will return the following interval pairs as overlaps:
 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_0.png" width=60%> 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_0.png" width=60%>
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/overlap_inner_1.png" width=60%>
 
 
 To `merge` all overlapping intervals in a dataframe, call:
@@ -71,11 +71,11 @@ bf.merge(df1)
 
 For this input dataframe, with intervals all on the same chromosome:
 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/df1.png" width=60%>
 
 `merge` will return a new dataframe with these merged intervals:
 
-<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/merge_df1.png" width=60%> 
+<img src="https://github.com/open2c/bioframe/raw/main/docs/figs/merge_df1.png" width=60%>
 
 See the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html) for visualizations of other interval operations in bioframe.
 
@@ -89,12 +89,12 @@ ctcf_motif_calls = bioframe.read_table(jaspar_url, schema='jaspar', skiprows=1)
 ```
 
 ## Tutorials
-See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/tutorials/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe. 
+See this [jupyter notebook](https://github.com/open2c/bioframe/tree/master/docs/tutorials/tutorial_assign_motifs_to_peaks.ipynb) for an example of how to assign TF motifs to ChIP-seq peaks using bioframe.
 
 
 ## Citing
 
-If you use ***bioframe*** in your work, please cite:  
+If you use ***bioframe*** in your work, please cite:
 
 ```bibtex
 @article{bioframe_2024,

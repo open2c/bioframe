@@ -10,7 +10,7 @@ genomes. These are accessible through a convenient dataclass interface via :func
 The assemblies are listed in a manifest YAML file, and each assembly
 has a mandatory companion file called `seqinfo` that contains the sequence
 names, lengths, and other information. The records in the manifest file contain
-the following fields:   
+the following fields:
 
 - ``organism``: the organism name
 - ``provider``: the genome assembly provider (e.g, ucsc, ncbi)
@@ -31,8 +31,8 @@ The `seqinfo` file is a TSV file with the following columns (with header):
 - ``unit``: assembly unit of the chromosome (e.g., "primary", "non-nuclear", "decoy")
 - ``aliases``: comma-separated list of aliases for the sequence name
 
-We currently do not include sequences with "alt" or "patch" roles in `seqinfo` files, but we 
-do support the inclusion of additional decoy sequences (as used by so-called NGS *analysis 
+We currently do not include sequences with "alt" or "patch" roles in `seqinfo` files, but we
+do support the inclusion of additional decoy sequences (as used by so-called NGS *analysis
 sets* for human genome assemblies) by marking them as members of a "decoy" assembly unit.
 
 The `cytoband` file is an optional TSV file with the following columns (with header):
@@ -61,7 +61,7 @@ New assemblies can be requested by opening an issue on GitHub or by submitting a
 
 Remote resources
 ----------------
-These functions now default to using the local data store, but can be used to obtain chromsizes or 
+These functions now default to using the local data store, but can be used to obtain chromsizes or
 centromere positions from UCSC by setting ``provider="ucsc"``.
 
 .. automodule:: bioframe.io.resources

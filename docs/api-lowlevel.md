@@ -25,7 +25,7 @@ kernelspec:
 
 ```
 
-Low level array-based operations are used to implement the genomic interval operations on dataframes. 
+Low level array-based operations are used to implement the genomic interval operations on dataframes.
 
 ```{code-cell} ipython3
 import itertools
