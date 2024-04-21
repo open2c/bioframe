@@ -41,10 +41,10 @@ Date 2024-01-08
 
 API changes:
 
-Default behavior of `ensure_nullable` option in `overlap` was modified to minimize the possibility of regressions in libraries that depend on legacy behavior. 
+Default behavior of `ensure_nullable` option in `overlap` was modified to minimize the possibility of regressions in libraries that depend on legacy behavior.
 
-* The new option was renamed `ensure_int` and is `True` by default. It ensures that output coordinate columns are always returned with an integer dtype, as was the case in prior versions. This is achieved by converting columns having non-nullable NumPy dtypes to Pandas nullable ones in the specific case where the result of an **outer join** generates missing values; otherwise, column dtypes are preserved unchanged in the output. 
-* Unlike previous minor versions of bioframe, the nullable dtype chosen will have the **same underlying type** as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output). 
+* The new option was renamed `ensure_int` and is `True` by default. It ensures that output coordinate columns are always returned with an integer dtype, as was the case in prior versions. This is achieved by converting columns having non-nullable NumPy dtypes to Pandas nullable ones in the specific case where the result of an **outer join** generates missing values; otherwise, column dtypes are preserved unchanged in the output.
+* Unlike previous minor versions of bioframe, the nullable dtype chosen will have the **same underlying type** as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output).
 * This behavior can be turned off by setting `ensure_int` to `False`, in which case outer joins on dataframes using NumPy dtypes may produce floating point output columns when missing values are introduced (stored as `NaN`), following the native casting behavior of such columns.
 
 ## [v0.6.0](https://github.com/open2c/bioframe/compare/v0.5.1...v0.6.0)
@@ -141,27 +141,27 @@ API changes:
 Date : 2021-08-31
 
 Conceptual changes:
-* we formulated strict definitions for genomic intervals, dataframes, and 
+* we formulated strict definitions for genomic intervals, dataframes, and
     their various properties. All bioframe functions are expected to follow
-    to these definitions tightly.  
+    to these definitions tightly.
 
 API changes:
-* reorganize modules: 
-    * ops - operations on genomic interval dataframes 
+* reorganize modules:
+    * ops - operations on genomic interval dataframes
     * extras - miscellaneous operations, most involving
         genomic sequences and gene annotations
     * vis - visualizations of genomic interval dataframes
     * core.arrops - operations on genomic interval arrays
     * core.checks - tests for definitions of genomic interval dataframes
     * core.construction - construction and sanitation of genomic interval dataframes
-    * core.specs - specifications for the implementation of genomic intervals in pandas.dataframes 
+    * core.specs - specifications for the implementation of genomic intervals in pandas.dataframes
         (i.e. column names, datatypes, etc)
     * core.stringops - operations on genomic interval strings
     * io.fileops - I/O on common file formats for genomic data
     * io.schemas - schemas for standard tabular formats for genomic data storage
-    * io.resources - interfaces to popular online genomic data resources 
+    * io.resources - interfaces to popular online genomic data resources
 
-* new functions: extras.pair_by_distance, ops.sort_bedframe, ops.assign_view, 
+* new functions: extras.pair_by_distance, ops.sort_bedframe, ops.assign_view,
     dataframe constructors
 
 * existing functions:

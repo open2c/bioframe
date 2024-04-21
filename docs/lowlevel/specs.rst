@@ -1,4 +1,4 @@
-Specifications 
+Specifications
 =================
 
 .. automodule:: bioframe.core.specs

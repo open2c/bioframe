@@ -8,7 +8,7 @@
 # import sys
 from datetime import datetime
 from importlib.metadata import metadata
-from pathlib import Path
+
 # autodoc_mock_imports = ["numpy", "pandas", "matplotlib", "requests"]
 
 
@@ -49,7 +49,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", '**.ipynb_checkpoints']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
 # nbsphinx_custom_formats = {
 #     '.md': ['jupytext.reads', {'fmt': 'MyST'}],
@@ -76,4 +76,4 @@ add_module_names = False
 
 # Cache MyST (.md or .ipynb) notebook outputs if unmodified
 jupyter_execute_notebooks = "cache"
-execution_excludepatterns = ['guide-performance.ipynb']
+execution_excludepatterns = ["guide-performance.ipynb"]

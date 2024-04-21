@@ -26,9 +26,9 @@ This project uses the [hatch](https://hatch.pypa.io/latest/) project manager and
 pipx install hatch
 ```
 
-> [!TIP]  
+> [!TIP]
 > If you prefer to store your virtual environments in your working directory (like classic virtualenvs) rather than in a centralized location (similar to conda), configure hatch as follows:
-> 
+>
 > ```sh
 > hatch config set dirs.env.virtual .venv
 > ```
