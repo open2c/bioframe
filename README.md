@@ -3,6 +3,7 @@
 <img src="https://github.com/open2c/bioframe/raw/main/docs/figs/bioframe-logo.png" width=75%>
 
 ![CI](https://github.com/open2c/bioframe/actions/workflows/ci.yml/badge.svg)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/open2c/bioframe/main.svg)](https://results.pre-commit.ci/latest/github/open2c/bioframe/main)
 [![Docs status](https://readthedocs.org/projects/bioframe/badge/)](https://bioframe.readthedocs.io/en/latest/)
 [![Paper](https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtae088-blue)](https://doi.org/10.1093/bioinformatics/btae088)
 [![Zenodo](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
