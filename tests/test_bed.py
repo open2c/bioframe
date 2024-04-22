@@ -1,8 +1,8 @@
-import numpy as np
 import os
+import tempfile
+
 import pandas as pd
 import pytest
-import tempfile
 
 import bioframe
 
@@ -20,7 +20,7 @@ def test_involution():
 
 def test_chrom_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'chrom'] = 'value with space'
         with pytest.raises(ValueError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'))
@@ -36,7 +36,7 @@ def test_chrom_validators():
 
 def test_end_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'end'] = 10 # end must be after start
         bf.loc[0, 'start'] = 11
         with pytest.raises(ValueError):
@@ -45,7 +45,7 @@ def test_end_validators():
 
 def test_name_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'name'] = '' # must not be empty
         with pytest.raises(ValueError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'))
@@ -57,7 +57,7 @@ def test_name_validators():
 
 def test_score_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         # negative value is enforced by the normal types
 
         bf.loc[0, 'score'] = 1001
@@ -71,7 +71,7 @@ def test_score_validators():
 
 def test_strand_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'strand'] = '*'
         with pytest.raises(ValueError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'))
@@ -80,7 +80,7 @@ def test_strand_validators():
 def test_thick_validators():
     with tempfile.TemporaryDirectory() as directory:
         for direction in ['Start', 'End']:
-            bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+            bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
             bf.loc[0, 'start'] = 100
             bf.loc[0, 'end'] = 1000
             bf.loc[0, f'thick{direction}'] = 1001
@@ -94,7 +94,7 @@ def test_thick_validators():
 
 def test_itemRgb_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf["itemRgb"] = bf["itemRgb"].astype(str)
         bf.loc[0, 'itemRgb'] = 'a,12,13' # must be integers
         with pytest.raises(ValueError):
@@ -119,7 +119,7 @@ def test_itemRgb_validators():
 
 def test_blockCount_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'blockCount'] = 0
         with pytest.raises(ValueError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'))
@@ -127,7 +127,7 @@ def test_blockCount_validators():
 
 def test_blockSizes_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'blockCount'] = 2
         bf.loc[0, 'blockSizes'] = '2,a,'
         with pytest.raises(ValueError):
@@ -141,7 +141,7 @@ def test_blockSizes_validators():
 
 def test_blockStarts_validators():
     with tempfile.TemporaryDirectory() as directory:
-        bf = bioframe.read_table(f'tests/test_data/bed12.bed', schema='bed12')
+        bf = bioframe.read_table('tests/test_data/bed12.bed', schema='bed12')
         bf.loc[0, 'blockCount'] = 2
         bf.loc[0, 'blockSizes'] = '2,4,'
         bf.loc[0, 'blockStarts'] = '0,a,'

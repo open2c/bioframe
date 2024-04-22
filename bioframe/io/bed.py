@@ -48,14 +48,14 @@ the uninformative score value as 0.
 We also don't enforce limiting name fields to 7-bit printable ascii.
 """
 from __future__ import annotations
-from typing import Callable
+
 import pathlib
 import re
 import warnings
+from typing import Callable
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 
 __all__ = ["to_bed"]
 
