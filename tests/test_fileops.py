@@ -46,3 +46,12 @@ def test_read_chromsizes():
     assert chromsizes.name == "length"
     assert list(chromsizes.index) == ["chr1", "chr2", "chr3"]
     assert list(chromsizes.values) == [1, 3, 2]
+
+
+def test_read_beds():
+    # Checking that wen properly read common bed schemas
+    schemas = ['narrowPeak', 'jaspar', 'bed9', 'bed12']
+
+    for schema in schemas:
+        _ = bioframe.read_table(f'tests/test_data/{schema}.bed', schema=schema,
+                                schema_is_strict=True)
