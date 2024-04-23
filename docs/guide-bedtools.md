@@ -20,7 +20,22 @@ and turn them into bedframe by renaming the `seqname` column into `chrom`.
 
 ## `bedtools intersect`
 
-### Original entries from the first bed `-wa`
+### Original unique entries from the first bed `-u`
+
+Note that this gives one row per overlap and can contain duplicates,
+
+```sh
+bedtools intersect -u -a A.bed -b B.bed > out.bed
+```
+
+```py
+overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
+out = A.loc[overlap['index_1'].unique()]
+```
+
+### Original entries from the first bed for each overlap`-wa`
+
+Note that this gives one row per overlap and can contain duplicates,
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed > out.bed
@@ -87,7 +102,7 @@ bedtools intersect -wa -a A.bed -b B.bed -v -s > out.bed
 out = bf.setdiff(A, B, on=['strand'])
 ```
 
-### Minimum overlap a as fraction of A `-f`
+### Minimum overlap as a fraction of A `-f`
 
 We want to keep rows of A that are covered at least 70% by elements from B
 
@@ -97,5 +112,5 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 
 ```py
 cov = bf.coverage(A, B)
-out = A[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
+out = A.loc[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
 ```
