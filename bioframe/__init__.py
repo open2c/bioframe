@@ -52,6 +52,7 @@ __all__ = [
     "read_pairix",
     "read_tabix",
     "read_table",
+    "to_bed",
     "to_bigbed",
     "to_bigwig",
     "assign_view",
@@ -123,6 +124,7 @@ from .io import (
     read_pairix,
     read_tabix,
     read_table,
+    to_bed,
     to_bigbed,
     to_bigwig,
 )

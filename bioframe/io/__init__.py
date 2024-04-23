@@ -1,4 +1,5 @@
 from .assembly import assemblies_available, assembly_info
+from .bed import to_bed
 from .fileops import (
     load_fasta,
     read_bam,
@@ -24,6 +25,7 @@ __all__ = [
     "read_bam",
     "load_fasta",
     "read_bigwig",
+    "to_bed",
     "to_bigwig",
     "read_bigbed",
     "to_bigbed",
