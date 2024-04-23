@@ -49,7 +49,7 @@ def test_read_chromsizes():
 
 
 def test_read_beds():
-    # Checking that wen properly read common bed schemas
+    # Checking that we properly read common bed schemas
     schemas = ['narrowPeak', 'jaspar', 'bed9', 'bed12']
 
     for schema in schemas:
