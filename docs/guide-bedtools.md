@@ -25,6 +25,9 @@ and turn them into bedframe by renaming the `seqname` column into `chrom`.
 Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support
 all the following operations TODO `API_fileops`
 
+You can write the output of your operations back to a bed file using `to_bed` which will
+generally be able to infer the bed format used.
+
 ## `bedtools intersect`
 
 ### Original unique entries from the first bed `-u`
@@ -133,4 +136,3 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 cov = bf.coverage(A, B)
 out = A.loc[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
 ```
-
