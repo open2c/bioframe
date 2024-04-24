@@ -14,9 +14,16 @@ kernelspec:
 
 # Bioframe for bedtools users
 
-If you want to work on `gtf` files, you do not need to turn them into bed files,
-you can directly read them (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master))
+If you work with bed files you can simply load them using `read_table`, it will
+create a pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
+which supports all the bioframe operations.
+
+Altertantively if you want to work on `gtf` files, you do not need to turn them
+into bed files, you can directly read them (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master))
 and turn them into bedframe by renaming the `seqname` column into `chrom`.
+
+Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support
+all the following operations TODO `API_fileops`
 
 ## `bedtools intersect`
 
@@ -31,6 +38,18 @@ bedtools intersect -u -a A.bed -b B.bed > out.bed
 ```py
 overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1'].unique()]
+```
+
+### Report the number of hits in B `-c`
+
+Reports 0 for A entries that have no overlap with B.
+
+```sh
+bedtools intersect -c -a A.bed -b B.bed > out.bed
+```
+
+```py
+out = bf.count_overlaps(A, B)
 ```
 
 ### Original entries from the first bed for each overlap`-wa`
@@ -114,3 +133,4 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 cov = bf.coverage(A, B)
 out = A.loc[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
 ```
+
