@@ -1,3 +1,5 @@
+.. _API_fileops:
+
 File I/O
 ========
 

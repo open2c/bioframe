@@ -14,19 +14,18 @@ kernelspec:
 
 # Bioframe for bedtools users
 
-If you work with bed files you can simply load them using `read_table`, it will
-create a pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
-which supports all the bioframe operations.
 
-Altertantively if you want to work on `gtf` files, you do not need to turn them
-into bed files, you can directly read them (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master))
-and turn them into bedframe by renaming the `seqname` column into `chrom`.
+bioframe is built around the analysis of genomic intervals as a pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) in memory, rather than working with tab-delimited text files saved on disk.
 
-Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support
-all the following operations TODO `API_fileops`
+Bioframe supports reading a number of standard genomics text file formats via [`read_table`](https://bioframe.readthedocs.io/en/latest/api-fileops.html#bioframe.io.fileops.read_table), including BED files (see [schemas](https://github.com/open2c/bioframe/blob/main/bioframe/io/schemas.py)), which will load them as pandas DataFrames, a complete list of helper functions is [available here](API_fileops).
 
-You can write the output of your operations back to a bed file using `to_bed` which will
-generally be able to infer the bed format used.
+For example, with gtf files, you do not need to turn them into bed files, you can directly read them into pandas (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master)).
+For gtfs, it is often convenient to rename the seqname column into chrom, the default column name used in bioframe.
+
+Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support the genomic [interval operations in bioframe](API_ops).
+
+Finally, if needed, bioframe provides a convenience function to write the back to a bed file using `to_bed`.
+
 
 ## `bedtools intersect`
 
@@ -64,8 +63,10 @@ bedtools intersect -wa -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
+overlap = bf.overlap(A, B, suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
+# Alternatively
+out = A.loc[bioframe.ops._overlap_intidxs(A, B, how='inner')[:,0]]
 ```
 
 ### Original entries from the second bed `-wb`
@@ -87,7 +88,7 @@ bedtools intersect -wa -a A.bed -b B.bed C.bed D.bed> out.bed
 
 ```py
 others = pd.concat([B, C, D])
-overlap = bf.overlap(A, others, how='inner', suffixes=('_1','_2'), return_index=True)
+overlap = bf.overlap(A, others, suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 ```
 
@@ -135,4 +136,6 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 ```py
 cov = bf.coverage(A, B)
 out = A.loc[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
+# alternatively
+out = bf.coverage(A, B).query('coverage / (end - start) >= 0.7')[A.columns]
 ```
