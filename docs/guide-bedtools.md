@@ -69,6 +69,7 @@ out = A.loc[overlap['index_1']]
 out = bf.overlap(A, B, how='inner')[A.columns]
 ```
 **Note:** The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result (the join output) will have an integer range index.
+
 ### Original entries from the second bed `-wb`
 
 ```sh
