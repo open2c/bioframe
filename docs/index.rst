@@ -20,6 +20,7 @@ bioframe
    guide-recipes.md
    guide-definitions
    guide-specifications
+   guide-bedtools
 
 .. toctree::
    :maxdepth: 1
