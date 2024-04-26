@@ -66,9 +66,9 @@ bedtools intersect -wa -a A.bed -b B.bed > out.bed
 overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 # Alternatively
-out = A.loc[bioframe.ops._overlap_intidxs(A, B, how='inner')[:,0]]
+out = bf.overlap(A, B, how='inner')[A.columns]
 ```
-
+**Note:** The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result (the join output) will have an integer range index.
 ### Original entries from the second bed `-wb`
 
 ```sh
@@ -78,6 +78,9 @@ bedtools intersect -wb -a A.bed -b B.bed > out.bed
 ```py
 overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = B.loc[overlap['index_2']]
+
+# Alternatively
+out = bf.overlap(A, B, how='inner', suffixes=("_", ""))[B.columns]
 ```
 
 ### Intersect with multiple beds
