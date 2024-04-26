@@ -15,23 +15,20 @@ kernelspec:
 # Bioframe for bedtools users
 
 
-bioframe is built around the analysis of genomic intervals as a pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) in memory, rather than working with tab-delimited text files saved on disk.
+Bioframe is built around the analysis of genomic intervals as a pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) in memory, rather than working with tab-delimited text files saved on disk.
 
 Bioframe supports reading a number of standard genomics text file formats via [`read_table`](https://bioframe.readthedocs.io/en/latest/api-fileops.html#bioframe.io.fileops.read_table), including BED files (see [schemas](https://github.com/open2c/bioframe/blob/main/bioframe/io/schemas.py)), which will load them as pandas DataFrames, a complete list of helper functions is [available here](API_fileops).
 
-For example, with gtf files, you do not need to turn them into bed files, you can directly read them into pandas (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master)).
-For gtfs, it is often convenient to rename the seqname column into chrom, the default column name used in bioframe.
+Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support the genomic [interval operations in bioframe](API_ops). The names of these columns can also be customized via the `cols=` arguments in bioframe functions.
 
-Any DataFrame object with `'chrom'`, `'start'`, and `'end'` columns will support the genomic [interval operations in bioframe](API_ops).
+For example, with gtf files, you do not need to turn them into bed files, you can directly read them into pandas (with e.g. [gtfparse](https://github.com/openvax/gtfparse/tree/master)). For gtfs, it is often convenient to rename the `'seqname'` column to `'chrom'`, the default column name used in bioframe.
 
-Finally, if needed, bioframe provides a convenience function to write the back to a bed file using `to_bed`.
+Finally, if needed, bioframe provides a convenience function to write dataframes to a standard BED file using [`to_bed`](https://bioframe.readthedocs.io/en/latest/api-fileops.html#bioframe.io.bed.to_bed).
 
 
 ## `bedtools intersect`
 
 ### Original unique entries from the first bed `-u`
-
-Note that this gives one row per overlap and can contain duplicates,
 
 ```sh
 bedtools intersect -u -a A.bed -b B.bed > out.bed
@@ -56,8 +53,6 @@ out = bf.count_overlaps(A, B)
 
 ### Original entries from the first bed for each overlap`-wa`
 
-Note that this gives one row per overlap and can contain duplicates,
-
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed > out.bed
 ```
@@ -65,10 +60,12 @@ bedtools intersect -wa -a A.bed -b B.bed > out.bed
 ```py
 overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
+
 # Alternatively
 out = bf.overlap(A, B, how='inner')[A.columns]
 ```
-**Note:** The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result (the join output) will have an integer range index.
+
+> **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
 
 ### Original entries from the second bed `-wb`
 
@@ -83,6 +80,8 @@ out = B.loc[overlap['index_2']]
 # Alternatively
 out = bf.overlap(A, B, how='inner', suffixes=("_", ""))[B.columns]
 ```
+
+> **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `B`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
 
 ### Intersect with multiple beds
 
@@ -119,7 +118,7 @@ overlap = bf.overlap(A, B, on=['strand'], suffixes=('_1','_2'), return_index=Tru
 out = A.loc[overlap['index_1']]
 ```
 
-For non intersection
+For non-intersection `-v`
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed -v -s > out.bed
@@ -140,6 +139,7 @@ bedtools intersect -wa -a A.bed -b B.bed -f 0.7 > out.bed
 ```py
 cov = bf.coverage(A, B)
 out = A.loc[cov['coverage'] / (cov['end'] - cov['start']) ) >= 0.70]
-# alternatively
+
+# Alternatively
 out = bf.coverage(A, B).query('coverage / (end - start) >= 0.7')[A.columns]
 ```
