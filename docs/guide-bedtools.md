@@ -28,7 +28,7 @@ Finally, if needed, bioframe provides a convenience function to write dataframes
 
 ## `bedtools intersect`
 
-### Original unique entries from the first bed `-u`
+### Select unique entries from the first bed overlapping the second bed `-u`
 
 ```sh
 bedtools intersect -u -a A.bed -b B.bed > out.bed
@@ -51,7 +51,31 @@ bedtools intersect -c -a A.bed -b B.bed > out.bed
 out = bf.count_overlaps(A, B)
 ```
 
-### Original entries from the first bed for each overlap`-wa`
+### Return entries from both beds for each overlap `-wa -wb`
+
+```sh
+bedtools intersect -wa -wb -a A.bed -b B.bed > out.bed
+```
+
+```py
+out = bf.overlap(A, B, how='inner')
+```
+
+**Note:** This is called an "inner join", and is analogous to an inner pandas join or merge. The default column suffixes in the output dataframe are `''` (nothing) for A's columns and `'_'` for B's columns.
+
+### Include all entries from the first bed, even if no overlap `-loj`
+
+```sh
+bedtools intersect -wa -wb -loj -a A.bed -b B.bed > out.bed
+```
+
+```py
+out = bf.overlap(A, B, how='left')
+```
+
+**Note:** This is called a "left-outer join".
+
+### Select entries from the first bed for each overlap `-wa`
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed > out.bed
@@ -67,7 +91,7 @@ out = bf.overlap(A, B, how='inner')[A.columns]
 
 > **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
 
-### Original entries from the second bed `-wb`
+### Select entries from the second bed for each overlap `-wb`
 
 ```sh
 bedtools intersect -wb -a A.bed -b B.bed > out.bed
@@ -78,15 +102,16 @@ overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = B.loc[overlap['index_2']]
 
 # Alternatively
-out = bf.overlap(A, B, how='inner', suffixes=("_", ""))[B.columns]
+out = bf.overlap(A, B, how='inner', suffixes=('_', ''))[B.columns]
 ```
 
 > **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `B`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
 
-### Intersect with multiple beds
+
+### Intersect multiple beds against A
 
 ```sh
-bedtools intersect -wa -a A.bed -b B.bed C.bed D.bed> out.bed
+bedtools intersect -wa -a A.bed -b B.bed C.bed D.bed > out.bed
 ```
 
 ```py
@@ -95,7 +120,7 @@ overlap = bf.overlap(A, others, how='inner', suffixes=('_1','_2'), return_index=
 out = A.loc[overlap['index_1']]
 ```
 
-### Keep no overlap `-v`
+### Return everything in A that doesn't overlap with B `-v`
 
 ```sh
 bedtools intersect -wa -a A.bed -b B.bed -v > out.bed
@@ -104,6 +129,8 @@ bedtools intersect -wa -a A.bed -b B.bed -v > out.bed
 ```py
 out = bf.setdiff(A, B)
 ```
+
+**Note:** We call this a set difference.
 
 ### Force strandedness `-s`
 
