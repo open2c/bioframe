@@ -63,7 +63,7 @@ bedtools intersect -wa -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, suffixes=('_1','_2'), return_index=True)
+overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 # Alternatively
 out = A.loc[bioframe.ops._overlap_intidxs(A, B, how='inner')[:,0]]
@@ -88,7 +88,7 @@ bedtools intersect -wa -a A.bed -b B.bed C.bed D.bed> out.bed
 
 ```py
 others = pd.concat([B, C, D])
-overlap = bf.overlap(A, others, suffixes=('_1','_2'), return_index=True)
+overlap = bf.overlap(A, others, how='inner', suffixes=('_1','_2'), return_index=True)
 out = A.loc[overlap['index_1']]
 ```
 
