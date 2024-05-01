@@ -243,7 +243,7 @@ def read_bam(fp, chrom=None, start=None, end=None):
             (
                 s.qname,
                 s.flag,
-                s.rname,
+                s.reference_name,
                 s.pos,
                 s.mapq,
                 s.cigarstring if s.mapq != 0 else np.nan,
