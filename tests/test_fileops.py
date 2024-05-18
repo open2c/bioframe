@@ -53,3 +53,13 @@ def test_read_beds():
     for schema in schemas:
         _ = bioframe.read_table(f'tests/test_data/{schema}.bed', schema=schema,
                                 schema_is_strict=True)
+
+
+def test_read_sam():
+    # SAM file taken from https://github.com/samtools/samtools/blob/develop/examples/toy.sam
+    pass
+
+
+def test_read_bam():
+    # converted toy.sam via `samtools view -bS toy.sam > toy.bam`
+    pass
