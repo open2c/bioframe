@@ -234,7 +234,7 @@ def read_pairix(
 
 def read_alignment(fp, chrom=None, start=None, end=None):
     """
-    Read alignemnt records into a DataFrame.
+    Read alignment records into a DataFrame.
     """
     import pysam
 
