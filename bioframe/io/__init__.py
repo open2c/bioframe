@@ -2,6 +2,7 @@ from .assembly import assemblies_available, assembly_info
 from .bed import to_bed
 from .fileops import (
     load_fasta,
+    read_alignment,
     read_bam,
     read_bigbed,
     read_bigwig,
@@ -23,6 +24,7 @@ __all__ = [
     "read_tabix",
     "read_pairix",
     "read_bam",
+    "read_alignment",
     "load_fasta",
     "read_bigwig",
     "to_bed",

@@ -57,9 +57,10 @@ def test_read_beds():
 
 def test_read_sam():
     # SAM file taken from https://github.com/samtools/samtools/blob/develop/examples/toy.sam
-    pass
+    bioframe.read_alignment('tests/test_data/toy.sam')
 
 
 def test_read_bam():
-    # converted toy.sam via `samtools view -bS toy.sam > toy.bam`
-    pass
+    # converted toy.sam via `samtools view -bS toy.sam > toy.bam;
+    # index file created with `samtools index toy.bam`
+    bioframe.read_alignment('tests/test_data/toy.bam')

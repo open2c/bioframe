@@ -1,3 +1,4 @@
+import array
 import io
 import json
 import os
@@ -231,33 +232,53 @@ def read_pairix(
     return df
 
 
-def read_bam(fp, chrom=None, start=None, end=None):
+def read_alignment(fp, chrom=None, start=None, end=None):
     """
-    Read bam records into a DataFrame.
+    Read alignemnt records into a DataFrame.
     """
     import pysam
 
-    with closing(pysam.AlignmentFile(fp, "rb")) as f:
-        bam_iter = f.fetch(chrom, start, end)
-        records = [
-            (
-                s.qname,
-                s.flag,
-                s.reference_name,
-                s.pos,
-                s.mapq,
-                s.cigarstring if s.mapq != 0 else np.nan,
-                s.rnext,
-                s.pnext,
-                s.tlen,
-                s.seq,
-                s.qual,
-                json.dumps(OrderedDict(s.tags)),
+    ext = os.path.splitext(fp)[1]
+    if ext == '.sam':
+        mode = 'r'
+    elif ext == '.bam':
+        mode = 'rb'
+    elif ext == '.cram':
+        mode = 'rc'
+    else:
+        raise ValueError(f'{ext} is not a supported filetype')
+
+    with closing(pysam.AlignmentFile(fp, mode)) as f:
+        records = []
+        for s in f.fetch(chrom, start, end):
+            # Needed because array.array is not json serializable
+            tags = [(k, v.tolist() if type(v) == array.array else v) for k, v in s.tags]
+            records.append(
+                (
+                    s.qname,
+                    s.flag,
+                    s.reference_name,
+                    s.pos,
+                    s.mapq,
+                    s.cigarstring if s.mapq != 0 else np.nan,
+                    s.rnext,
+                    s.pnext,
+                    s.tlen,
+                    s.seq,
+                    s.qual,
+                    json.dumps(OrderedDict(tags)),
+                )
             )
-            for s in bam_iter
-        ]
         df = pd.DataFrame(records, columns=BAM_FIELDS)
     return df
+
+
+def read_bam(fp, chrom=None, start=None, end=None):
+    """
+    Deprecated: use `read_alignment` instead.
+    Read bam file into dataframe,
+    """
+    return read_alignment(fp, chrom, start, end)
 
 
 class PysamFastaRecord:
