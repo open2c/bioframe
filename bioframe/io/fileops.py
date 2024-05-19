@@ -266,7 +266,7 @@ def read_alignment(fp, chrom=None, start=None, end=None):
                     s.tlen,
                     s.seq,
                     s.qual,
-                    json.dumps(OrderedDict(tags)),
+                    json.dumps(dict(tags)),
                 )
             )
         df = pd.DataFrame(records, columns=BAM_FIELDS)
