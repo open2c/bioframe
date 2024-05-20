@@ -1,6 +1,24 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.6.4...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.7.0...HEAD)
+
+## [v0.6.4](https://github.com/open2c/bioframe/compare/v0.6.4...v0.7.0)
+Date 2024-05-20
+
+API changes:
+* Add `to_bed` function to validate and write standard BED files @gamazeps in https://github.com/open2c/bioframe/pull/203
+* `read_bam` deprecated in favor of `read_alignments` @gamazeps in https://github.com/open2c/bioframe/pull/206
+
+Documentation:
+* Add "bioframe for bedtools users" guide to docs by @gamazeps in https://github.com/open2c/bioframe/pull/198
+
+Bug fixes:
+* Fix contig name and JSON isses in read_bam implementation by @gamazeps in https://github.com/open2c/bioframe/pull/206
+
+New Contributors:
+* @gamazeps made their first contribution in https://github.com/open2c/bioframe/pull/203
+
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.4...v0.7.0
 
 ## [v0.6.4](https://github.com/open2c/bioframe/compare/v0.6.3...v0.6.4)
 Date 2024-04-06
