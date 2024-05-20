@@ -18,7 +18,7 @@ Bioframe is built directly on top of [Pandas](https://pandas.pydata.org/). Biofr
 * Operations for special classes of genomic intervals, including chromosome arms and fixed-size bins.
 * Conveniences for diverse tabular genomic data formats and loading genome assembly summary information.
 
-Read the [docs](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html), as well as the [bioframe preprint](https://doi.org/10.1101/2022.02.16.480748) for more information.
+Read the [documentation](https://bioframe.readthedocs.io/en/latest/), including the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html), as well as the [publication](https://doi.org/10.1093/bioinformatics/btae088) for more information.
 
 Bioframe is an Affiliated Project of [NumFOCUS](https://www.numfocus.org).
 
