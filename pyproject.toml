@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bioframe"
-version = "0.7.0"
+version = "0.7.1"
 description = "Operations and utilities for Genomic Interval Dataframes."
 license = {text = "MIT"}
 authors = [
@@ -37,7 +37,7 @@ classifiers = [
 readme = "README.md"
 dependencies = [
     "matplotlib",
-    "numpy>=1.10",
+    "numpy>=1.10, <2",
     "pandas>=1.3",
     "pyyaml",
     "requests",
