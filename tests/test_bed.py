@@ -64,7 +64,7 @@ def test_score_validators():
         with pytest.raises(ValueError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'), strict_score=True)
 
-        bf.loc[0, 'score'] = '.' # enforced to be a number by the types
+        bf['score'] = '.' # enforced to be a number by the types
         with pytest.raises(TypeError):
             bioframe.to_bed(bf, os.path.join(directory, 'foo.bed'))
 
