@@ -2,7 +2,9 @@
 
 ## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.7.1...HEAD)
 
-## [v0.7.0](https://github.com/open2c/bioframe/compare/v0.7.0...v0.7.1)
+## v0.7.1
+
+Date: 2024-06-17
 
 Maintenance:
 * Refactor join arrayops and intidx internals by @nvictus in https://github.com/open2c/bioframe/pull/204
@@ -10,8 +12,9 @@ Maintenance:
 
 **Full Changelog**: https://github.com/open2c/bioframe/compare/v0.7.0...v0.7.1
 
-## [v0.7.0](https://github.com/open2c/bioframe/compare/v0.6.4...v0.7.0)
-Date 2024-05-20
+## v0.7.0
+
+Date: 2024-05-20
 
 API changes:
 * Add `to_bed` function to validate and write standard BED files @gamazeps in https://github.com/open2c/bioframe/pull/203
@@ -28,8 +31,9 @@ New Contributors:
 
 **Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.4...v0.7.0
 
-## [v0.6.4](https://github.com/open2c/bioframe/compare/v0.6.3...v0.6.4)
-Date 2024-04-06
+## v0.6.4
+
+Date: 2024-04-06
 
 Maintenance:
 * Migrate from setuptools `pkg_resources` to `importlib.resources` by @nvictus in https://github.com/open2c/bioframe/pull/194
@@ -44,8 +48,9 @@ New Contributors:
 
 **Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.3...v0.6.4
 
-## [v0.6.3](https://github.com/open2c/bioframe/compare/v0.6.2...v0.6.3)
-Date 2024-03-11
+## v0.6.3
+
+Date: 2024-03-11
 
 Fixes:
 * Prevent dropout from `closest` in some cases of left intervals with no neighbors by @agalitsyna in https://github.com/open2c/bioframe/pull/185
@@ -53,8 +58,9 @@ Fixes:
 
 **Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.2...v0.6.3
 
-## [v0.6.2](https://github.com/open2c/bioframe/compare/v0.6.1...v0.6.2)
-Date 2024-02-08
+## v0.6.2
+
+Date: 2024-02-08
 
 Changes:
 * cols and df_view_col passed to downstream functions by @smitkadvani in https://github.com/open2c/bioframe/pull/182
@@ -62,8 +68,11 @@ Changes:
 Fixes:
 * Update to new UCSC hgdownload url by @golobor and @nvictus in https://github.com/open2c/bioframe/pull/187
 
-## [v0.6.1](https://github.com/open2c/bioframe/compare/v0.6.0...v0.6.1)
-Date 2024-01-08
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.1...v0.6.2
+
+## v0.6.1
+
+Date: 2024-01-08
 
 API changes:
 
@@ -73,8 +82,11 @@ Default behavior of `ensure_nullable` option in `overlap` was modified to minimi
 * Unlike previous minor versions of bioframe, the nullable dtype chosen will have the **same underlying type** as the corresponding column from the input (i.e, an input dataframe using `np.uint32` start coordinates may yield a `pd.UInt32` start column in the output).
 * This behavior can be turned off by setting `ensure_int` to `False`, in which case outer joins on dataframes using NumPy dtypes may produce floating point output columns when missing values are introduced (stored as `NaN`), following the native casting behavior of such columns.
 
-## [v0.6.0](https://github.com/open2c/bioframe/compare/v0.5.1...v0.6.0)
-Date 2024-01-04
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.6.0...v0.6.1
+
+## v0.6.0
+
+Date: 2024-01-04
 
 API changes:
 * `overlap`: In previous versions, output coordinate columns were always converted to Pandas "nullable" `Int64` dtype before returning outer join results. In the interest of flexibility, memory efficiency, and least surprise, the coordinate columns returned in the output dataframe now preserve dtype from the input dataframes, following native type casting rules if missing data are introduced. We introduce the `ensure_nullable` argument to force Pandas nullable dtypes in the output coordinates. See the [docs](https://bioframe.readthedocs.io/en/latest/api-intervalops.html#bioframe.ops.overlap) for more details. (#178)
@@ -87,17 +99,20 @@ Documentation:
 * Updated README and added CITATION.cff file.
 * Updated performance benchmarks.
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.5.1...v0.6.0
 
-## [v0.5.1](https://github.com/open2c/bioframe/compare/v0.5.0...v0.5.1)
-Date 2023-11-08
+## v0.5.1
+
+Date: 2023-11-08
 
 Bug fixes:
 * Series are treated like dict in `make_chromarms`
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.5.0...v0.5.1
 
-## [v0.5.0](https://github.com/open2c/bioframe/compare/v0.4.1...v0.5.0)
+## v0.5.0
 
-Date 2023-10-05
+Date: 2023-10-05
 
 API changes:
 * New builtin curated genome assembly database (metadata, chromsizes, cytobands):
@@ -114,18 +129,20 @@ Maintenance:
 * Migrate to hatch build system and pyproject.toml
 * Various refactorings
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.4.1...v0.5.0
 
-## [v0.4.1](https://github.com/open2c/bioframe/compare/v0.4.0...v0.4.1)
+## v0.4.1
 
-Date 2023-04-22
+Date: 2023-04-22
 
 Bug fixes:
 * Fix bug introduced in the last release in `select` and `select_*` query interval semantics. Results of select are now consistent with the query interval being interpreted as half-open, closed on the left.
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.4.0...v0.4.1
 
-## [v0.4.0](https://github.com/open2c/bioframe/compare/v0.3.3...v0.4.0)
+## v0.4.0
 
-Date 2023-03-23
+Date: 2023-03-23
 
 API changes:
 * New strand-aware directionality options for `closest()` via `direction_col` #129.
@@ -138,7 +155,9 @@ Bug fixes:
 * Import fixes in sandbox
 * Relax bioframe validator to permit using same column as start and end (e.g. point variants).
 
-## [v0.3.3](https://github.com/open2c/bioframe/compare/v0.3.2...v0.3.3)
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.3.3...v0.4.0
+
+## v0.3.3
 
 Date: 2022-02-28
 
@@ -146,7 +165,9 @@ Bug fixes:
 * fixed a couple functions returning an error instance instead of raising
 * fetch_mrna link fixed
 
-## [v0.3.2](https://github.com/open2c/bioframe/compare/v0.3.1...v0.3.2)
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.3.2...v0.3.3
+
+## v0.3.2
 
 Date: 2022-02-01
 
@@ -154,17 +175,21 @@ Bug fixes:
 * fixed error in is_contained
 * tutorial updates
 
-## [v0.3.1](https://github.com/open2c/bioframe/compare/v0.3.0...v0.3.1)
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.3.1...v0.3.2
 
-Date : 2021-11-15
+## v0.3.1
+
+Date: 2021-11-15
 
 API changes:
 
 * `bioframe.sort_bedframe` does not append columns or modify their dtypes.
 
-## [v0.3.0](https://github.com/open2c/bioframe/compare/v0.2.0...v0.3.0)
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.3.0...v0.3.1
 
-Date : 2021-08-31
+## v0.3.0
+
+Date: 2021-08-31
 
 Conceptual changes:
 * we formulated strict definitions for genomic intervals, dataframes, and
@@ -208,34 +233,36 @@ Miscellaneous:
 * speed up frac_gc is faster now
 * drop support for Python 3.6, add support for 3.9
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.2.0...v0.3.0
 
-## [v0.2.0](https://github.com/open2c/bioframe/compare/v0.1.0...v0.2.0)
+## v0.2.0
 
-Date : 2020-12-02
+Date: 2020-12-02
 
-API changes
+API changes:
 * `read_chromsizes` and `fetch_chromsizes`: add new `as_bed` parameter.
 * `read_chromsizes` and `fetch_chromsizes`: revert to filtering chromosome names by default, but clearly expose `filter_chroms` kwarg.
 
-Bug fixes
+Bug fixes:
 * Fixed `bioframe.split`
 * Restored `frac_genome_coverage`
 
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.1.0...v0.2.0
 
-## [v0.1.0](https://github.com/open2c/bioframe/compare/v0.0.12...v0.1.0)
+## v0.1.0
 
-Date : 2020-09-23
+Date: 2020-09-23
 
 First beta release.
 
-### What's new
-
+What's new:
 * New extensive dataframe genomic interval arithmetic toolsuite.
 * Improved region handling and region querying functions.
 * [Documentation!](https://bioframe.readthedocs.io/)
 
-### Maintenance
-
+Maintenance:
 * Dropped Python 2 support
 * Refactoring of various genome operations and resources.
 * Improved testing and linting
+
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.0.12...v0.1.0
