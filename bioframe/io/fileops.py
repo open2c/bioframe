@@ -30,7 +30,7 @@ __all__ = [
     "read_chromsizes",
     "read_tabix",
     "read_pairix",
-    "read_bam",
+    "read_alignments",
     "load_fasta",
     "read_bigwig",
     "to_bigwig",
@@ -164,7 +164,10 @@ def read_tabix(fp, chrom=None, start=None, end=None):
     """
     Read a tabix-indexed file into dataFrame.
     """
-    import pysam
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError("pysam is required to use `read_tabix`")
 
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
@@ -232,11 +235,14 @@ def read_pairix(
     return df
 
 
-def read_alignment(fp, chrom=None, start=None, end=None):
+def read_alignments(fp, chrom=None, start=None, end=None):
     """
     Read alignment records into a DataFrame.
     """
-    import pysam
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError("pysam is required to use `read_alignments`")
 
     ext = os.path.splitext(fp)[1]
     if ext == '.sam':
@@ -252,7 +258,10 @@ def read_alignment(fp, chrom=None, start=None, end=None):
         records = []
         for s in f.fetch(chrom, start, end):
             # Needed because array.array is not json serializable
-            tags = [(k, v.tolist() if type(v) == array.array else v) for k, v in s.tags]
+            tags = [
+                (k, v.tolist() if isinstance(v, array.array) else v)
+                for k, v in s.tags
+            ]
             records.append(
                 (
                     s.qname,
@@ -278,7 +287,7 @@ def read_bam(fp, chrom=None, start=None, end=None):
     Deprecated: use `read_alignment` instead.
     Read bam file into dataframe,
     """
-    return read_alignment(fp, chrom, start, end)
+    return read_alignments(fp, chrom, start, end)
 
 
 class PysamFastaRecord:
