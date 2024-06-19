@@ -1,6 +1,18 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.7.1...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.7.2...HEAD)
+
+## v0.7.2
+
+Date: 2024-06-19
+
+API changes:
+* `read_alignment` function introduced in v0.7.0 has been pluralized to `read_alignments`
+
+Maintenance:
+* Skip `read_alignments` tests on big-endian architectures by @nvictus in https://github.com/open2c/bioframe/pull/216
+
+**Full Changelog**: https://github.com/open2c/bioframe/compare/v0.7.1...v0.7.2
 
 ## v0.7.1
 
