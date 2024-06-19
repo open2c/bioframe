@@ -1,9 +1,12 @@
+import sys
 from io import StringIO
 
 import pandas as pd
 import pytest
 
 import bioframe
+
+is_big_endian = sys.byteorder == "big"
 
 
 ############# tests #####################
@@ -55,12 +58,14 @@ def test_read_beds():
                                 schema_is_strict=True)
 
 
+@pytest.mark.skipif(is_big_endian, reason="Test skipped on big-endian systems")
 def test_read_sam():
     pytest.importorskip("pysam")
     # SAM file taken from https://github.com/samtools/samtools/blob/develop/examples/toy.sam
     _ = bioframe.read_alignments('tests/test_data/toy.sam')
 
 
+@pytest.mark.skipif(is_big_endian, reason="Test skipped on big-endian systems")
 def test_read_bam():
     pytest.importorskip("pysam")
     # converted toy.sam via `samtools view -bS toy.sam > toy.bam;
