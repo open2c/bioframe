@@ -56,11 +56,13 @@ def test_read_beds():
 
 
 def test_read_sam():
+    pytest.importorskip("pysam")
     # SAM file taken from https://github.com/samtools/samtools/blob/develop/examples/toy.sam
-    _ = bioframe.read_alignment('tests/test_data/toy.sam')
+    _ = bioframe.read_alignments('tests/test_data/toy.sam')
 
 
 def test_read_bam():
+    pytest.importorskip("pysam")
     # converted toy.sam via `samtools view -bS toy.sam > toy.bam;
     # index file created with `samtools index toy.bam`
-    _ = bioframe.read_alignment('tests/test_data/toy.bam')
+    _ = bioframe.read_alignments('tests/test_data/toy.bam')
