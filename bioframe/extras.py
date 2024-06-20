@@ -185,7 +185,7 @@ def digest(fasta_records, enzyme):
         import Bio.Restriction as biorst
         import Bio.Seq as bioseq
     except ImportError:
-        raise ImportError("Biopython is required to use digest")
+        raise ImportError("Biopython is required to use digest") from None
 
     # http://biopython.org/DIST/docs/cookbook/Restriction.html#mozTocId447698
     if not isinstance(fasta_records, dict):
@@ -196,8 +196,8 @@ def digest(fasta_records, enzyme):
     chroms = fasta_records.keys()
     try:
         cut_finder = getattr(biorst, enzyme).search
-    except AttributeError:
-        raise ValueError(f"Unknown enzyme name: {enzyme}")
+    except AttributeError as e:
+        raise ValueError(f"Unknown enzyme name: {enzyme}") from e
 
     def _each(chrom):
         seq = bioseq.Seq(str(fasta_records[chrom][:]))

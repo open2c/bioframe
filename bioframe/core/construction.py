@@ -165,8 +165,8 @@ def from_any(regions, fill_null=False, name_col="name", cols=None):
                 else:
                     ends.append(out_df[ek1].values[i])
             out_df[ek1] = ends
-        except Exception:
-            raise ValueError("could not fill ends with provided chromsizes")
+        except Exception as e:
+            raise ValueError("could not fill ends with provided chromsizes") from e
 
     return out_df
 

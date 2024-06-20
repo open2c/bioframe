@@ -4,6 +4,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
+INT64_MAX = np.iinfo(np.int64).max
+
 
 def natsort_key(s, _NS_REGEX=re.compile(r"(\d+)", re.U)):
     return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
@@ -210,6 +212,7 @@ def _overlap_intervals_legacy(starts1, ends1, starts2, ends2, closed=False, sort
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
                 SyntaxWarning,
+                stacklevel=2,
             )
 
     starts1 = np.asarray(starts1)
@@ -308,6 +311,7 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
                 SyntaxWarning,
+                stacklevel=2,
             )
 
     starts1 = np.asarray(starts1)
@@ -442,6 +446,7 @@ def merge_intervals(starts, ends, min_dist=0):
                 "One of the inputs is provided as pandas.Series and its index "
                 "will be ignored.",
                 SyntaxWarning,
+                stacklevel=2,
             )
 
     starts = np.asarray(starts)
@@ -473,7 +478,7 @@ def merge_intervals(starts, ends, min_dist=0):
 def complement_intervals(
     starts,
     ends,
-    bounds=(0, np.iinfo(np.int64).max),
+    bounds=(0, INT64_MAX),
 ):
     _, merged_starts, merged_ends = merge_intervals(starts, ends, min_dist=0)
 
@@ -534,6 +539,7 @@ def _closest_intervals_nooverlap(
                 "One of the inputs is provided as pandas.Series "
                 "and its index will be ignored.",
                 SyntaxWarning,
+                stacklevel=2,
             )
 
     starts1 = np.asarray(starts1)
@@ -776,7 +782,7 @@ def stack_intervals(starts, ends):
 
     occupancy = np.zeros(2, dtype=bool)
     levels = -1 * np.ones(n, dtype=np.int64)
-    for border, border_id in zip(borders, border_ids):
+    for border_id in border_ids:
         interval_id = np.abs(border_id) - 1
         if border_id > 0:
             if occupancy.sum() == occupancy.shape[0]:
