@@ -96,6 +96,19 @@ known-first-party = ["bioframe"]
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
+[tool.pytest.ini_options]
+minversion = "7"
+log_cli_level = "info"
+xfail_strict = true
+addopts = [
+    "-ra",
+    "--showlocals",
+    "--strict-config",
+    "--strict-markers",
+]
+filterwarnings = ["ignore::PendingDeprecationWarning"]
+testpaths = ["tests"]
+
 [tool.hatch.envs.default]
 features = ["dev", "test", "docs"]
 
