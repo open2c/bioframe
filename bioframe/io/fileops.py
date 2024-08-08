@@ -487,7 +487,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
     return df
 
 
-def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
+def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', path_to_binary=None):
     """
     Save a bedGraph-like dataframe as a binary BigWig track.
 
@@ -505,34 +505,10 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
         is to use the fourth column.
     path_to_binary : str, optional
         Provide system path to the bedGraphToBigWig binary.
+    engine : {'kenttools', 'pybigtools'}, optional
+        Engine to use for creating the BigWig file.
 
     """
-
-    if path_to_binary is None:
-        cmd = "bedGraphToBigWig"
-        try:
-            assert shutil.which(cmd) is not None
-        except Exception:
-            raise ValueError(
-                "bedGraphToBigWig is not present in the current environment. "
-                "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
-                "install it with, for example, conda install -y -c bioconda "
-                "ucsc-bedgraphtobigwig "
-            ) from None
-    elif path_to_binary.endswith("bedGraphToBigWig"):
-        if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
-            raise ValueError(
-                f"bedGraphToBigWig is absent in the provided path or cannot be "
-                f"fexecuted: {path_to_binary}. "
-            )
-        cmd = path_to_binary
-    else:
-        cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
-        if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
-            raise ValueError(
-                f"bedGraphToBigWig is absent in the provided path or cannot be "
-                f"executed: {path_to_binary}. "
-            )
 
     is_bedgraph = True
     for col in ["chrom", "start", "end"]:
@@ -552,21 +528,62 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
     bg["chrom"] = bg["chrom"].astype(str)
     bg = bg.sort_values(["chrom", "start", "end"])
 
-    with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
-         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip
-        chromsizes.to_csv(cs, sep="\t", header=False)
-        cs.flush()
+    if chromsizes is None:
+        chromsizes = df.groupby('chrom')['end']
 
-        bg.to_csv(
-            f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
-        )
+    if engine.lower() == 'kenttools':
+        if path_to_binary is None:
+            cmd = "bedGraphToBigWig"
+            try:
+                assert shutil.which(cmd) is not None
+            except Exception:
+                raise ValueError(
+                    "bedGraphToBigWig is not present in the current environment. "
+                    "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
+                    "install it with, for example, conda install -y -c bioconda "
+                    "ucsc-bedgraphtobigwig "
+                ) from None
+        elif path_to_binary.endswith("bedGraphToBigWig"):
+            if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
+                raise ValueError(
+                    f"bedGraphToBigWig is absent in the provided path or cannot be "
+                    f"fexecuted: {path_to_binary}. "
+                )
+            cmd = path_to_binary
+        else:
+            cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
+            if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
+                raise ValueError(
+                    f"bedGraphToBigWig is absent in the provided path or cannot be "
+                    f"executed: {path_to_binary}. "
+                )
 
-        p = subprocess.run(
-            [cmd, f.name, cs.name, outpath],
-            capture_output=True,
-        )
-    return p
+        with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
+            tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip
+            chromsizes.to_csv(cs, sep="\t", header=False)
+            cs.flush()
 
+            bg.to_csv(
+                f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
+            )
+
+            p = subprocess.run(
+                [cmd, f.name, cs.name, outpath],
+                capture_output=True,
+            )
+        return p
+
+    elif engine.lower() == 'pybigtools':
+        import pybigtools
+
+        f = pybigtools.open(outpath, "w")
+        if issubclass(type(chromsizes), pd.Series):
+            chromsizes = chromsizes.astype(int).to_dict()
+
+        bg = bg.astype({'chrom':str, "start": int, "end": int, value_field: float})
+        f.write(chroms=chromsizes, vals=bg.itertuples(index=False))
+        f.close()
+    
 
 def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
     """
