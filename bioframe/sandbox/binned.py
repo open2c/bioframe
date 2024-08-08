@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 
+import scipy.signal
+
+
 from ..core import arrops
 
 
@@ -185,6 +188,7 @@ def find_peaks(track_df, value_col):
 def select_bins(track_df, features, value_col):
     """
     Selects the values from a track DataFrame corresponding to the midpoints of features.
+    It uses a more efficient algorithm than overlap, but it requires the features to be sorted.
 
     Args:
         track_df (pandas.DataFrame): DataFrame containing the track data.
