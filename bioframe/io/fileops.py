@@ -583,7 +583,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', pat
         bg = bg.astype({'chrom':str, "start": int, "end": int, value_field: float})
         f.write(chroms=chromsizes, vals=bg.itertuples(index=False))
         f.close()
-    
+
 
 def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
     """
