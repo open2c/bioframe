@@ -487,7 +487,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
     return df
 
 
-def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', path_to_binary=None):
+def to_bigwig(df, chromsizes, outpath, value_field=None, engine='ucsc', path_to_binary=None):
     """
     Save a bedGraph-like dataframe as a binary BigWig track.
 
@@ -505,7 +505,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', pat
         is to use the fourth column.
     path_to_binary : str, optional
         Provide system path to the bedGraphToBigWig binary.
-    engine : {'kenttools', 'pybigtools'}, optional
+    engine : {'ucsc', 'bigtools'}, optional
         Engine to use for creating the BigWig file.
 
     """
@@ -531,7 +531,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', pat
     if chromsizes is None:
         chromsizes = df.groupby('chrom')['end']
 
-    if engine.lower() == 'kenttools':
+    if engine.lower() == 'ucsc':
         if path_to_binary is None:
             cmd = "bedGraphToBigWig"
             try:
@@ -573,7 +573,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='kenttools', pat
             )
         return p
 
-    elif engine.lower() == 'pybigtools':
+    elif engine.lower() == 'bigtools':
         import pybigtools
 
         f = pybigtools.open(outpath, "w")
