@@ -5,51 +5,25 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath("../"))
+# import sys
+from datetime import datetime
+from importlib.metadata import metadata
 
 # autodoc_mock_imports = ["numpy", "pandas", "matplotlib", "requests"]
 
 
 # -- Project information -----------------------------------------------------
-
-project = "bioframe"
-copyright = "2020, Open2C"
+# NOTE: If you installed your project in editable mode, this might be stale.
+#       If this is the case, reinstall it to refresh the metadata
+info = metadata("bioframe")
+project_name = info["Name"]
 author = "Open2C"
-
+copyright = f"{datetime.now():%Y}, {author}."
+version = info["Version"]
+urls = dict(pu.split(", ") for pu in info.get_all("Project-URL"))
 
 # The full version, including alpha/beta/rc tags
-def _read(*parts, **kwargs):
-    import os
-
-    filepath = os.path.join(os.path.dirname(__file__), *parts)
-    encoding = kwargs.pop("encoding", "utf-8")
-    with open(filepath, encoding=encoding) as fh:
-        text = fh.read()
-    return text
-
-
-def get_version():
-    import re
-
-    version = re.search(
-        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-        _read("..", "bioframe", "_version.py"),
-        re.MULTILINE,
-    ).group(1)
-    return version
-
-
-version = get_version()
-# The full version, including alpha/beta/rc tags.
-release = version
+release = info["Version"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -75,7 +49,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", '**.ipynb_checkpoints']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
 # nbsphinx_custom_formats = {
 #     '.md': ['jupytext.reads', {'fmt': 'MyST'}],
@@ -102,4 +76,4 @@ add_module_names = False
 
 # Cache MyST (.md or .ipynb) notebook outputs if unmodified
 jupyter_execute_notebooks = "cache"
-execution_excludepatterns = ['guide-performance.ipynb']
+execution_excludepatterns = ["guide-performance.ipynb"]

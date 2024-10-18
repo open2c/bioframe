@@ -29,7 +29,8 @@ def is_bedframe(
 
     - chrom, start, end columns
     - columns have valid dtypes
-    - for each interval, if any of chrom, start, end are null, then all are null
+    - for each interval, if any of chrom, start, end are null, then all are
+        null
     - all starts < ends.
 
     Parameters
@@ -125,7 +126,9 @@ def is_cataloged(
 
     if not _verify_columns(view_df, [view_name_col], return_as_bool=True):
         if raise_errors:
-            raise ValueError(f"Could not find `{view_name_col}` column in view_df")
+            raise ValueError(f"Could not find \
+                `{view_name_col}` \
+                column in view_df")
         return False
 
     if not set(df[df_view_col].copy().dropna().values).issubset(
@@ -238,7 +241,8 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
     if len(set(region_df[view_name_col])) < len(region_df[view_name_col].values):
         if raise_errors:
             raise ValueError(
-                "Invalid view: entries in region_df[view_name_col] must be unique"
+                "Invalid view: entries in \
+                region_df[view_name_col] must be unique"
             )
         return False
 
@@ -257,6 +261,7 @@ def is_contained(
     df_view_col=None,
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Tests if all genomic intervals in a bioframe `df` are cataloged and do not
@@ -277,8 +282,13 @@ def is_contained(
         Column from df used to associate interviews with view regions.
         Default `view_region`.
 
+    view_name_col:
+        Column from view_df with view region names. Default `name`.
+
     cols: (str, str, str)
         Column names for chrom, start, end in df.
+    cols_view: (str, str, str)
+        Column names for chrom, start, end in view_df.
 
     Returns
     -------
@@ -288,17 +298,21 @@ def is_contained(
     from ..ops import trim
 
     ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-
+    ck2, sk2, ek2 = _get_default_colnames() if cols_view is None else cols_view
     if df_view_col is None:
         try:
-            df_view_assigned = ops.overlap(df, view_df)
-            assert (df_view_assigned["end_"].isna()).sum() == 0
-            assert (df_view_assigned["start_"].isna()).sum() == 0
-            assert (df_view_assigned["end"] <= df_view_assigned["end_"]).all()
-            assert (df_view_assigned["start"] >= df_view_assigned["start_"]).all()
-        except AssertionError:
+            df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=cols_view)
+            # ek2 = end_ is the default value
+            assert (df_view_assigned[ek2 + "_"].isna()).sum() == 0
+            # sk2 = start_ is the default value
+            assert (df_view_assigned[sk2 + "_"].isna()).sum() == 0
+            assert (df_view_assigned[ek1] <= df_view_assigned[ek2 + "_"]).all()
+            # ek1 = end is the default value
+            # sk1 = start is the default value
+            assert (df_view_assigned[sk1] >= df_view_assigned[sk2 + "_"]).all()
+        except AssertionError as e:
             if raise_errors:
-                raise AssertionError("df not contained in view_df")
+                raise AssertionError("df not contained in view_df") from e
             else:
                 return False
         return True
@@ -311,8 +325,14 @@ def is_contained(
         return False
 
     df_trim = trim(
-        df, view_df=view_df, df_view_col=df_view_col, view_name_col=view_name_col
+        df,
+        view_df=view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view,
     )
+
     is_start_trimmed = np.any(df[sk1].values != df_trim[sk1].values)
     is_end_trimmed = np.any(df[ek1].values != df_trim[ek1].values)
 
@@ -324,7 +344,7 @@ def is_contained(
         return True
 
 
-def is_covering(df, view_df, view_name_col="name", cols=None):
+def is_covering(df, view_df, view_name_col="name", cols=None, cols_view=None):
     """
     Tests if a view `view_df` is covered by the set of genomic intervals in
     the bedframe `df`.
@@ -348,6 +368,12 @@ def is_covering(df, view_df, view_name_col="name", cols=None):
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided separately for
+        each set. The default
+        values are 'chrom', 'start', 'end'.
+
     Returns
     -------
     is_covering:bool
@@ -360,6 +386,7 @@ def is_covering(df, view_df, view_name_col="name", cols=None):
         view_df=view_df,
         view_name_col=view_name_col,
         cols=cols,
+        cols_view=cols_view,
     ).empty:
         return True
     else:
@@ -373,6 +400,7 @@ def is_tiling(
     df_view_col="view_region",
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Tests if a view `view_df` is tiled by the set of genomic intervals in the
@@ -405,6 +433,11 @@ def is_tiling(
         The names of columns containing the chromosome, start and end of the
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided
+        separately for each set. The default
+        values are 'chrom', 'start', 'end'.
 
     Returns
     -------
@@ -413,19 +446,26 @@ def is_tiling(
     """
 
     view_df = construction.make_viewframe(
-        view_df, view_name_col=view_name_col, cols=cols
+        view_df, view_name_col=view_name_col, cols=cols_view
     )
 
-    if is_overlapping(df):
+    if is_overlapping(df, cols=cols):
         if raise_errors:
             raise ValueError("overlaps")
         return False
-    if not is_covering(df, view_df, view_name_col=view_name_col, cols=None):
+    if not is_covering(
+        df, view_df, view_name_col=view_name_col, cols=cols, cols_view=cols_view
+    ):
         if raise_errors:
             raise ValueError("not covered")
         return False
     if not is_contained(
-        df, view_df, df_view_col=df_view_col, view_name_col=view_name_col, cols=None
+        df,
+        view_df,
+        df_view_col=df_view_col,
+        view_name_col=view_name_col,
+        cols=cols,
+        cols_view=cols_view,
     ):
         if raise_errors:
             raise ValueError("not contained")
@@ -440,6 +480,7 @@ def is_sorted(
     df_view_col=None,
     view_name_col="name",
     cols=None,
+    cols_view=None,
 ):
     """
     Tests if a bedframe is changed by sorting.
@@ -472,6 +513,12 @@ def is_sorted(
         genomic intervals, provided separately for each set. The default
         values are 'chrom', 'start', 'end'.
 
+    cols_view: (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals in view_df, provided separately for each set.
+        The default
+        values are 'chrom', 'start', 'end'.
+
     Returns
     -------
     is_sorted : bool
@@ -486,6 +533,7 @@ def is_sorted(
         df_view_col=df_view_col,
         view_name_col=view_name_col,
         cols=cols,
+        cols_view=cols_view,
     )
 
     if df.equals(df_sorted):

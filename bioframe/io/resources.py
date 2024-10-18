@@ -129,16 +129,16 @@ def _origins_from_cytoband(
     cens = []
     for chrom, group in grouped:
         if not len(group) == 2:
-            raise ValueError(
-                f"Expected 2 'acen' bands for {chrom}, found {len(group)}"
-            )
+            raise ValueError(f"Expected 2 'acen' bands for {chrom}, found {len(group)}")
         acens = group.sort_values("start")
-        cens.append({
-            "chrom": chrom,
-            "start": acens.iloc[0]["start"],
-            "end": acens.iloc[1]["end"],
-            "mid": acens.iloc[0]["end"],
-        })
+        cens.append(
+            {
+                "chrom": chrom,
+                "start": acens.iloc[0]["start"],
+                "end": acens.iloc[1]["end"],
+                "mid": acens.iloc[0]["end"],
+            }
+        )
     return pd.DataFrame.from_records(cens)
 
 
@@ -158,10 +158,7 @@ def _origins_from_ucsccentromeres(cens: pd.DataFrame) -> pd.DataFrame:
     pandas.DataFrame
         A dataframe with columns 'chrom', 'start', 'end', 'mid'.
     """
-    cens = cens.groupby("chrom").agg({
-        "start": np.min,
-        "end": np.max
-    }).reset_index()
+    cens = cens.groupby("chrom").agg({"start": np.min, "end": np.max}).reset_index()
     cens["mid"] = (cens["start"] + cens["end"]) // 2
     cens = (
         cens[["chrom", "start", "end", "mid"]]
@@ -225,7 +222,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
             ("centromeres", client.fetch_centromeres),
         ]
 
-        for schema, fetcher in fetchers:
+        for schema, fetcher in fetchers:  # noqa: B007
             try:
                 df = fetcher()
                 break
@@ -233,7 +230,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
                 pass
         else:
             raise ValueError(
-               f"No source for centromere data found from provider '{provider}'."
+                f"No source for centromere data found from provider '{provider}'."
             )
 
         if schema == "centromeres":
@@ -246,7 +243,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
 
 
 class UCSCClient:
-    BASE_URL = "http://hgdownload.cse.ucsc.edu/"
+    BASE_URL = "https://hgdownload.soe.ucsc.edu/"
 
     def __init__(self, db: str):
         self._db = db

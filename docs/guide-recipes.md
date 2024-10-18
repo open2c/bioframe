@@ -14,13 +14,13 @@ kernelspec:
 
 # How do I
 
-## Obtain overlapping intervals with matching strandedness? 
+## Obtain overlapping intervals with matching strandedness?
 Use overlap with the ``on`` argument:
 ```
 df = bf.overlap(df1, df2, on=[‘strand’])
 ```
 
-## Obtain overlapping intervals with opposite strandedness? 
+## Obtain overlapping intervals with opposite strandedness?
 Overlap then filter pairs of opposite strandedness:
 ```
 df = bf.overlap(df1, df2)
@@ -34,7 +34,7 @@ df = df[ ( df["coverage"] / (df["end"]-df["start"]) ) >=0.50]
 ```
 
 ## Shift all intervals on the positive strand by 10bp?
-Use pandas indexing: 
+Use pandas indexing:
 ```
 df.loc[df.strand=="+",["start", "end"]] += 10
 ```
@@ -52,8 +52,8 @@ Use closest after filtering by strand, and passing the `ignore_upsream=True` arg
 bioframe.closest(df1.loc[df1['strand']=='+'], df2, ignore_upstream=True)
 ```
 
-For gener, the upstream/downstream direction might be defined by the direction of transcription. 
-Use `direction_col='strand'` to set up the direction: 
+For gener, the upstream/downstream direction might be defined by the direction of transcription.
+Use `direction_col='strand'` to set up the direction:
 ```
 bioframe.closest(df1, df2, ignore_upstream=True, direction_col='strand')
 ```
@@ -63,7 +63,3 @@ Use pandas DataFrame.isin(values):
 ```
 df[ ~df.chrom.isin(['chrX','chrY'])]
 ```
-
-
-
-

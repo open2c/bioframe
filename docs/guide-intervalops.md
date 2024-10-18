@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Genomic interval operations 
+# Genomic interval operations
 
 ```{eval-rst}
 This guide provides an introdution into how to use bioframe to perform genomic interval operations. For the full list of genomic interval operations, see the :ref:`API reference<API_ops>`.
@@ -51,7 +51,7 @@ Or via functions in :mod:`bioframe.core.construction`, e.g.:
 ```{code-cell} ipython3
 df2 = bioframe.from_any(
     [['chr1', 4, 8],
-     ['chr1', 10, 11]], 
+     ['chr1', 10, 11]],
     name_col='chrom')
 ```
 ```{eval-rst}
@@ -59,12 +59,12 @@ Or ingested from datasets and databases with functions in :mod:`bioframe.io.file
 ```
 
 ```{eval-rst}
-BedFrames satisfy the following properties:  
+BedFrames satisfy the following properties:
 
-- chrom, start, end columns  
-- columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype(), int/pd.Int64Dtype())  
+- chrom, start, end columns
+- columns have valid dtypes (object/string/categorical, int/pd.Int64Dtype(), int/pd.Int64Dtype())
 - for each interval, if any of chrom, start, end are null, then all are null
-- all starts < ends.  
+- all starts <= ends.
 
 Whether a dataframe satisfies these properties can be checked with :func:`bioframe.core.checks.is_bedframe`:
 ```
@@ -98,7 +98,7 @@ overlapping_intervals = bf.overlap(df1, df2, how='inner', suffixes=('_1','_2'))
 display(overlapping_intervals)
 ```
 ```{code-cell} ipython3
-for i, reg_pair in overlapping_intervals.iterrows(): 
+for i, reg_pair in overlapping_intervals.iterrows():
     bf.vis.plot_intervals_arr(
         starts = [reg_pair.start_1,reg_pair.start_2],
         ends = [reg_pair.end_1,reg_pair.end_2],
@@ -158,7 +158,7 @@ bf.vis.plot_intervals(df_annotated, labels=df_annotated['cluster'], show_coords=
 
 ## Merge
 ```{eval-rst}
-Instead of returning cluster assignments, :func:`bioframe.merge` returns a new dataframe of merged genomic intervals. As with :func:`bioframe.cluster`, using ``min_dist=0`` and ``min_dist=None`` gives different results. 
+Instead of returning cluster assignments, :func:`bioframe.merge` returns a new dataframe of merged genomic intervals. As with :func:`bioframe.cluster`, using ``min_dist=0`` and ``min_dist=None`` gives different results.
 
 If ``min_dist=0``, this returns a dataframe of two intervals:
 ```
@@ -185,7 +185,7 @@ closest_intervals = bf.closest(df1, df2, suffixes=('_1','_2'))
 display(closest_intervals)
 ```
 ```{code-cell} ipython3
-for i, reg_pair in closest_intervals.iterrows(): 
+for i, reg_pair in closest_intervals.iterrows():
     bf.vis.plot_intervals_arr(
         starts = [reg_pair.start_1,reg_pair.start_2],
         ends = [reg_pair.end_1,reg_pair.end_2],
@@ -197,11 +197,11 @@ for i, reg_pair in closest_intervals.iterrows():
 ```
 
 ```{eval-rst}
-By default, :func:`bioframe.closest` reports overlapping intervals. This can be modified by passing ``ignore_overlap=True``. Note the closest pair #2 and #3, which did not overlap, remain the same: 
+By default, :func:`bioframe.closest` reports overlapping intervals. This can be modified by passing ``ignore_overlap=True``. Note the closest pair #2 and #3, which did not overlap, remain the same:
 ```
 ```{code-cell} ipython3
 closest_intervals = bf.closest(df1, df2, ignore_overlaps=True, suffixes=('_1','_2'))
-for i, reg_pair in closest_intervals.iterrows(): 
+for i, reg_pair in closest_intervals.iterrows():
     bf.vis.plot_intervals_arr(
         starts = [reg_pair.start_1,reg_pair.start_2],
         ends = [reg_pair.end_1,reg_pair.end_2],
@@ -213,19 +213,19 @@ for i, reg_pair in closest_intervals.iterrows():
 ```
 
 ```{eval-rst}
-Closest intervals within a single DataFrame can be found simply by passing a single dataframe to :func:`bioframe.closest`. The number of closest intervals to report per query interval can be adjusted with ``k``. 
+Closest intervals within a single DataFrame can be found simply by passing a single dataframe to :func:`bioframe.closest`. The number of closest intervals to report per query interval can be adjusted with ``k``.
 ```
 ```{code-cell} ipython3
 bf.closest(df1, k=2)
 ```
 
 ```{eval-rst}
-Closest intervals upstream of the features in df1 can be found by ignoring downstream and overlaps. 
+Closest intervals upstream of the features in df1 can be found by ignoring downstream and overlaps.
 Upstream/downstream direction is defined by genomic coordinates by default (smaller coordinate is upstream).
 ```
 ```{code-cell} ipython3
-bf.closest(df1, df2, 
-    ignore_overlaps=True, 
+bf.closest(df1, df2,
+    ignore_overlaps=True,
     ignore_downstream=True)
 ```
 
@@ -235,9 +235,9 @@ direction can be changed to the direction of the features by `direction_col`:
 ```
 ```{code-cell} ipython3
 df1["strand"] = np.where(np.random.rand(len(df1)) > 0.5, "+", "-")
-bf.closest(df1, df2, 
-    ignore_overlaps=True, 
-    ignore_downstream=True, 
+bf.closest(df1, df2,
+    ignore_overlaps=True,
+    ignore_downstream=True,
     direction_col='strand')
 ```
 
@@ -259,9 +259,9 @@ display(df1_coverage_and_count)
 This plot shows the coverage and number of overlaps for intervals in ``df1`` by ``df2``:
 ```{code-cell} ipython3
 bf.vis.plot_intervals(
-    df1_coverage_and_count, 
-    show_coords=True, xlim=(0,16), 
-    labels = [f'{cov} bp, {n} intervals' 
+    df1_coverage_and_count,
+    show_coords=True, xlim=(0,16),
+    labels = [f'{cov} bp, {n} intervals'
               for cov, n in zip(df1_coverage_and_count.coverage, df1_coverage_and_count['count'])])
 
 bf.vis.plot_intervals(df2, show_coords=True, xlim=(0,16), colors='lightpink')
@@ -294,11 +294,11 @@ bf.vis.plot_intervals(setdiff_intervals, show_coords=True, xlim=(0,16))
 
 ## Expand
 ```{eval-rst}
-:func:`bioframe.expand` enables quick resizing of intervals. 
+:func:`bioframe.expand` enables quick resizing of intervals.
 
 
-Expand supports additive resizing, with ``pad``. 
-Note that unless subsequently trimmed (with :func:`bioframe.trim`), 
+Expand supports additive resizing, with ``pad``.
+Note that unless subsequently trimmed (with :func:`bioframe.trim`),
 expanded intervals can have negative values:
 ```
 ```{code-cell} ipython3
@@ -324,23 +324,23 @@ bf.vis.plot_intervals(expanded_intervals, show_coords=True, xlim=(0,16))
 ```{eval-rst}
 Certain interval operations are often used relative to a set of reference intervals, whether those are chromosomes, scaffolds, or sub-intervals of either. Bioframe formalizes this with the concept of a `genomic view`, implemented as pandas dataframes, termed viewFrames, that satisfy the following:
 
-- all requirements for bedFrames, including columns for ('chrom', 'start', 'end')  
-- it has an additional column, ``view_name_col``, with default 'name'  
-- entries in the view_name_col are unique 
-- intervals are non-overlapping  
-- it does not contain null values  
+- all requirements for bedFrames, including columns for ('chrom', 'start', 'end')
+- it has an additional column, ``view_name_col``, with default 'name'
+- entries in the view_name_col are unique
+- intervals are non-overlapping
+- it does not contain null values
 
-Importanly a `genomic view` specifies a global coordinate axis, i.e. a conversion from a genomic coordinate system to a single axis. See :ref:`Technical Notes<Technical_Notes>` for more details. 
+Importanly a `genomic view` specifies a global coordinate axis, i.e. a conversion from a genomic coordinate system to a single axis. See :ref:`Technical Notes<Technical_Notes>` for more details.
 
 Bioframe provides a function to assign intervals to corresponding intervals in a view, :func:`bioframe.assign_view`, a function to construct views from various input formats, :func:`bioframe.core.construction.make_viewframe`, and a function check that viewframe requirements are met, :func:`bioframe.core.checks.is_viewframe`.
 
-The following genomic interval operations make use of views, though also have useful default behavior if no view is provided: :func:`bioframe.complement`, :func:`bioframe.trim`, :func:`bioframe.sort_bedframe`.  
+The following genomic interval operations make use of views, though also have useful default behavior if no view is provided: :func:`bioframe.complement`, :func:`bioframe.trim`, :func:`bioframe.sort_bedframe`.
 
 ```
 
 ## Complement
 ```{eval-rst}
-Equally important to finding which genomic features overlap is finding those that do not. :func:`bioframe.complement` returns a BedFrame of intervals not covered by any intervals in an input BedFrame. 
+Equally important to finding which genomic features overlap is finding those that do not. :func:`bioframe.complement` returns a BedFrame of intervals not covered by any intervals in an input BedFrame.
 
 Complments are defined relative to a `genomic view`. Here this is provided as a dictionary with a single chromosome of length 15:
 ```
@@ -422,9 +422,9 @@ display( bioframe.select(df_unsorted,'chrX:8-14') )
 
 +++
 
-Genomic analyses often deal with dataframes with inhomogeneously named columns. Bioframe offers a way to set the default column names that are most convenient for your analyses. 
+Genomic analyses often deal with dataframes with inhomogeneously named columns. Bioframe offers a way to set the default column names that are most convenient for your analyses.
 
-Default bedframe column names are stored in ``bioframe.core.specs_rc``. 
+Default bedframe column names are stored in ``bioframe.core.specs_rc``.
 
 ```{code-cell} ipython3
 bf.core.specs._rc
@@ -468,4 +468,3 @@ with bf.core.specs.update_default_colnames(['CHROMOSOME', 'LEFT', 'RIGHT']):
 bf.core.specs.update_default_colnames(['chrom', 'start', 'end'])
 bf.core.specs._rc
 ```
-

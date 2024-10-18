@@ -1,0 +1,84 @@
+cff-version: 1.2.0
+type: software
+title: bioframe
+license: MIT
+repository-code: 'https://github.com/open2c/bioframe'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+authors:
+  - given-names: Nezar
+    family-names: Abdennur
+    orcid: 'https://orcid.org/0000-0001-5814-0864'
+  - given-names: Geoffrey
+    family-names: Fudenberg
+    orcid: "https://orcid.org/0000-0001-5905-6517"
+  - given-names: Ilya
+    family-names: Flyamer
+    orcid: "https://orcid.org/0000-0002-4892-4208"
+  - given-names: Aleksandra
+    family-names: Galitsyna
+    orcid: "https://orcid.org/0000-0001-8969-5694"
+  - given-names: Anton
+    family-names: Goloborodko
+    orcid: "https://orcid.org/0000-0002-2210-8616"
+  - given-names: Maxim
+    family-names: Imakaev
+    orcid: "https://orcid.org/0000-0002-5320-2728"
+  - given-names: Sergey
+    family-names: Venev
+    orcid: "https://orcid.org/0000-0002-1507-7460"
+abstract: >-
+  Bioframe is a library to enable flexible and performant
+  operations on genomic interval data frames in Python.
+keywords:
+  - bioinformatics
+  - genomics
+  - ranges
+  - intervals
+  - dataframes
+  - pandas
+  - numpy
+  - Python
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.3897573
+    description: Zenodo
+  - type: doi
+    value: 10.1101/2022.02.16.480748
+    description: bioRxiv preprint
+  - type: doi
+    value: 10.1093/bioinformatics/btae088
+    description: Publication
+preferred-citation:
+  type: article
+  title: "Bioframe: Operations on Genomic Intervals in Pandas Dataframes"
+  authors:
+    - family-names: Open2C
+    - given-names: Nezar
+      family-names: Abdennur
+      orcid: 'https://orcid.org/0000-0001-5814-0864'
+    - given-names: Geoffrey
+      family-names: Fudenberg
+      orcid: "https://orcid.org/0000-0001-5905-6517"
+    - given-names: Ilya
+      family-names: Flyamer
+      name-suffix: M
+      orcid: "https://orcid.org/0000-0002-4892-4208"
+    - given-names: Aleksandra
+      family-names: Galitsyna
+      name-suffix: A
+      orcid: "https://orcid.org/0000-0001-8969-5694"
+    - given-names: Anton
+      family-names: Goloborodko
+      orcid: "https://orcid.org/0000-0002-2210-8616"
+    - given-names: Maxim
+      family-names: Imakaev
+      orcid: "https://orcid.org/0000-0002-5320-2728"
+    - given-names: Sergey
+      family-names: Venev
+      orcid: "https://orcid.org/0000-0002-1507-7460"
+  journal: Bioinformatics
+  year: 2024
+  url: "https://doi.org/10.1093/bioinformatics/btae088"
+  doi: "10.1093/bioinformatics/btae088"

@@ -11,9 +11,7 @@ def test_fetch_chromsizes():
         assert chromsizes.name == "length"
         assert len(chromsizes) == 25
 
-        chromsizes_df = bioframe.fetch_chromsizes(
-            db, provider=provider, as_bed=True
-        )
+        chromsizes_df = bioframe.fetch_chromsizes(db, provider=provider, as_bed=True)
         assert isinstance(chromsizes_df, pd.DataFrame)
         assert list(chromsizes_df.columns) == ["chrom", "start", "end"]
         assert len(chromsizes_df) == 25

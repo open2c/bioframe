@@ -1,3 +1,4 @@
+import array
 import io
 import json
 import os
@@ -29,7 +30,7 @@ __all__ = [
     "read_chromsizes",
     "read_tabix",
     "read_pairix",
-    "read_bam",
+    "read_alignments",
     "load_fasta",
     "read_bigwig",
     "to_bigwig",
@@ -69,7 +70,7 @@ def read_table(filepath_or, schema=None, schema_is_strict=False, **kwargs):
             kwargs.setdefault("names", SCHEMAS[schema])
         except (KeyError, TypeError):
             if isinstance(schema, str):
-                raise ValueError(f"TSV schema not found: '{schema}'")
+                raise ValueError(f"TSV schema not found: '{schema}'") from None
             kwargs.setdefault("names", schema)
     df = pd.read_csv(filepath_or, **kwargs)
     if schema_is_strict:
@@ -88,7 +89,7 @@ def read_chromsizes(
     chrom_patterns=(r"^chr[0-9]+$", r"^chr[XY]$", r"^chrM$"),
     natsort=True,
     as_bed=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Read a ``<db>.chrom.sizes`` or ``<db>.chromInfo.txt`` file from the UCSC
@@ -132,7 +133,7 @@ def read_chromsizes(
         usecols=[0, 1],
         names=["name", "length"],
         dtype={"name": str},
-        **kwargs
+        **kwargs,
     )
 
     if filter_chroms:
@@ -163,7 +164,10 @@ def read_tabix(fp, chrom=None, start=None, end=None):
     """
     Read a tabix-indexed file into dataFrame.
     """
-    import pysam
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError("pysam is required to use `read_tabix`") from None
 
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
@@ -184,7 +188,7 @@ def read_pairix(
     columns=None,
     usecols=None,
     dtypes=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Read a pairix-indexed file into DataFrame.
@@ -231,33 +235,59 @@ def read_pairix(
     return df
 
 
-def read_bam(fp, chrom=None, start=None, end=None):
+def read_alignments(fp, chrom=None, start=None, end=None):
     """
-    Read bam records into a DataFrame.
+    Read alignment records into a DataFrame.
     """
-    import pysam
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError("pysam is required to use `read_alignments`") from None
 
-    with closing(pysam.AlignmentFile(fp, "rb")) as f:
-        bam_iter = f.fetch(chrom, start, end)
-        records = [
-            (
-                s.qname,
-                s.flag,
-                s.rname,
-                s.pos,
-                s.mapq,
-                s.cigarstring if s.mapq != 0 else np.nan,
-                s.rnext,
-                s.pnext,
-                s.tlen,
-                s.seq,
-                s.qual,
-                json.dumps(OrderedDict(s.tags)),
+    ext = os.path.splitext(fp)[1]
+    if ext == '.sam':
+        mode = 'r'
+    elif ext == '.bam':
+        mode = 'rb'
+    elif ext == '.cram':
+        mode = 'rc'
+    else:
+        raise ValueError(f'{ext} is not a supported filetype')
+
+    with closing(pysam.AlignmentFile(fp, mode)) as f:
+        records = []
+        for s in f.fetch(chrom, start, end):
+            # Needed because array.array is not json serializable
+            tags = [
+                (k, v.tolist() if isinstance(v, array.array) else v)
+                for k, v in s.tags
+            ]
+            records.append(
+                (
+                    s.qname,
+                    s.flag,
+                    s.reference_name,
+                    s.pos,
+                    s.mapq,
+                    s.cigarstring if s.mapq != 0 else np.nan,
+                    s.rnext,
+                    s.pnext,
+                    s.tlen,
+                    s.seq,
+                    s.qual,
+                    json.dumps(dict(tags)),
+                )
             )
-            for s in bam_iter
-        ]
         df = pd.DataFrame(records, columns=BAM_FIELDS)
     return df
+
+
+def read_bam(fp, chrom=None, start=None, end=None):
+    """
+    Deprecated: use `read_alignment` instead.
+    Read bam file into dataframe,
+    """
+    return read_alignments(fp, chrom, start, end)
 
 
 class PysamFastaRecord:
@@ -313,7 +343,7 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
         try:
             import pysam
         except ImportError:
-            raise ImportError("pysam is required to use engine='pysam'")
+            raise ImportError("pysam is required to use engine='pysam'") from None
 
         if is_multifile:
             for onefile in filepath_or:
@@ -329,7 +359,7 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
         try:
             import pyfaidx
         except ImportError:
-            raise ImportError("pyfaidx is required to use engine='pyfaidx'")
+            raise ImportError("pyfaidx is required to use engine='pyfaidx'") from None
 
         if is_multifile:
             for onefile in filepath_or:
@@ -397,9 +427,7 @@ def read_bigwig(path, chrom, start=None, end=None, engine="auto"):
         df.insert(0, "chrom", chrom)
 
     else:
-        raise ValueError(
-            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
-        )
+        raise ValueError(f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}")
 
     return df
 
@@ -454,9 +482,7 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
         df.insert(0, "chrom", chrom)
 
     else:
-        raise ValueError(
-            f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}"
-        )
+        raise ValueError(f"engine must be 'auto', 'pybbi' or 'pybigwig'; got {engine}")
 
     return df
 
@@ -492,7 +518,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
                 "install it with, for example, conda install -y -c bioconda "
                 "ucsc-bedgraphtobigwig "
-            )
+            ) from None
     elif path_to_binary.endswith("bedGraphToBigWig"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
@@ -516,9 +542,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
         is_bedgraph = False
 
     if not is_bedgraph:
-        raise ValueError(
-            f"A bedGraph-like DataFrame is required, got {df.columns}"
-        )
+        raise ValueError(f"A bedGraph-like DataFrame is required, got {df.columns}")
 
     if value_field is None:
         value_field = df.columns[3]
@@ -529,8 +553,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
     bg = bg.sort_values(["chrom", "start", "end"])
 
     with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
-         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs: # fmt: skip
-
+         tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 
@@ -576,7 +599,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigbed or "
                 "install it with, for example, conda install -y -c bioconda "
                 "ucsc-bedtobigbed "
-            )
+            ) from None
     elif path_to_binary.endswith("bedToBigBed"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
@@ -610,7 +633,6 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
     with tempfile.NamedTemporaryFile(suffix=".bed") as f, tempfile.NamedTemporaryFile(
         "wt", suffix=".chrom.sizes"
     ) as cs:
-
         chromsizes.to_csv(cs, sep="\t", header=False)
         cs.flush()
 

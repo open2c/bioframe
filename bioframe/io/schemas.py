@@ -2,6 +2,7 @@
 Field names for various genomic tabular files
 
 """
+
 __all__ = ["SCHEMAS"]
 
 
@@ -16,7 +17,7 @@ BED12_FIELDS = [
     "strand",
     "thickStart",
     "thickEnd",
-    "rgb",
+    "itemRgb",
     "blockCount",
     "blockSizes",
     "blockStarts",
@@ -107,7 +108,7 @@ GAPPEDPEAK_FIELDS = [
     "strand",
     "thickStart",
     "thickEnd",
-    "rgb",
+    "itemRgb",
     "blockCount",
     "blockSizes",
     "blockStarts",

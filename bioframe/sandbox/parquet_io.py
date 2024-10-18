@@ -8,7 +8,7 @@ def to_parquet(
     compression="snappy",
     use_dictionary=True,
     version=2.0,
-    **kwargs
+    **kwargs,
 ):
     """
     Save an iterable of dataframe chunks to a single Apache Parquet file. For
@@ -40,7 +40,7 @@ def to_parquet(
         import pyarrow as pa
         import pyarrow.parquet
     except ImportError:
-        raise ImportError("Saving to parquet requires the `pyarrow` package")
+        raise ImportError("Saving to parquet requires the `pyarrow` package") from None
 
     if isinstance(pieces, pd.DataFrame):
         pieces = (pieces,)
@@ -55,7 +55,7 @@ def to_parquet(
                     compression=compression,
                     use_dictionary=use_dictionary,
                     version=version,
-                    **kwargs
+                    **kwargs,
                 )
             writer.write_table(table, row_group_size=row_group_size)
     finally:
@@ -101,7 +101,7 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
         except ImportError:
             raise ImportError(
                 "Iterating over Parquet data requires the `pyarrow` package."
-            )
+            ) from None
 
         class ParquetFileIterator(ParquetFile):
             def __iter__(self):
