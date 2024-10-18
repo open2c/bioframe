@@ -40,7 +40,7 @@ def to_parquet(
         import pyarrow as pa
         import pyarrow.parquet
     except ImportError:
-        raise ImportError("Saving to parquet requires the `pyarrow` package")
+        raise ImportError("Saving to parquet requires the `pyarrow` package") from None
 
     if isinstance(pieces, pd.DataFrame):
         pieces = (pieces,)
@@ -101,7 +101,7 @@ def read_parquet(filepath, columns=None, iterator=False, **kwargs):
         except ImportError:
             raise ImportError(
                 "Iterating over Parquet data requires the `pyarrow` package."
-            )
+            ) from None
 
         class ParquetFileIterator(ParquetFile):
             def __iter__(self):

@@ -53,7 +53,7 @@ def to_ucsc_colorstring(color: Union[str, tuple]) -> str:
     chr2   0      10   green  0,128,0
     chr2   10     20   None   0
     """
-    if pd.isnull(color):
+    if pd.isnull(color) or color == "none":
         return "0"
     else:
         return ",".join(str(int(x * 255)) for x in to_rgb(color))
@@ -136,8 +136,8 @@ def plot_intervals_arr(
     else:
         labels = itertools.cycle(labels)
 
-    for i, (start, end, level, color, label) in enumerate(
-        zip(starts, ends, levels, colors, labels)
+    for (start, end, level, color, label) in zip(
+        starts, ends, levels, colors, labels
     ):
         _plot_interval(start, end, level, facecolor=color)
         if label is not None:

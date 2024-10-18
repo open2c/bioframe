@@ -70,7 +70,7 @@ def read_table(filepath_or, schema=None, schema_is_strict=False, **kwargs):
             kwargs.setdefault("names", SCHEMAS[schema])
         except (KeyError, TypeError):
             if isinstance(schema, str):
-                raise ValueError(f"TSV schema not found: '{schema}'")
+                raise ValueError(f"TSV schema not found: '{schema}'") from None
             kwargs.setdefault("names", schema)
     df = pd.read_csv(filepath_or, **kwargs)
     if schema_is_strict:
@@ -167,7 +167,7 @@ def read_tabix(fp, chrom=None, start=None, end=None):
     try:
         import pysam
     except ImportError:
-        raise ImportError("pysam is required to use `read_tabix`")
+        raise ImportError("pysam is required to use `read_tabix`") from None
 
     with closing(pysam.TabixFile(fp)) as f:
         names = list(f.header) or None
@@ -242,7 +242,7 @@ def read_alignments(fp, chrom=None, start=None, end=None):
     try:
         import pysam
     except ImportError:
-        raise ImportError("pysam is required to use `read_alignments`")
+        raise ImportError("pysam is required to use `read_alignments`") from None
 
     ext = os.path.splitext(fp)[1]
     if ext == '.sam':
@@ -343,7 +343,7 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
         try:
             import pysam
         except ImportError:
-            raise ImportError("pysam is required to use engine='pysam'")
+            raise ImportError("pysam is required to use engine='pysam'") from None
 
         if is_multifile:
             for onefile in filepath_or:
@@ -359,7 +359,7 @@ def load_fasta(filepath_or, engine="pysam", **kwargs):
         try:
             import pyfaidx
         except ImportError:
-            raise ImportError("pyfaidx is required to use engine='pyfaidx'")
+            raise ImportError("pyfaidx is required to use engine='pyfaidx'") from None
 
         if is_multifile:
             for onefile in filepath_or:
@@ -518,7 +518,7 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, path_to_binary=None):
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
                 "install it with, for example, conda install -y -c bioconda "
                 "ucsc-bedgraphtobigwig "
-            )
+            ) from None
     elif path_to_binary.endswith("bedGraphToBigWig"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(
@@ -599,7 +599,7 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
                 "Pass it as 'path_to_binary' parameter to bioframe.to_bigbed or "
                 "install it with, for example, conda install -y -c bioconda "
                 "ucsc-bedtobigbed "
-            )
+            ) from None
     elif path_to_binary.endswith("bedToBigBed"):
         if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
             raise ValueError(

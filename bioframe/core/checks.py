@@ -310,9 +310,9 @@ def is_contained(
             # ek1 = end is the default value
             # sk1 = start is the default value
             assert (df_view_assigned[sk1] >= df_view_assigned[sk2 + "_"]).all()
-        except AssertionError:
+        except AssertionError as e:
             if raise_errors:
-                raise AssertionError("df not contained in view_df")
+                raise AssertionError("df not contained in view_df") from e
             else:
                 return False
         return True

@@ -222,7 +222,7 @@ def fetch_centromeres(db: str, provider: str = "local") -> pd.DataFrame:
             ("centromeres", client.fetch_centromeres),
         ]
 
-        for schema, fetcher in fetchers:
+        for schema, fetcher in fetchers:  # noqa: B007
             try:
                 df = fetcher()
                 break

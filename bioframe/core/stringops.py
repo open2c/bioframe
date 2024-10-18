@@ -231,8 +231,8 @@ def parse_region(
     if chromsizes is not None:
         try:
             clen = chromsizes[chrom]
-        except KeyError:
-            raise ValueError(f"Unknown sequence label: {chrom}")
+        except KeyError as e:
+            raise ValueError(f"Unknown sequence label: {chrom}") from e
         if end is None:
             end = clen
 

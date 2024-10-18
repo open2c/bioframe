@@ -701,7 +701,8 @@ def to_bed(
             warnings.warn(
                 f"Standard column {col} contains null values. "
                 "These will be replaced with the uninformative value "
-                f"{BED_FIELD_FILLVALUES[col]}."
+                f"{BED_FIELD_FILLVALUES[col]}.",
+                stacklevel=2,
             )
             bed[col] = df[col].fillna(BED_FIELD_FILLVALUES[col])
         else:
