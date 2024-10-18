@@ -597,50 +597,15 @@ def parse_bed_schema(schema: str) -> tuple[int, bool]:
     return n, extended
 
 
-def to_bed(
+def to_bed_dataframe(
     df: pd.DataFrame,
-    path: str | pathlib.Path | None = None,
-    *,
     schema: str = "infer",
     validate_fields: bool = True,
     require_sorted: bool = False,
     chromsizes: dict | pd.Series | None = None,
     strict_score: bool = False,
     replace_na: bool = True,
-    na_rep: str = "nan",
-) -> str | None:
-    """Write a DataFrame to a BED file.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame to write.
-    path : str or Path, optional
-        Path to write the BED file to. If ``None``, the serialized BED file is
-        returned as a string.
-    schema : str, optional [default: "infer"]
-        BED schema to use. If ``"infer"``, the schema is inferred from the
-        DataFrame's columns.
-    validate_fields : bool, optional [default: True]
-        Whether to validate the fields of the BED file.
-    require_sorted : bool, optional [default: False]
-        Whether to require the BED file to be sorted.
-    chromsizes : dict or pd.Series, optional
-        Chromosome sizes to validate against.
-    strict_score : bool, optional [default: False]
-        Whether to strictly enforce validation of the score field (0-1000).
-    replace_na : bool, optional [default: True]
-        Whether to replace null values of standard BED fields with
-        compliant uninformative values.
-    na_rep : str, optional [default: "nan"]
-        String representation of null values if written.
-
-    Returns
-    -------
-    str or None:
-        The serialized BED file as a string if ``path`` is ``None``, otherwise
-        ``None``.
-    """
+) -> pd.DataFrame:
     if schema == "infer":
         n, extended = infer_bed_schema(df)
     else:
@@ -712,4 +677,60 @@ def to_bed(
         if col in custom_cols:
             bed[col] = df[col]
 
+    return bed
+
+
+def to_bed(
+    df: pd.DataFrame,
+    path: str | pathlib.Path | None = None,
+    *,
+    schema: str = "infer",
+    validate_fields: bool = True,
+    require_sorted: bool = False,
+    chromsizes: dict | pd.Series | None = None,
+    strict_score: bool = False,
+    replace_na: bool = True,
+    na_rep: str = "nan",
+) -> str | None:
+    """Write a DataFrame to a BED file.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to write.
+    path : str or Path, optional
+        Path to write the BED file to. If ``None``, the serialized BED file is
+        returned as a string.
+    schema : str, optional [default: "infer"]
+        BED schema to use. If ``"infer"``, the schema is inferred from the
+        DataFrame's columns.
+    validate_fields : bool, optional [default: True]
+        Whether to validate the fields of the BED file.
+    require_sorted : bool, optional [default: False]
+        Whether to require the BED file to be sorted.
+    chromsizes : dict or pd.Series, optional
+        Chromosome sizes to validate against.
+    strict_score : bool, optional [default: False]
+        Whether to strictly enforce validation of the score field (0-1000).
+    replace_na : bool, optional [default: True]
+        Whether to replace null values of standard BED fields with
+        compliant uninformative values.
+    na_rep : str, optional [default: "nan"]
+        String representation of null values if written.
+
+    Returns
+    -------
+    str or None:
+        The serialized BED file as a string if ``path`` is ``None``, otherwise
+        ``None``.
+    """
+    bed = to_bed_dataframe(
+        df,
+        schema=schema,
+        validate_fields=validate_fields,
+        require_sorted=require_sorted,
+        chromsizes=chromsizes,
+        strict_score=strict_score,
+        replace_na=replace_na,
+    )
     return bed.to_csv(path, sep="\t", na_rep=na_rep, index=False, header=False)
