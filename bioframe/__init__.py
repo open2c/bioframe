@@ -65,6 +65,8 @@ __all__ = [
     "expand",
     "merge",
     "overlap",
+    "mark_runs",
+    "merge_runs",
     "select",
     "select_indices",
     "select_labels",
@@ -107,6 +109,8 @@ from .extras import (
     frac_gene_coverage,
     frac_mapped,
     make_chromarms,
+    mark_runs,
+    merge_runs,
     pair_by_distance,
     seq_gc,
 )
