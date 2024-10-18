@@ -245,22 +245,21 @@ def read_alignments(fp, chrom=None, start=None, end=None):
         raise ImportError("pysam is required to use `read_alignments`") from None
 
     ext = os.path.splitext(fp)[1]
-    if ext == '.sam':
-        mode = 'r'
-    elif ext == '.bam':
-        mode = 'rb'
-    elif ext == '.cram':
-        mode = 'rc'
+    if ext == ".sam":
+        mode = "r"
+    elif ext == ".bam":
+        mode = "rb"
+    elif ext == ".cram":
+        mode = "rc"
     else:
-        raise ValueError(f'{ext} is not a supported filetype')
+        raise ValueError(f"{ext} is not a supported filetype")
 
     with closing(pysam.AlignmentFile(fp, mode)) as f:
         records = []
         for s in f.fetch(chrom, start, end):
             # Needed because array.array is not json serializable
             tags = [
-                (k, v.tolist() if isinstance(v, array.array) else v)
-                for k, v in s.tags
+                (k, v.tolist() if isinstance(v, array.array) else v) for k, v in s.tags
             ]
             records.append(
                 (
@@ -487,9 +486,38 @@ def read_bigbed(path, chrom, start=None, end=None, engine="auto"):
     return df
 
 
-def to_bigwig(df, chromsizes, outpath, value_field=None, engine='ucsc', path_to_binary=None):
-    """
-    Save a bedGraph-like dataframe as a binary BigWig track.
+def _find_ucsc_binary(path, cmd):
+    if path is None:
+        try:
+            assert shutil.which(cmd) is not None
+        except Exception:
+            raise ValueError(
+                f"{cmd} is not present in the current environment. "
+                f"Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
+                f"install it with, for example, conda install -y -c bioconda "
+                f"ucsc-{cmd.lower()} "
+            ) from None
+    elif path.endswith(cmd):
+        if not os.path.isfile(path) and os.access(path, os.X_OK):
+            raise ValueError(
+                f"{cmd} is absent in the provided path or cannot be "
+                f"executed: {path}. "
+            )
+        cmd = path
+    else:
+        cmd = os.path.join(path, cmd)
+        if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
+            raise ValueError(
+                f"{cmd} is absent in the provided path or cannot be "
+                f"executed: {path}. "
+            )
+    return cmd
+
+
+def to_bigwig(
+    df, chromsizes, outpath, value_field=None, engine="ucsc", path_to_binary=None
+):
+    """Save a bedGraph-like dataframe as a binary BigWig file.
 
     Parameters
     ----------
@@ -507,7 +535,6 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='ucsc', path_to_
         Provide system path to the bedGraphToBigWig binary.
     engine : {'ucsc', 'bigtools'}, optional
         Engine to use for creating the BigWig file.
-
     """
 
     is_bedgraph = True
@@ -528,43 +555,21 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='ucsc', path_to_
     bg["chrom"] = bg["chrom"].astype(str)
     bg = bg.sort_values(["chrom", "start", "end"])
 
-    if chromsizes is None:
-        chromsizes = df.groupby('chrom')['end']
-
-    if engine.lower() == 'ucsc':
-        if path_to_binary is None:
-            cmd = "bedGraphToBigWig"
-            try:
-                assert shutil.which(cmd) is not None
-            except Exception:
-                raise ValueError(
-                    "bedGraphToBigWig is not present in the current environment. "
-                    "Pass it as 'path_to_binary' parameter to bioframe.to_bigwig or "
-                    "install it with, for example, conda install -y -c bioconda "
-                    "ucsc-bedgraphtobigwig "
-                ) from None
-        elif path_to_binary.endswith("bedGraphToBigWig"):
-            if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
-                raise ValueError(
-                    f"bedGraphToBigWig is absent in the provided path or cannot be "
-                    f"fexecuted: {path_to_binary}. "
-                )
-            cmd = path_to_binary
-        else:
-            cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
-            if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
-                raise ValueError(
-                    f"bedGraphToBigWig is absent in the provided path or cannot be "
-                    f"executed: {path_to_binary}. "
-                )
+    if engine.lower() == "ucsc":
+        cmd = _find_ucsc_binary(path_to_binary, "bedGraphToBigWig")
 
         with tempfile.NamedTemporaryFile(suffix=".bg") as f, \
-            tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip
-            chromsizes.to_csv(cs, sep="\t", header=False)
+             tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip # noqa: E501
+            pd.Series(chromsizes).to_csv(cs, sep="\t", header=False)
             cs.flush()
 
             bg.to_csv(
-                f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
+                f.name,
+                sep="\t",
+                columns=columns,
+                index=False,
+                header=False,
+                na_rep="nan",
             )
 
             p = subprocess.run(
@@ -573,21 +578,27 @@ def to_bigwig(df, chromsizes, outpath, value_field=None, engine='ucsc', path_to_
             )
         return p
 
-    elif engine.lower() == 'bigtools':
-        import pybigtools
+    elif engine.lower() == "bigtools":
+        try:
+            import pybigtools
+        except ImportError:
+            raise ImportError(
+                "pybigtools is required to use engine='bigtools'"
+            ) from None
 
         f = pybigtools.open(outpath, "w")
         if issubclass(type(chromsizes), pd.Series):
             chromsizes = chromsizes.astype(int).to_dict()
 
-        bg = bg.astype({'chrom':str, "start": int, "end": int, value_field: float})
+        bg = bg.astype({"chrom": str, "start": int, "end": int, value_field: float})
         f.write(chroms=chromsizes, vals=bg.itertuples(index=False))
         f.close()
 
 
-def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
-    """
-    Save a bedGraph-like dataframe as a binary BigWig track.
+def to_bigbed(
+    df, chromsizes, outpath, schema="infer", engine="ucsc", path_to_binary=None
+):
+    """Save a BED-like dataframe as a binary BigBed file.
 
     Parameters
     ----------
@@ -602,63 +613,59 @@ def to_bigbed(df, chromsizes, outpath, schema="bed6", path_to_binary=None):
         Select the column label of the data frame to generate the track. Default
         is to use the fourth column.
     path_to_binary : str, optional
-        Provide system path to the bedGraphToBigWig binary.
-
+        Provide system path to the bedToBigBed binary.
     """
+    from bioframe.io.bed import infer_bed_schema, parse_bed_schema, to_bed_dataframe
 
-    if path_to_binary is None:
-        cmd = "bedToBigBed"
-        try:
-            assert shutil.which(cmd) is not None
-        except Exception:
-            raise ValueError(
-                "bedToBigBed is not present in the current environment. "
-                "Pass it as 'path_to_binary' parameter to bioframe.to_bigbed or "
-                "install it with, for example, conda install -y -c bioconda "
-                "ucsc-bedtobigbed "
-            ) from None
-    elif path_to_binary.endswith("bedToBigBed"):
-        if not os.path.isfile(path_to_binary) and os.access(path_to_binary, os.X_OK):
-            raise ValueError(
-                f"bedToBigBed is absent in the provided path or cannot be "
-                f"executed: {path_to_binary}. "
-            )
-        cmd = path_to_binary
+    if schema == "infer":
+        n, _ = infer_bed_schema(df)
     else:
-        cmd = os.path.join(path_to_binary, "bedGraphToBigWig")
-        if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
-            raise ValueError(
-                f"bedToBigBed is absent in the provided path or cannot be "
-                f"executed: {path_to_binary}. "
+        n, _ = parse_bed_schema(schema)
+
+    bed = to_bed_dataframe(df, schema=schema)
+    m = len(bed.columns) - n
+    schema = f"bed{n}+{m}" if m > 0 else f"bed{n}"
+
+    if engine.lower() == "ucsc":
+        if path_to_binary is None:
+            cmd = _find_ucsc_binary(path_to_binary, "bedToBigBed")
+
+        with tempfile.NamedTemporaryFile(suffix=".bed") as f, \
+             tempfile.NamedTemporaryFile("wt", suffix=".chrom.sizes") as cs:  # fmt: skip # noqa: E501
+            pd.Series(chromsizes).to_csv(cs, sep="\t", header=False)
+            cs.flush()
+
+            bed.to_csv(
+                f.name,
+                sep="\t",
+                columns=bed.columns,
+                index=False,
+                header=False,
+                na_rep="nan",
             )
 
-    is_bed6 = True
-    for col in ["chrom", "start", "end", "name", "score", "strand"]:
-        if col not in df.columns:
-            is_bed6 = False
-    if len(df.columns) < 6:
-        is_bed6 = False
+            p = subprocess.run(
+                [cmd, f"-type={schema}", f.name, cs.name, outpath],
+                capture_output=True,
+            )
+        return p
 
-    if not is_bed6:
-        raise ValueError(f"A bed6-like DataFrame is required, got {df.columns}")
+    elif engine.lower() == "bigtools":
+        try:
+            import pybigtools
+        except ImportError:
+            raise ImportError(
+                "pybigtools is required to use engine='bigtools'"
+            ) from None
 
-    columns = ["chrom", "start", "end", "name", "score", "strand"]
-    bed = df[columns].copy()
-    bed["chrom"] = bed["chrom"].astype(str)
-    bed = bed.sort_values(["chrom", "start", "end"])
+        f = pybigtools.open(outpath, "w")
+        if issubclass(type(chromsizes), pd.Series):
+            chromsizes = chromsizes.astype(int).to_dict()
 
-    with tempfile.NamedTemporaryFile(suffix=".bed") as f, tempfile.NamedTemporaryFile(
-        "wt", suffix=".chrom.sizes"
-    ) as cs:
-        chromsizes.to_csv(cs, sep="\t", header=False)
-        cs.flush()
-
-        bed.to_csv(
-            f.name, sep="\t", columns=columns, index=False, header=False, na_rep="nan"
+        bed = bed.astype({"chrom": str, "start": int, "end": int})
+        record_iter = (
+            (row[0], row[1], row[2], "\t".join(str(x) for x in row[3:]))
+            for row in bed.itertuples(index=False)
         )
-
-        p = subprocess.run(
-            [cmd, f"-type={schema}", f.name, cs.name, outpath],
-            capture_output=True,
-        )
-    return p
+        f.write(chroms=chromsizes, vals=record_iter)
+        f.close()
