@@ -304,3 +304,102 @@ def test_pair_by_distance():
         bioframe.pair_by_distance(
             df, min_sep=0, max_sep=9, min_intervening=10, max_intervening=9
         )
+
+
+def test_mark_merge_runs():
+    df1 = pd.DataFrame([
+        # chr1
+        # consecutive run of "c"
+        ["chr1", 85563, 129897, "c", 0.2],
+        ["chr1", 129897, 508340, "c", 0.8],
+        ["chr1", 508340, 620903, "c", 0.5],
+
+        # singleton run of "c" separated by 1bp from previous run
+        ["chr1", 620904, 688020, "c", 0.7],
+
+        # consecutive with previous interval but different value of "name"
+        ["chr1", 688020, 858415, "b", 0.8],
+
+        # chr2
+        ["chr2", 548402, 639680, "a", 0.6],
+        ["chr2", 639680, 1026586, "b", 0.8],
+
+        # chr3
+        ["chr3", 260538, 272930, "c", 0.5],
+        ["chr3", 272930, 470969, "c", 0.5],
+        ["chr3", 470969, 502336, "c", 0.5],
+    ], columns=["chrom", "start", "end", "name", "score"])
+
+    runs = bioframe.mark_runs(df1, "name")
+    assert (
+        runs["name"].to_numpy()
+        == np.array(["c", "c", "c", "c", "b", "a", "b", "c", "c", "c"])
+    ).all()
+    assert (
+        runs["run"].to_numpy()
+        == np.array([0, 0, 0, 1, 2, 0, 1, 0, 0, 0])
+    ).all()
+
+    runs = bioframe.mark_runs(df1, "name", reset_counter=False)
+    assert (
+        runs["run"].to_numpy()
+        == np.array([0, 0, 0, 1, 2, 3, 4, 5, 5, 5])
+    ).all()
+
+    runs = bioframe.mark_runs(df1, "name", run_col="foo", reset_counter=False)
+    assert (
+        runs["foo"].to_numpy()
+        == np.array([0, 0, 0, 1, 2, 3, 4, 5, 5, 5])
+    ).all()
+
+    merged = bioframe.merge_runs(
+        df1, "name", agg={"score_mean": ("score", "mean")}
+    )
+    assert (
+        merged["name"].to_numpy()
+        == np.array(["c", "c", "b", "a", "b", "c"])
+    ).all()
+    assert np.allclose(
+        merged["score_mean"].to_numpy(),
+        np.array([0.5, 0.7, 0.8, 0.6, 0.8, 0.5]),
+    )
+
+
+def test_mark_merge_runs__with_overlaps():
+    df1 = pd.DataFrame([
+        # chr1
+        # consecutive run of "c"
+        ["chr1", 85563, 129897, "c", 0.2],
+        ["chr1", 129897, 508340, "c", 0.8],
+        ["chr1", 508340, 620903, "c", 0.5],
+
+        # singleton run of "c" separated by 1bp from previous run
+        ["chr1", 620904, 688020, "c", 0.7],
+
+        # consecutive with previous interval but different value of "name"
+        ["chr1", 688020, 858415, "b", 0.8],
+        # overlapping with previous interval
+        ["chr1", 700000, 900000, "b", 0.8],
+
+        # chr2
+        ["chr2", 548402, 639680, "a", 0.6],
+        ["chr2", 639680, 1026586, "b", 0.8],
+
+        # chr3
+        ["chr3", 260538, 272930, "c", 0.5],
+        ["chr3", 272930, 470969, "c", 0.5],
+        ["chr3", 470969, 502336, "c", 0.5],
+    ], columns=["chrom", "start", "end", "name", "score"])
+
+    with pytest.raises(ValueError):
+        bioframe.mark_runs(df1, "name")
+
+    runs = bioframe.mark_runs(df1, "name", allow_overlaps=True)
+    assert (
+        runs["name"].to_numpy()
+        == np.array(["c", "c", "c", "c", "b", "b", "a", "b", "c", "c", "c"])
+    ).all()
+    assert (
+        runs["run"].to_numpy()
+        == np.array([0, 0, 0, 1, 2, 2, 0, 1, 0, 0, 0])
+    ).all()
