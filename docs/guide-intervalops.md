@@ -34,7 +34,7 @@ import bioframe.vis
 ## DataFrames & BedFrames
 
 ```{eval-rst}
-The core objects in bioframe are pandas DatFrames of genomic intervals, or BedFrames. These can either be defined directly with :py:class:`pandas.DataFrame`:
+The core objects in bioframe are pandas DataFrames of genomic intervals, or BedFrames. These can either be defined directly with :py:class:`pandas.DataFrame`:
 ```
 ```{code-cell} ipython3
 df1 = pd.DataFrame([
