@@ -6,6 +6,7 @@ import pandas as pd
 __all__ = [
     "update_default_colnames",
     "is_chrom_dtype",
+    "_ensure_bed_columns",
 ]
 
 _rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
@@ -151,3 +152,38 @@ def is_chrom_dtype(chrom_dtype):
             isinstance(chrom_dtype, pd.api.types.CategoricalDtype),
         ]
     )
+
+
+def _ensure_bed_columns(df, cols=None, unique_cols=False, return_as_bool=False):
+    """
+    Get default column names and verify they exist in the dataframe.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    cols : (str, str, str) or None
+        The names of columns containing the chromosome, start and end of the
+        genomic intervals. The default values are 'chrom', 'start', 'end'.
+
+    unique_cols : bool
+        If True, check that column names are unique. Default False.
+
+    return_as_bool : bool
+        If True, returns a boolean indicating whether verification passed
+        instead of raising an error. Default False.
+
+    Returns
+    -------
+    tuple: (chrom_col, start_col, end_col)
+    """
+    ck, sk, ek = _get_default_colnames() if cols is None else cols
+
+    if return_as_bool:
+        if not _verify_columns(df, [ck, sk, ek],
+                            unique_cols=unique_cols, return_as_bool=True):
+            return False, (ck, sk, ek)
+        return True, (ck, sk, ek)
+    else:
+        _verify_columns(df, [ck, sk, ek], unique_cols=unique_cols)
+        return ck, sk, ek

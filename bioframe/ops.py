@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from .core import arrops, checks, construction
-from .core.specs import _get_default_colnames, _verify_columns
+from .core.specs import _ensure_bed_columns, _get_default_colnames, _verify_columns
 from .core.stringops import parse_region
 
 __all__ = [
@@ -46,8 +46,7 @@ def select_mask(df, region, cols=None):
     -------
     Boolean array of shape (len(df),)
     """
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    ck, sk, ek = _ensure_bed_columns(df, cols=cols)
 
     chrom, start, end = parse_region(region)
 
@@ -271,10 +270,8 @@ def _overlap_intidxs(df1, df2, how="left", cols1=None, cols2=None, on=None):
         dataframes. The 1st column contains the indices of intervals
         from the 1st set, the 2nd column - the indicies from the 2nd set.
     """
-    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
-    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
-    _verify_columns(df1, [ck1, sk1, ek1])
-    _verify_columns(df2, [ck2, sk2, ek2])
+    ck1, sk1, ek1 = _ensure_bed_columns(df1, cols=cols1)
+    ck2, sk2, ek2 = _ensure_bed_columns(df2, cols=cols2)
 
     # Determine grouping columns.
     by1 = [ck1]
@@ -612,8 +609,7 @@ def cluster(
         if min_dist < 0:
             raise ValueError("min_dist>=0 currently required")
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    ck, sk, ek = _ensure_bed_columns(df, cols=cols)
 
     # Switch to integer indices.
     df_index = df.index
@@ -1495,8 +1491,7 @@ def trim(
 
     """
 
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    ck, sk, ek = _ensure_bed_columns(df, cols)
     df_columns = list(df.columns)
     df_trimmed = df.copy()
     inferred_view = False
@@ -1605,8 +1600,7 @@ def complement(df, view_df=None, view_name_col="name", cols=None, cols_view=None
     ### TODO add on=, so can do strand-specific complements...
 
     # Allow users to specify the names of columns containing the interval coordinates.
-    ck, sk, ek = _get_default_colnames() if cols is None else cols
-    _verify_columns(df, [ck, sk, ek])
+    ck, sk, ek = _ensure_bed_columns(df, cols)
 
     if view_df is None:
         view_df = {i: np.iinfo(np.int64).max for i in set(df[ck].dropna().values)}
