@@ -115,6 +115,14 @@ overlapping_intervals = bf.overlap(df1, df2)
 display(overlapping_intervals)
 ```
 
+To include the overlapping intervals in the output as additional columns (`overlap_start`, `overlap_end`), we can set `return_overlap=True`.
+If `return_overlap` is set to a string, its value is used to name the overlap columns (e.g., `return_overlap + "_start"`, `return_overlap + "_end"`).
+This is useful when we want to explicitly see the overlapping regions between the intervals.
+
+```{code-cell} ipython3
+overlapping_intervals = bf.overlap(df1, df2, how='inner', return_overlap=True)
+display(overlapping_intervals)
+```
 
 ## Cluster
 ```{eval-rst}
