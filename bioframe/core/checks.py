@@ -228,9 +228,11 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
             raise TypeError("Invalid view: invalid column names")
         return False
 
-    if not is_bedframe(region_df, cols=cols):
+    try:
+        is_bedframe(region_df, raise_errors=True, cols=cols)
+    except Exception as e:
         if raise_errors:
-            raise ValueError("Invalid view: not a bedframe")
+            raise ValueError("Invalid view: not a bedframe") from e
         return False
 
     if pd.isna(region_df).values.any():

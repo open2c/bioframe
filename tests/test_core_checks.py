@@ -431,6 +431,22 @@ def test_is_viewframe():
     )
     assert is_viewframe(df1)
 
+    # error chaining with is_bedframe
+    df1 = pd.DataFrame(
+        [
+            ["chr1", 20, 10, "chr1p"],
+            ["chr1", 25, 20, "chr1q"],
+            ["chr2", 30, 20, "chr2q"],
+        ],
+        columns=["chrom", "start", "end", "name"],
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        is_viewframe(df1, raise_errors=True)
+
+    assert "Invalid view: not a bedframe" in str(excinfo.value)
+    assert "Invalid bedframe: starts exceed ends for" in str(excinfo.value.__cause__)
+
 
 def test_is_sorted():
     view_df = pd.DataFrame(
