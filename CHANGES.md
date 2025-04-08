@@ -1,6 +1,17 @@
 # Release notes
 
-## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.7.2...HEAD)
+## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.8.0...HEAD)
+
+## v0.8.0
+
+Date: 2025-04-08
+
+API changes:
+* bigtools engine for bigwig and bigbed.
+* run length functions `mark_runs` and `compress_runs`.
+
+Maintenance:
+* Numpy 2.x support.
 
 ## v0.7.2
 
