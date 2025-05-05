@@ -6,23 +6,23 @@ from .core.specs import _get_default_colnames, _verify_columns
 from .core.stringops import parse_region
 
 __all__ = [
+    "assign_view",
+    "closest",
+    "cluster",
+    "complement",
+    "count_overlaps",
+    "coverage",
+    "expand",
+    "merge",
+    "overlap",
     "select",
-    "select_mask",
     "select_indices",
     "select_labels",
-    "expand",
-    "overlap",
-    "cluster",
-    "merge",
-    "coverage",
-    "closest",
-    "subtract",
+    "select_mask",
     "setdiff",
-    "count_overlaps",
-    "trim",
-    "complement",
     "sort_bedframe",
-    "assign_view",
+    "subtract",
+    "trim",
 ]
 
 
