@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 __all__ = [
-    "update_default_colnames",
     "is_chrom_dtype",
+    "update_default_colnames",
 ]
 
 _rc = {"colnames": {"chrom": "chrom", "start": "start", "end": "end"}}
