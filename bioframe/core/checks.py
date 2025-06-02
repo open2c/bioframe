@@ -8,12 +8,12 @@ from .specs import _get_default_colnames, _verify_column_dtypes, _verify_columns
 __all__ = [
     "is_bedframe",
     "is_cataloged",
-    "is_overlapping",
-    "is_viewframe",
     "is_contained",
     "is_covering",
-    "is_tiling",
+    "is_overlapping",
     "is_sorted",
+    "is_tiling",
+    "is_viewframe",
 ]
 
 

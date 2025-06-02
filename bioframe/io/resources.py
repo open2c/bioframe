@@ -11,9 +11,9 @@ from .fileops import read_chromsizes, read_table
 from .schemas import SCHEMAS
 
 __all__ = [
-    "fetch_chromsizes",
-    "fetch_centromeres",
     "UCSCClient",
+    "fetch_centromeres",
+    "fetch_chromsizes",
 ]
 
 
