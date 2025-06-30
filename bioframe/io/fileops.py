@@ -26,16 +26,16 @@ from ..core.stringops import parse_region
 from .schemas import BAM_FIELDS, SCHEMAS
 
 __all__ = [
-    "read_table",
-    "read_chromsizes",
-    "read_tabix",
-    "read_pairix",
-    "read_alignments",
     "load_fasta",
-    "read_bigwig",
-    "to_bigwig",
+    "read_alignments",
     "read_bigbed",
+    "read_bigwig",
+    "read_chromsizes",
+    "read_pairix",
+    "read_tabix",
+    "read_table",
     "to_bigbed",
+    "to_bigwig",
 ]
 
 
