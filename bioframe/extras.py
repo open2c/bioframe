@@ -7,16 +7,16 @@ from . import ops
 from .core.specs import _get_default_colnames, _verify_columns
 
 __all__ = [
-    "make_chromarms",
     "binnify",
     "digest",
-    "frac_mapped",
     "frac_gc",
-    "seq_gc",
     "frac_gene_coverage",
-    "pair_by_distance",
+    "frac_mapped",
+    "make_chromarms",
     "mark_runs",
-    "merge_runs"
+    "merge_runs",
+    "pair_by_distance",
+    "seq_gc"
 ]
 
 
