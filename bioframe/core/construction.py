@@ -6,10 +6,10 @@ from .specs import _get_default_colnames, _verify_columns, is_chrom_dtype
 from .stringops import is_complete_ucsc_string, parse_region_string, to_ucsc_string
 
 __all__ = [
-    "from_dict",
-    "from_series",
-    "from_list",
     "from_any",
+    "from_dict",
+    "from_list",
+    "from_series",
     "make_viewframe",
     "sanitize_bedframe",
 ]

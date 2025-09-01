@@ -4,9 +4,9 @@ from typing import Optional, Tuple, Union
 import pandas as pd
 
 __all__ = [
+    "is_complete_ucsc_string",
     "parse_region",
     "parse_region_string",
-    "is_complete_ucsc_string",
     "to_ucsc_string",
 ]
 
