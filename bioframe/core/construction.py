@@ -229,7 +229,7 @@ def make_viewframe(
     view_df:dataframe satisfying properties of a view
 
     """
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    ck1, _sk1, _ek1 = _get_default_colnames() if cols is None else cols
 
     view_df = from_any(regions, name_col=view_name_col, cols=cols)
 

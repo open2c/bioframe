@@ -880,8 +880,8 @@ def coverage(
 
     """
 
-    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
-    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    _ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
+    _ck2, _sk2, _ek2 = _get_default_colnames() if cols2 is None else cols2
 
     df1.reset_index(inplace=True, drop=True)
 
@@ -1365,8 +1365,8 @@ def setdiff(df1, df2, cols1=None, cols2=None, on=None):
     df_setdiff : pandas.DataFrame
 
     """
-    ck1, sk1, ek1 = _get_default_colnames() if cols1 is None else cols1
-    ck2, sk2, ek2 = _get_default_colnames() if cols2 is None else cols2
+    _ck1, _sk1, _ek1 = _get_default_colnames() if cols1 is None else cols1
+    _ck2, _sk2, _ek2 = _get_default_colnames() if cols2 is None else cols2
 
     events1, _ = _overlap_intidxs(
         df1, df2, how="inner", cols1=cols1, cols2=cols2, on=on
@@ -1866,7 +1866,7 @@ def assign_view(
 
     """
 
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    _ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
     df = df.copy()
     df.reset_index(inplace=True, drop=True)

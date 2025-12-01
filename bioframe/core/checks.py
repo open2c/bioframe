@@ -169,7 +169,7 @@ def is_overlapping(df, cols=None):
     """
     from ..ops import merge
 
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    _ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
 
     df_merged = merge(df, cols=cols)
 
@@ -297,8 +297,8 @@ def is_contained(
     """
     from ..ops import trim
 
-    ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
-    ck2, sk2, ek2 = _get_default_colnames() if cols_view is None else cols_view
+    _ck1, sk1, ek1 = _get_default_colnames() if cols is None else cols
+    _ck2, sk2, ek2 = _get_default_colnames() if cols_view is None else cols_view
     if df_view_col is None:
         try:
             df_view_assigned = ops.overlap(df, view_df, cols1=cols, cols2=cols_view)
