@@ -9,14 +9,11 @@
 from datetime import datetime
 from importlib.metadata import metadata
 
-# autodoc_mock_imports = ["numpy", "pandas", "matplotlib", "requests"]
-
-
 # -- Project information -----------------------------------------------------
 # NOTE: If you installed your project in editable mode, this might be stale.
 #       If this is the case, reinstall it to refresh the metadata
 info = metadata("bioframe")
-project_name = info["Name"]
+project = info["Name"]
 author = "Open2C"
 copyright = f"{datetime.now():%Y}, {author}."
 version = info["Version"]
@@ -31,25 +28,35 @@ release = info["Version"]
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    # "sphinx.ext.autodoc",
-    # 'sphinx.ext.doctest',
-    # 'sphinx.ext.todo',
-    # 'sphinx.ext.coverage',
-    # 'sphinx.ext.mathjax',
-    # 'sphinx.ext.ifconfig',
     "autodocsumm",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",  # 'numpydoc'
+    # "myst_parser",
     "myst_nb",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
 ]
+
+source_suffix = [".rst", ".md"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
+exclude_patterns = [
+    "_build",
+    "**.ipynb_checkpoints",
+    "Thumbs.db",
+    ".DS_Store",
+    ".env",
+    ".venv",
+]
 
 # nbsphinx_custom_formats = {
 #     '.md': ['jupytext.reads', {'fmt': 'MyST'}],
@@ -75,5 +82,9 @@ autosummary_generate = True
 add_module_names = False
 
 # Cache MyST (.md or .ipynb) notebook outputs if unmodified
-jupyter_execute_notebooks = "cache"
-execution_excludepatterns = ["guide-performance.ipynb"]
+nb_execution_mode = "cache"
+nb_execution_excludepatterns = ["guide-performance.ipynb"]
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}

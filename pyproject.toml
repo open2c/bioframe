@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.7.19"]
+build-backend = "uv_build"
 
 [project]
 name = "bioframe"
@@ -33,6 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -47,35 +48,38 @@ dependencies = [
     "importlib-resources ; python_version<'3.9'",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "biopython",
-    "pre-commit",
-    "pysam",
-    "pybbi",
-    "pytest",
-    "ruff",
-]
+[dependency-groups]
 test = [
-    "pytest",
+    "pytest>=6.0",
 ]
 docs = [
     "autodocsumm",
     "myst_nb",
-    "jinja2",
-    "Sphinx",
+    "myst_parser",
+    "sphinx >=4.0",
     "sphinx-autobuild",
     "sphinx_rtd_theme",
+    "sphinx-copybutton",
+    "sphinx-autodoc-typehints",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "docs" },
+    "biopython",
+    "pre-commit",
+    "pysam",
+    "pybbi",
+    "ruff",
 ]
 
 [project.urls]
 homepage = "https://github.com/open2c/bioframe"
-documentation = "https://bioframe.readthedocs.io/en/latest"
-repository = "https://github.com/open2c/bioframe"
+documentation = "https://bioframe.readthedocs.io"
+source = "https://github.com/open2c/bioframe"
+issues = "https://github.com/open2c/bioframe/issues"
 changelog = "https://github.com/open2c/bioframe/blob/main/CHANGES.md"
 
 [tool.ruff]
-target-version = "py37"
 exclude = [
     ".venv",
 ]
@@ -100,30 +104,11 @@ known-first-party = ["bioframe"]
 convention = "numpy"
 
 [tool.pytest.ini_options]
-minversion = "7"
-log_cli_level = "info"
+minversion = "6.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
-addopts = [
-    "-ra",
-    "--showlocals",
-    "--strict-config",
-    "--strict-markers",
+filterwarnings = ["error"]
+log_level = "INFO"
+testpaths = [
+  "tests",
 ]
-filterwarnings = ["ignore::PendingDeprecationWarning"]
-testpaths = ["tests"]
-
-[tool.hatch.envs.default]
-features = ["dev", "test", "docs"]
-
-[tool.hatch.envs.default.scripts]
-fix = "ruff check --fix ."
-lint = "ruff check bioframe tests"
-format = "ruff format bioframe tests"
-test = "pytest ."
-docs = "sphinx-autobuild docs docs/_build/html"
-
-[tool.hatch.envs.test]
-features = ["dev", "test"]
-
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
