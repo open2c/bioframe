@@ -976,8 +976,7 @@ def _closest_intidxs(
         tie_func = lambda x: tie_breaking_col(x).values  # noqa: E731
     else:
         ValueError(
-            "tie_breaking_col must be either a column label or "
-            "f(DataFrame) -> Series"
+            "tie_breaking_col must be either a column label or f(DataFrame) -> Series"
         )
 
     # Find overlapping intervals per chromosome.
@@ -1187,12 +1186,8 @@ def closest(
 
     df_overlap = None
     if return_overlap:
-        overlap_start = np.maximum(
-            df1[sk1].values[events1], df2[sk2].values[events2]
-        )
-        overlap_end = np.minimum(
-            df1[ek1].values[events1], df2[ek2].values[events2]
-        )
+        overlap_start = np.maximum(df1[sk1].values[events1], df2[sk2].values[events2])
+        overlap_end = np.minimum(df1[ek1].values[events1], df2[ek2].values[events2])
         have_overlap = overlap_start < overlap_end
         df_overlap = pd.DataFrame(
             {
@@ -1223,7 +1218,7 @@ def closest(
             {
                 "distance": np.maximum(distance_left, distance_right),
             },
-            dtype=pd.Int64Dtype()
+            dtype=pd.Int64Dtype(),
         )
         df_distance[na_mask] = pd.NA
 
@@ -1235,10 +1230,7 @@ def closest(
         df_input2 = df2.iloc[events2].reset_index(drop=True)
         df_input2.columns = [col + suffixes[1] for col in df_input2.columns]
         df_input2 = df_input2.astype(
-            {
-                sk2 + suffixes[1]: pd.Int64Dtype(),
-                ek2 + suffixes[1]: pd.Int64Dtype()
-            }
+            {sk2 + suffixes[1]: pd.Int64Dtype(), ek2 + suffixes[1]: pd.Int64Dtype()}
         )
         df_input2[na_mask] = pd.NA
 

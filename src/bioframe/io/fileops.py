@@ -500,16 +500,14 @@ def _find_ucsc_binary(path, cmd):
     elif path.endswith(cmd):
         if not os.path.isfile(path) and os.access(path, os.X_OK):
             raise ValueError(
-                f"{cmd} is absent in the provided path or cannot be "
-                f"executed: {path}. "
+                f"{cmd} is absent in the provided path or cannot be executed: {path}. "
             )
         cmd = path
     else:
         cmd = os.path.join(path, cmd)
         if not os.path.isfile(cmd) and os.access(cmd, os.X_OK):
             raise ValueError(
-                f"{cmd} is absent in the provided path or cannot be "
-                f"executed: {path}. "
+                f"{cmd} is absent in the provided path or cannot be executed: {path}. "
             )
     return cmd
 

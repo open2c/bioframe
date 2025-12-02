@@ -126,9 +126,7 @@ def is_cataloged(
 
     if not _verify_columns(view_df, [view_name_col], return_as_bool=True):
         if raise_errors:
-            raise ValueError(f"Could not find \
-                `{view_name_col}` \
-                column in view_df")
+            raise ValueError(f"Could not find `{view_name_col}` column in view_df")
         return False
 
     if not set(df[df_view_col].copy().dropna().values).issubset(
