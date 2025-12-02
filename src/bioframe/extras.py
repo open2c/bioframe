@@ -16,7 +16,7 @@ __all__ = [
     "mark_runs",
     "merge_runs",
     "pair_by_distance",
-    "seq_gc"
+    "seq_gc",
 ]
 
 
@@ -242,8 +242,7 @@ def frac_mapped(df, fasta_records, return_input=True):
 
     if not set(df["chrom"].values).issubset(set(fasta_records.keys())):
         raise ValueError(
-            "chrom from intervals not in fasta_records: "
-            "double-check genome agreement"
+            "chrom from intervals not in fasta_records: double-check genome agreement"
         )
     if not isinstance(fasta_records, dict):
         raise ValueError(
@@ -550,7 +549,7 @@ def mark_runs(
     *,
     allow_overlaps: bool = False,
     reset_counter: bool = True,
-    run_col: str = 'run',
+    run_col: str = "run",
     cols: tuple[str, str, str] | None = None,
 ) -> pd.DataFrame:
     """
@@ -628,11 +627,9 @@ def mark_runs(
 
         # Find borders of consecutive equal values
         values = group[col].to_numpy()
-        if values.dtype.kind == 'f':
+        if values.dtype.kind == "f":
             is_value_border = np.r_[
-                True,
-                ~np.isclose(values[1:], values[:-1], equal_nan=True),
-                False
+                True, ~np.isclose(values[1:], values[:-1], equal_nan=True), False
             ]
         else:
             is_value_border = np.r_[True, values[1:] != values[:-1], False]
@@ -724,17 +721,15 @@ def merge_runs(
         col,
         allow_overlaps=allow_overlaps,
         reset_counter=False,
-        run_col='_run',
+        run_col="_run",
     )
-    df_merged = (
-        df_runs
-        .groupby('_run')
-        .agg(**{
-            ck: (ck, 'first'),
-            sk: (sk, 'min'),
-            ek: (ek, 'max'),
-            col: (col, 'first'),
-            **agg
-         })
+    df_merged = df_runs.groupby("_run").agg(
+        **{
+            ck: (ck, "first"),
+            sk: (sk, "min"),
+            ek: (ek, "max"),
+            col: (col, "first"),
+            **agg,
+        }
     )
     return df_merged.reset_index(drop=True)

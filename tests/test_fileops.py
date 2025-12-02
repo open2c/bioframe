@@ -51,18 +51,19 @@ def test_read_chromsizes():
 
 def test_read_beds():
     # Checking that we properly read common bed schemas
-    schemas = ['narrowPeak', 'jaspar', 'bed9', 'bed12']
+    schemas = ["narrowPeak", "jaspar", "bed9", "bed12"]
 
     for schema in schemas:
-        _ = bioframe.read_table(f'tests/test_data/{schema}.bed', schema=schema,
-                                schema_is_strict=True)
+        _ = bioframe.read_table(
+            f"tests/test_data/{schema}.bed", schema=schema, schema_is_strict=True
+        )
 
 
 @pytest.mark.skipif(is_big_endian, reason="Test skipped on big-endian systems")
 def test_read_sam():
     pytest.importorskip("pysam")
     # SAM file taken from https://github.com/samtools/samtools/blob/develop/examples/toy.sam
-    _ = bioframe.read_alignments('tests/test_data/toy.sam')
+    _ = bioframe.read_alignments("tests/test_data/toy.sam")
 
 
 @pytest.mark.skipif(is_big_endian, reason="Test skipped on big-endian systems")
@@ -70,4 +71,4 @@ def test_read_bam():
     pytest.importorskip("pysam")
     # converted toy.sam via `samtools view -bS toy.sam > toy.bam;
     # index file created with `samtools index toy.bam`
-    _ = bioframe.read_alignments('tests/test_data/toy.bam')
+    _ = bioframe.read_alignments("tests/test_data/toy.bam")

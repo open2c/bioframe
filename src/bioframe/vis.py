@@ -136,9 +136,7 @@ def plot_intervals_arr(
     else:
         labels = itertools.cycle(labels)
 
-    for (start, end, level, color, label) in zip(
-        starts, ends, levels, colors, labels
-    ):
+    for start, end, level, color, label in zip(starts, ends, levels, colors, labels):
         _plot_interval(start, end, level, facecolor=color)
         if label is not None:
             plt.text(

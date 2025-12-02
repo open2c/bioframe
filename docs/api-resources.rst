@@ -8,7 +8,7 @@ Bioframe provides a collection of genome assembly metadata for commonly used
 genomes. These are accessible through a convenient dataclass interface via :func:`bioframe.assembly_info`.
 
 The assemblies are listed in a manifest YAML file, and each assembly
-has a mandatory companion file called `seqinfo` that contains the sequence
+has a mandatory companion file called _seqinfo_ that contains the sequence
 names, lengths, and other information. The records in the manifest file contain
 the following fields:
 
@@ -22,7 +22,7 @@ the following fields:
 - ``default_units``: default assembly units to include from the seqinfo file
 - ``url``: URL to where the corresponding sequence files can be downloaded
 
-The `seqinfo` file is a TSV file with the following columns (with header):
+The _seqinfo_ file is a TSV file with the following columns (with header):
 
 - ``name``: canonical sequence name
 - ``length``: sequence length
@@ -31,21 +31,20 @@ The `seqinfo` file is a TSV file with the following columns (with header):
 - ``unit``: assembly unit of the chromosome (e.g., "primary", "non-nuclear", "decoy")
 - ``aliases``: comma-separated list of aliases for the sequence name
 
-We currently do not include sequences with "alt" or "patch" roles in `seqinfo` files, but we
+We currently do not include sequences with "alt" or "patch" roles in _seqinfo_ files, but we
 do support the inclusion of additional decoy sequences (as used by so-called NGS *analysis
 sets* for human genome assemblies) by marking them as members of a "decoy" assembly unit.
 
-The `cytoband` file is an optional TSV file with the following columns (with header):
-
+The _cytoband_ file is an optional TSV file with the following columns (with header):
 - ``chrom``: chromosome name
 - ``start``: start position
 - ``end``: end position
 - ``band``: cytogenetic coordinate (name of the band)
 - ``stain``: Giesma stain result
 
-The order of the sequences in the `seqinfo` file is treated as canonical.
-The ordering of the chromosomes in the `cytobands` file should match the order
-of the chromosomes in the `seqinfo` file.
+The order of the sequences in the _seqinfo_ file is treated as canonical.
+The ordering of the chromosomes in the _cytobands_ file should match the order
+of the chromosomes in the _seqinfo_ file.
 
 The manifest and companion files are stored in the ``bioframe/io/data`` directory.
 New assemblies can be requested by opening an issue on GitHub or by submitting a pull request.

@@ -354,14 +354,18 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     )
 
     # Generate IDs of pairs of overlapping intervals
-    ovids1 = np.concatenate([
-        np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts),
-        ids1[arange_multi(match_1in2_starts, match_1in2_ends)],
-    ])
-    ovids2 = np.concatenate([
-        ids2[arange_multi(match_2in1_starts, match_2in1_ends)],
-        np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts),
-    ])
+    ovids1 = np.concatenate(
+        [
+            np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts),
+            ids1[arange_multi(match_1in2_starts, match_1in2_ends)],
+        ]
+    )
+    ovids2 = np.concatenate(
+        [
+            ids2[arange_multi(match_2in1_starts, match_2in1_ends)],
+            np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts),
+        ]
+    )
 
     if sort:
         idx = np.lexsort([ovids2, ovids1])
@@ -723,9 +727,7 @@ def closest_intervals(
     # Combine the results
     events1 = np.concatenate([left_ids1, right_ids1, ovids1])
     events2 = np.concatenate([left_ids2, right_ids2, ovids2])
-    dists = np.concatenate(
-        [left_dists, right_dists, np.zeros(ovids1.shape[0])]
-    )
+    dists = np.concatenate([left_dists, right_dists, np.zeros(ovids1.shape[0])])
 
     if len(events1) == 0:
         return np.array([], dtype=int), np.array([], dtype=int)

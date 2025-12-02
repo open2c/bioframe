@@ -31,8 +31,7 @@ class update_default_colnames:
         if isinstance(new_colnames, collections.abc.Iterable):
             if len(new_colnames) != 3:
                 raise ValueError(
-                    "Please, specify new columns using a list of "
-                    "3 strings or a dict!"
+                    "Please, specify new columns using a list of 3 strings or a dict!"
                 )
             (
                 _rc["colnames"]["chrom"],
@@ -49,7 +48,7 @@ class update_default_colnames:
             )
         else:
             raise ValueError(
-                "Please, specify new columns using a list of " "3 strings or a dict!"
+                "Please, specify new columns using a list of 3 strings or a dict!"
             )
 
     def __enter__(self):

@@ -1,22 +1,19 @@
 # Contributing
 
-
 ## General guidelines
 
 If you haven't contributed to open-source before, we recommend you read [this excellent guide by GitHub on how to contribute to open source](https://opensource.guide/how-to-contribute). The guide is long, so you can gloss over things you're familiar with.
 
 If you're not already familiar with it, we follow the [fork and pull model](https://help.github.com/articles/about-collaborative-development-models) on GitHub. Also, check out this recommended [git workflow](https://www.asmeurer.com/git-workflow/).
 
-
 ## Contributing Code
 
 This project has a number of requirements for all code contributed.
 
-* We follow the [PEP-8 style](https://www.python.org/dev/peps/pep-0008/) convention.
-* We use [NumPy-style docstrings](https://numpydoc.readthedocs.io/en/latest/format.html).
-* It's ideal if user-facing API changes or new features have documentation added.
-* It is best if all new functionality and/or bug fixes have unit tests added with each use-case.
-
+- We follow the [PEP-8 style](https://www.python.org/dev/peps/pep-0008/) convention.
+- We use [NumPy-style docstrings](https://numpydoc.readthedocs.io/en/latest/format.html).
+- It's ideal if user-facing API changes or new features have documentation added.
+- It is best if all new functionality and/or bug fixes have unit tests added with each use-case.
 
 ## Setting up Your Development Environment
 
@@ -95,7 +92,6 @@ uv run sphinx-autobuild docs docs/_build/html
 This will build the documentation and serve it on a local http server which listens for changes and automatically rebuilds.
 
 Documentation from the `main` branch and tagged releases is automatically built and hosted on [readthedocs](https://readthedocs.org/).
-
 
 ## Acknowledgments
 

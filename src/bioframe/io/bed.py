@@ -47,6 +47,7 @@ the uninformative score value as 0.
 
 We also don't enforce limiting name fields to 7-bit printable ascii.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -96,7 +97,7 @@ BED_FIELD_KINDS = {
     "strand": "OU",
     "thickStart": "iu",
     "thickEnd": "iu",
-    "itemRgb": "iOU", # can believe 0 is i
+    "itemRgb": "iOU",  # can believe 0 is i
     "blockCount": "iu",
     "blockSizes": "OU",
     "blockStarts": "OU",
@@ -326,7 +327,8 @@ def check_itemRgb(df: pd.DataFrame) -> dict[bool]:
 
     # Check that the itemRgb column contains only integers between 0 and 255, inclusive
     is_in_range = (
-        df["itemRgb"].astype(str)
+        df["itemRgb"]
+        .astype(str)
         .str.split(",")
         .apply(lambda x: all([int(i) >= 0 and int(i) <= 255 for i in x]))
     ).all()

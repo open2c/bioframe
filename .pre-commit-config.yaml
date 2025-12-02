@@ -1,3 +1,7 @@
+ci:
+  autoupdate_schedule: monthly
+  autoupdate_commit_msg: "chore: Update pre-commit hooks"
+  autofix_commit_msg: "style: Pre-commit fixes"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -11,6 +15,22 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.7
     hooks:
-      - id: ruff
+      - id: ruff-check
         types_or: [python, pyi, jupyter]
         args: [--fix, --show-fixes, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-no-log-warn
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+      - id: text-unicode-replacement-char
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.7.3
+    hooks:
+      - id: prettier
+        args: ["--cache-location=.prettier_cache/cache"]

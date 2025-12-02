@@ -1,7 +1,7 @@
 .. bioframe documentation master file, created by
    sphinx-quickstart on Sat Apr 11 11:44:26 2020.
    You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+   contain the root ``toctree`` directive.
 
 bioframe
 ========

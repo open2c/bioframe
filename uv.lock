@@ -221,6 +221,11 @@ docs = [
     { name = "sphinx-rtd-theme", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 test = [
+    { name = "biopython", version = "1.83", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "biopython", version = "1.85", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
+    { name = "biopython", version = "1.86", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pybbi" },
+    { name = "pysam" },
     { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
     { name = "pytest", version = "9.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -265,7 +270,12 @@ docs = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-rtd-theme" },
 ]
-test = [{ name = "pytest", specifier = ">=6.0" }]
+test = [
+    { name = "biopython" },
+    { name = "pybbi" },
+    { name = "pysam" },
+    { name = "pytest", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "biopython"

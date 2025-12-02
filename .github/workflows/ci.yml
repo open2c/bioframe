@@ -2,22 +2,21 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-
   Test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11", "3.12", "3.13" ]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}

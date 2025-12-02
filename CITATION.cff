@@ -2,14 +2,14 @@ cff-version: 1.2.0
 type: software
 title: bioframe
 license: MIT
-repository-code: 'https://github.com/open2c/bioframe'
+repository-code: "https://github.com/open2c/bioframe"
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 authors:
   - given-names: Nezar
     family-names: Abdennur
-    orcid: 'https://orcid.org/0000-0001-5814-0864'
+    orcid: "https://orcid.org/0000-0001-5814-0864"
   - given-names: Geoffrey
     family-names: Fudenberg
     orcid: "https://orcid.org/0000-0001-5905-6517"
@@ -57,7 +57,7 @@ preferred-citation:
     - family-names: Open2C
     - given-names: Nezar
       family-names: Abdennur
-      orcid: 'https://orcid.org/0000-0001-5814-0864'
+      orcid: "https://orcid.org/0000-0001-5814-0864"
     - given-names: Geoffrey
       family-names: Fudenberg
       orcid: "https://orcid.org/0000-0001-5905-6517"
