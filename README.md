@@ -7,7 +7,7 @@
 [![Docs status](https://readthedocs.org/projects/bioframe/badge/)](https://bioframe.readthedocs.io/en/latest/)
 [![Paper](https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtae088-blue)](https://doi.org/10.1093/bioinformatics/btae088)
 [![Zenodo](https://zenodo.org/badge/69901992.svg)](https://zenodo.org/badge/latestdoi/69901992)
-[![Slack](https://img.shields.io/badge/chat-slack-%233F0F3F?logo=slack)](https://bit.ly/open2c-slack)
+[![Discord](https://img.shields.io/badge/chat-discord-%237289da?logo=discord&logoColor=%237289da)](https://discord.com/invite/qVfSbDYHNG)
 [![NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://www.numfocus.org)
 
 Bioframe enables flexible and scalable operations on genomic interval dataframes in Python.
@@ -32,7 +32,7 @@ pip install bioframe
 
 ## Contributing
 
-Interested in contributing to bioframe? That's great! To get started, check out the [contributing guide](https://github.com/open2c/bioframe/blob/main/CONTRIBUTING.md). Discussions about the project roadmap take place on the [Open2C Slack](https://bit.ly/open2c-slack) and regular developer meetings scheduled there. Anyone can join and participate!
+Interested in contributing to bioframe? That's great! To get started, check out the [contributing guide](https://github.com/open2c/bioframe/blob/main/CONTRIBUTING.md). Discussions about the project roadmap take place on the [Open2C Discord](https://discord.com/invite/qVfSbDYHNG) server and regular developer meetings scheduled there. Anyone can join and participate!
 
 
 ## Interval operations
