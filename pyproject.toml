@@ -51,6 +51,9 @@ dependencies = [
 [dependency-groups]
 test = [
     "pytest>=6.0",
+    "biopython",
+    "pysam",
+    "pybbi",
 ]
 docs = [
     "autodocsumm",
@@ -65,10 +68,7 @@ docs = [
 dev = [
     { include-group = "test" },
     { include-group = "docs" },
-    "biopython",
     "pre-commit",
-    "pysam",
-    "pybbi",
     "ruff",
 ]
 
