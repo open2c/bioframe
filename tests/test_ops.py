@@ -772,6 +772,46 @@ def test_overlap():
         )
 
 
+def test_overlap_return_input():
+    df1 = pd.DataFrame(
+        [["chr1", 3, 8], ["chr1", 12, 16]],
+        columns=["chrom", "start", "end"],
+    )
+    df2 = pd.DataFrame(
+        [["chr1", 5, 10]],
+        columns=["chrom", "start", "end"],
+    )
+    left_cols = ["chrom", "start", "end"]
+    right_cols = ["chrom_", "start_", "end_"]
+
+    # True / False return both / neither sides
+    assert (
+        list(bioframe.overlap(df1, df2, how="inner", return_input=True).columns)
+        == left_cols + right_cols
+    )
+    assert (
+        list(bioframe.overlap(df1, df2, how="inner", return_input=False).columns) == []
+    )
+
+    # 1 / "1" / "left" return only df1 columns
+    for val in (1, "1", "left"):
+        assert (
+            list(bioframe.overlap(df1, df2, how="inner", return_input=val).columns)
+            == left_cols
+        )
+
+    # 2 / "2" / "right" return only df2 columns
+    for val in (2, "2", "right"):
+        assert (
+            list(bioframe.overlap(df1, df2, how="inner", return_input=val).columns)
+            == right_cols
+        )
+
+    # values outside the supported set raise instead of silently returning both
+    with pytest.raises(ValueError):
+        bioframe.overlap(df1, df2, how="inner", return_input="both")
+
+
 def test_overlap_preserves_coord_dtypes():
     df1 = pd.DataFrame(
         [

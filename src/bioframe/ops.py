@@ -387,8 +387,11 @@ def overlap(
         outer: use the union of the set of intervals from df1 and df2
         inner: use intersection of the set of intervals from df1 and df2
 
-    return_input : bool, optional
-        If True, return columns from input dfs. Default True.
+    return_input : bool, int, or str, optional
+        Controls which input columns are returned. If True (default), return
+        columns from both input dataframes; if False, return neither. To return
+        only one side, pass ``1``, ``"1"``, or ``"left"`` for ``df1``, or ``2``,
+        ``"2"``, or ``"right"`` for ``df2``.
 
     return_index : bool, optional
         If True, return indicies of overlapping pairs as two new columns
@@ -461,6 +464,20 @@ def overlap(
         _verify_columns(df1, on)
         _verify_columns(df2, on)
 
+    if return_input is True:
+        return_left = return_right = True
+    elif return_input is False:
+        return_left = return_right = False
+    elif return_input in (1, "1", "left"):
+        return_left, return_right = True, False
+    elif return_input in (2, "2", "right"):
+        return_left, return_right = False, True
+    else:
+        raise ValueError(
+            "return_input must be one of True, False, 1, 2, 'left', 'right'; "
+            f"got {return_input!r}"
+        )
+
     events1, events2 = _overlap_intidxs(
         df1,
         df2,
@@ -499,11 +516,11 @@ def overlap(
 
     df_input_1 = None
     df_input_2 = None
-    if return_input:
+    if return_left:
         df_input_1 = df1.iloc[events1].reset_index(drop=True)
         df_input_1.columns = [c + suffixes[0] for c in df_input_1.columns]
 
-    if return_input:
+    if return_right:
         df_input_2 = df2.iloc[events2].reset_index(drop=True)
         df_input_2.columns = [c + suffixes[1] for c in df_input_2.columns]
 
