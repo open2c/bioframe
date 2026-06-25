@@ -2,6 +2,11 @@
 
 ## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.8.0...HEAD)
 
+Bug fixes:
+
+- `overlap` again honors `return_input=1`/`"left"` and `return_input=2`/`"right"` to return only
+  one side's columns; unsupported values now raise `ValueError` instead of silently returning both.
+
 ## v0.8.0
 
 Date: 2025-04-08
