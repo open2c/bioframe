@@ -2289,3 +2289,24 @@ def test_sort_bedframe():
     assert (
         df.dtypes == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()
+
+
+def test_assign_view_drop_unassigned_keeps_nan_in_other_columns():
+    # drop_unassigned should only drop intervals that fall outside the view, not
+    # intervals that merely contain NaNs in unrelated columns (e.g. cooler bins with
+    # missing weights). See open2c/bioframe#160.
+    view_df = bioframe.make_viewframe([("chr1", 0, 100, "region1")])
+    df = pd.DataFrame(
+        {
+            "chrom": ["chr1", "chr1", "chr2"],
+            "start": [10, 30, 10],
+            "end": [20, 40, 20],
+            "value": [np.nan, 5.0, 7.0],
+        }
+    )
+    result = bioframe.assign_view(df, view_df, drop_unassigned=True)
+
+    # chr2:10-20 is outside the view and dropped; chr1:10-20 is assigned and kept
+    # even though its `value` is NaN.
+    assert list(zip(result["chrom"], result["start"])) == [("chr1", 10), ("chr1", 30)]
+    assert pd.isna(result.loc[0, "value"])

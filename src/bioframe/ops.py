@@ -1893,7 +1893,9 @@ def assign_view(
     out_df.rename(columns={view_name_col + "_view": df_view_col}, inplace=True)
 
     if drop_unassigned:
-        out_df = out_df.iloc[pd.isna(out_df).any(axis=1).values == 0, :]
+        # only drop intervals that weren't assigned to a view region, not rows
+        # that happen to contain NaNs in other columns
+        out_df = out_df[pd.notna(out_df[df_view_col]).values]
     out_df.reset_index(inplace=True, drop=True)
 
     return_cols = [*list(df.columns), df_view_col]

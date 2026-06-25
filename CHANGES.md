@@ -2,6 +2,11 @@
 
 ## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.8.0...HEAD)
 
+Bug fixes:
+
+- `assign_view(..., drop_unassigned=True)` now drops only intervals that fall outside the view,
+  instead of also dropping rows that contain NaNs in unrelated columns.
+
 ## v0.8.0
 
 Date: 2025-04-08
