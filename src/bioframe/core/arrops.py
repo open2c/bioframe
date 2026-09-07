@@ -7,7 +7,7 @@ import pandas as pd
 INT64_MAX = np.iinfo(np.int64).max
 
 
-def natsort_key(s, _NS_REGEX=re.compile(r"(\d+)", re.U)):
+def natsort_key(s, _NS_REGEX=re.compile(r"(\d+)", re.UNICODE)):
     return tuple([int(x) if x.isdigit() else x for x in _NS_REGEX.split(s) if x])
 
 

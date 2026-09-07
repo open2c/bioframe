@@ -86,8 +86,10 @@ See the [guide](https://bioframe.readthedocs.io/en/latest/guide-intervalops.html
 Bioframe includes utilities for reading genomic file formats into dataframes and vice versa. One handy function is `read_table` which mirrors pandas’s read_csv/read_table but provides a [`schema`](https://github.com/open2c/bioframe/blob/main/bioframe/io/schemas.py) argument to populate column names for common tabular file formats.
 
 ```python
-jaspar_url = 'http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2022/hg38/MA0139.1.tsv.gz'
-ctcf_motif_calls = bioframe.read_table(jaspar_url, schema='jaspar', skiprows=1)
+jaspar_url = (
+    "http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2022/hg38/MA0139.1.tsv.gz"
+)
+ctcf_motif_calls = bioframe.read_table(jaspar_url, schema="jaspar", skiprows=1)
 ```
 
 ## Tutorials
