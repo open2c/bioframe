@@ -13,7 +13,7 @@ repos:
       - id: check-case-conflict
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
+    rev: v0.16.6
     hooks:
       - id: ruff-check
         types_or: [python, pyi, jupyter]
@@ -30,7 +30,7 @@ repos:
       - id: text-unicode-replacement-char
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.7.3
+    rev: v3.9.6
     hooks:
       - id: prettier
         args: ["--cache-location=.prettier_cache/cache"]
