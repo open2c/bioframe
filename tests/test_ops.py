@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import bioframe
-import bioframe.core.checks as checks
+from bioframe.core import checks
 from bioframe.core.construction import make_viewframe
 
 # import pyranges as pr
