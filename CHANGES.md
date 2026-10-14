@@ -2,6 +2,10 @@
 
 ## [Upcoming release](https://github.com/open2c/bioframe/compare/v0.8.0...HEAD)
 
+Performance:
+
+- Skip overlap checks for singleton chromosome groups when validating views.
+
 ## v0.8.0
 
 Date: 2025-04-08

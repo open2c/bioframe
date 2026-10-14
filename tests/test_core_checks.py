@@ -499,3 +499,58 @@ def test_is_sorted():
 
     # view_df specifies a different ordering, so should not be sorted
     assert not is_sorted(bfs)
+
+
+@pytest.mark.parametrize("chrom_dtype", ["object", "string", "category"])
+@pytest.mark.parametrize("overlap", [False, True])
+def test_is_viewframe_singleton_chromosomes(chrom_dtype, overlap):
+    df = pd.DataFrame(
+        [
+            ["chr1", 10, 20, "first"],
+            ["read1", 0, 100, "read1"],
+            ["chr1", 19 if overlap else 20, 30, "second"],
+            ["read2", 0, 100, "read2"],
+            ["chr1", 15, 15, "point"],
+        ],
+        columns=["CHR", "START", "END", "NAME"],
+        index=[4, 2, 8, 3, 9],
+    ).astype({"CHR": chrom_dtype, "START": "Int64", "END": "Int64"})
+    original = df.copy()
+    assert is_viewframe(df, cols=("CHR", "START", "END"), view_name_col="NAME") == (
+        not overlap
+    )
+    pd.testing.assert_frame_equal(df, original)
+
+
+def test_is_viewframe_unique_chromosomes_still_validates():
+    df = pd.DataFrame(
+        [["read1", 0, 100, "read1"], ["read2", 50, 50, "read2"]],
+        columns=["chrom", "start", "end", "name"],
+    )
+    assert is_viewframe(df)
+    df.loc[1, "name"] = "read1"
+    with pytest.raises(ValueError, match="must be unique"):
+        is_viewframe(df, raise_errors=True)
+    df.loc[1, "name"] = None
+    with pytest.raises(ValueError, match="cannot contain NAs"):
+        is_viewframe(df, raise_errors=True)
+    df.loc[1, "name"] = "read2"
+    df.loc[1, "end"] = 49
+    with pytest.raises(ValueError, match="not a bedframe"):
+        is_viewframe(df, raise_errors=True)
+
+
+def test_is_viewframe_mixed_chromosomes_matches_overlap_check():
+    rng = np.random.default_rng(0)
+    for _ in range(50):
+        size = 30
+        starts = rng.integers(0, 100, size=size)
+        df = pd.DataFrame(
+            {
+                "chrom": rng.choice(["chr1", "chr2", *map(str, range(size))], size),
+                "start": starts,
+                "end": starts + rng.integers(0, 15, size=size),
+                "name": [f"region{i}" for i in range(size)],
+            }
+        )
+        assert is_viewframe(df) == (not is_overlapping(df))

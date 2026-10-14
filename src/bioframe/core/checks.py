@@ -244,6 +244,15 @@ def is_viewframe(region_df, raise_errors=False, view_name_col="name", cols=None)
             )
         return False
 
+    # A chromosome represented by only one interval cannot contain overlaps.
+    # Avoid constructing merged intervals for these groups during validation.
+    if len(region_df):
+        repeated_chroms = region_df[ck1].duplicated(keep=False)
+        if not repeated_chroms.any():
+            return True
+        if not repeated_chroms.all():
+            region_df = region_df.loc[repeated_chroms]
+
     if is_overlapping(region_df, cols=cols):
         if raise_errors:
             raise ValueError("Invalid view: entries must be non-overlapping")
