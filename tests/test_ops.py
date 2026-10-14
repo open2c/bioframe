@@ -2289,3 +2289,74 @@ def test_sort_bedframe():
     assert (
         df.dtypes == bioframe.sort_bedframe(df, view_df, view_name_col="fruit").dtypes
     ).all()
+
+
+@pytest.mark.parametrize("k", [1, 2])
+@pytest.mark.parametrize("callable_key", [False, True])
+def test_closest_tie_breaking_candidate_indices(k, callable_key):
+    query = pd.DataFrame(
+        [["chr1", 100, 110], ["chr1", 200, 210]],
+        columns=["chrom", "start", "end"],
+    )
+    target = pd.DataFrame(
+        [["chr1", 80, 90, 3], ["chr1", 120, 130, 2], ["chr1", 220, 230, 1]],
+        columns=["chrom", "start", "end", "priority"],
+    )
+    key = (lambda df: df["priority"]) if callable_key else "priority"
+    result = bioframe.closest(query, target, k=k, tie_breaking_col=key)
+    assert result["start_"].tolist() == ([120, 220] if k == 1 else [120, 80, 220, 120])
+    assert result["distance"].tolist() == ([10, 10] if k == 1 else [10, 10, 10, 70])
+
+
+def test_closest_tie_breaking_reordered_candidates():
+    # The candidate count can match the target count while their order differs.
+    query = pd.DataFrame([["chr1", 100, 110]], columns=["chrom", "start", "end"])
+    target = pd.DataFrame(
+        [["chr1", 120, 130, 1], ["chr1", 80, 90, 2]],
+        columns=["chrom", "start", "end", "priority"],
+    )
+    result = bioframe.closest(query, target, tie_breaking_col="priority")
+    assert result["start_"].tolist() == [120]
+
+
+@pytest.mark.parametrize("ignore_overlaps", [False, True])
+def test_closest_tie_breaking_overlaps_and_chromosomes(ignore_overlaps):
+    query = pd.DataFrame(
+        [["chr2", 100, 110], ["chr1", 100, 110]],
+        columns=["CHR", "START", "END"],
+        index=["q2", "q1"],
+    )
+    target = pd.DataFrame(
+        [
+            ["chr1", 100, 105, 2],
+            ["chr2", 100, 105, 2],
+            ["chr1", 105, 110, 1],
+            ["chr2", 105, 110, 1],
+            ["chr1", 110, 120, 3],
+            ["chr2", 110, 120, 3],
+        ],
+        columns=["CHR", "START", "END", "priority"],
+        index=["a1", "a2", "b1", "b2", "c1", "c2"],
+    )
+    original_query, original_target = query.copy(), target.copy()
+    result = bioframe.closest(
+        query,
+        target,
+        k=2,
+        tie_breaking_col="priority",
+        ignore_overlaps=ignore_overlaps,
+        cols1=("CHR", "START", "END"),
+        cols2=("CHR", "START", "END"),
+        return_input=False,
+        return_index=True,
+        return_overlap=True,
+    )
+    for query_index, suffix in [("q1", "1"), ("q2", "2")]:
+        selected = result[result["index"] == query_index]
+        assert selected["index_"].tolist() == (
+            ["c" + suffix] if ignore_overlaps else ["b" + suffix, "a" + suffix]
+        )
+        assert selected["distance"].eq(0).all()
+        assert selected["have_overlap"].eq(not ignore_overlaps).all()
+    pd.testing.assert_frame_equal(query, original_query)
+    pd.testing.assert_frame_equal(target, original_target)

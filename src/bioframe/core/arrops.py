@@ -737,7 +737,7 @@ def closest_intervals(
     if tie_arr is None:
         order = np.lexsort([events2, dists, events1])
     else:
-        order = np.lexsort([events2, tie_arr, dists, events1])
+        order = np.lexsort([events2, tie_arr[events2], dists, events1])
     events1 = events1[order]
     events2 = events2[order]
 
