@@ -33,8 +33,8 @@ bedtools intersect -u -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
-out = A.loc[overlap['index_1'].unique()]
+overlap = bf.overlap(A, B, how="inner", suffixes=("_1", "_2"), return_index=True)
+out = A.loc[overlap["index_1"].unique()]
 ```
 
 ### Report the number of hits in B `-c`
@@ -56,7 +56,7 @@ bedtools intersect -wa -wb -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-out = bf.overlap(A, B, how='inner')
+out = bf.overlap(A, B, how="inner")
 ```
 
 **Note:** This is called an "inner join", and is analogous to an inner pandas join or merge. The default column suffixes in the output dataframe are `''` (nothing) for A's columns and `'_'` for B's columns.
@@ -68,7 +68,7 @@ bedtools intersect -wa -wb -loj -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-out = bf.overlap(A, B, how='left')
+out = bf.overlap(A, B, how="left")
 ```
 
 **Note:** This is called a "left-outer join".
@@ -80,11 +80,11 @@ bedtools intersect -wa -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
-out = A.loc[overlap['index_1']]
+overlap = bf.overlap(A, B, how="inner", suffixes=("_1", "_2"), return_index=True)
+out = A.loc[overlap["index_1"]]
 
 # Alternatively
-out = bf.overlap(A, B, how='inner')[A.columns]
+out = bf.overlap(A, B, how="inner")[A.columns]
 ```
 
 > **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `A`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
@@ -96,11 +96,11 @@ bedtools intersect -wb -a A.bed -b B.bed > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, how='inner', suffixes=('_1','_2'), return_index=True)
-out = B.loc[overlap['index_2']]
+overlap = bf.overlap(A, B, how="inner", suffixes=("_1", "_2"), return_index=True)
+out = B.loc[overlap["index_2"]]
 
 # Alternatively
-out = bf.overlap(A, B, how='inner', suffixes=('_', ''))[B.columns]
+out = bf.overlap(A, B, how="inner", suffixes=("_", ""))[B.columns]
 ```
 
 > **Note:** This gives one row per overlap and can contain duplicates. The output dataframe of the former method will use the same pandas index as the input dataframe `B`, while the latter result --- the join output --- will have an integer range index, like a pandas merge.
@@ -113,8 +113,8 @@ bedtools intersect -wa -a A.bed -b B.bed C.bed D.bed > out.bed
 
 ```py
 others = pd.concat([B, C, D])
-overlap = bf.overlap(A, others, how='inner', suffixes=('_1','_2'), return_index=True)
-out = A.loc[overlap['index_1']]
+overlap = bf.overlap(A, others, how="inner", suffixes=("_1", "_2"), return_index=True)
+out = A.loc[overlap["index_1"]]
 ```
 
 ### Return everything in A that doesn't overlap with B `-v`
@@ -138,8 +138,10 @@ bedtools intersect -wa -a A.bed -b B.bed -s > out.bed
 ```
 
 ```py
-overlap = bf.overlap(A, B, on=['strand'], suffixes=('_1','_2'), return_index=True, how='inner')
-out = A.loc[overlap['index_1']]
+overlap = bf.overlap(
+    A, B, on=["strand"], suffixes=("_1", "_2"), return_index=True, how="inner"
+)
+out = A.loc[overlap["index_1"]]
 ```
 
 For non-intersection `-v`
@@ -149,7 +151,7 @@ bedtools intersect -wa -a A.bed -b B.bed -v -s > out.bed
 ```
 
 ```py
-out = bf.setdiff(A, B, on=['strand'])
+out = bf.setdiff(A, B, on=["strand"])
 ```
 
 ### Minimum overlap as a fraction of A `-f`
